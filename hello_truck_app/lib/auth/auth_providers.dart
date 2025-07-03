@@ -12,12 +12,26 @@ final authSocketProvider = Provider<AuthSocket>((ref) {
 
 final authStateProvider = StreamProvider<AuthState>((ref) {
   final socket = ref.watch(authSocketProvider);
-  return socket.authStateStream;
+  return socket.authStateStream.distinct();
 });
 
+// Single API instance that updates its token
 final apiProvider = FutureProvider<API>((ref) async {
-  final authState = ref.watch(authStateProvider);
-  final api = API(accessToken: authState.value?.token);
+  final api = API(accessToken: ref.read(authStateProvider).value?.token);
+  print("API initialized with token: ${api.accessToken}");
+
+  // Listen to auth state changes and update token
+  ref.listen(authStateProvider, (_, next) {
+    api.updateToken(next.value?.token);
+    print("Token updated: ${next.value?.token}");
+  });
+
+  // Initialize the API
   await api.init();
+
+  ref.onDispose(() async {
+    await api.dispose();
+  });
+
   return api;
 });

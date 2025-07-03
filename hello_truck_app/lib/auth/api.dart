@@ -5,11 +5,15 @@ import 'package:path_provider/path_provider.dart';
 
 class API {
   final Dio _dio = Dio();
-  final String? accessToken;
+  String? accessToken;
   late CacheStore _cacheStore;
   late CacheOptions _cacheOptions;
 
   API({this.accessToken});
+
+  void updateToken(String? newToken) {
+    accessToken = newToken;
+  }
 
   Future<void> init() async {
     final dir = await getTemporaryDirectory();
@@ -44,9 +48,9 @@ class API {
 
   Future<Response> get(String path, {CachePolicy? policy}) => _dio.get(
     path,
-    options: _cacheOptions.copyWith(
-      policy: policy ?? _cacheOptions.policy,
-    ).toOptions(),
+    options: _cacheOptions
+        .copyWith(policy: policy ?? _cacheOptions.policy)
+        .toOptions(),
   );
 
   Future<Response> post(String path, {dynamic data}) =>

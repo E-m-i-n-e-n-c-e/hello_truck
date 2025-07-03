@@ -9,7 +9,18 @@ class HelloTruck extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+    final api = ref.watch(apiProvider);
+    final authState = ref.watch(authStateProvider);
+
+    if (authState.isLoading || api.isLoading) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: Center(
+          child: CircularProgressIndicator(color: colorScheme.primary),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Hello Truck'),
@@ -37,12 +48,12 @@ class HelloTruck extends ConsumerWidget {
                   ],
                 ),
               );
-              
+
               // Logout if confirmed
               if (shouldLogout == true) {
                 const storage = FlutterSecureStorage();
                 await storage.deleteAll();
-                
+
                 final authSocket = ref.read(authSocketProvider);
                 authSocket.emitUnauthenticated();
               }
@@ -54,21 +65,19 @@ class HelloTruck extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/hello_truck.png',
-              height: 150,
-            ),
+            Image.asset('assets/images/hello_truck.png', height: 150),
             const SizedBox(height: 24),
             const Text(
               'Welcome to Hello Truck!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             const Text(
               'You are successfully logged in.',
+              style: TextStyle(fontSize: 16),
+            ),
+            Text(
+              "Current API Token: ${api.value?.accessToken ?? 'None'}",
               style: TextStyle(fontSize: 16),
             ),
           ],
@@ -76,4 +85,4 @@ class HelloTruck extends ConsumerWidget {
       ),
     );
   }
-} 
+}

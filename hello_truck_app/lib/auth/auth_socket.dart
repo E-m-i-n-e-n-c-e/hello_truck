@@ -73,7 +73,7 @@ class AuthSocket {
     }
 
     // 🕒 Periodic refresh every 1 minute
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
+    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
       final refreshToken = await _storage.read(key: 'refreshToken');
       if (refreshToken != null) {
         _socket.emit('refresh-token', {'refreshToken': refreshToken});

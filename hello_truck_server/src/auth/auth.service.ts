@@ -80,14 +80,14 @@ export class AuthService {
     }
 
     // Generate tokens
-    return this.generateTokens(user.id);
+    return this.generateTokens(user.id,phoneNumber);
   }
 
   // Generate access and refresh tokens
-  async generateTokens(userId: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async generateTokens(userId: string, phoneNumber: string): Promise<{ accessToken: string; refreshToken: string }> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { id: userId },
+        { id: userId, phoneNumber },
         {
           secret: this.configService.get<string>('JWT_SECRET'),
           expiresIn: '15m',
@@ -131,11 +131,11 @@ export class AuthService {
 
     // Delete the used refresh token
     await this.prisma.session.delete({
-      where: { id: session.id },
+      where: { id: session.id, },
     });
 
     // Generate new tokens
-    return this.generateTokens(session.userId);
+    return this.generateTokens(session.userId, session.user.phoneNumber);
   }
 
   // Logout - invalidate refresh token

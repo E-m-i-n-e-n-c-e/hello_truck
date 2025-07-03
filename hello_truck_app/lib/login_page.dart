@@ -55,7 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       // Call the API to send OTP
       final response = await api.post(
         'http://10.0.2.2:3000/auth/send-otp',
-        data: {'phoneNumber': _phoneController.text},
+        data: {'phoneNumber': _phoneController.text.trim()},
       );
 
       if (response.statusCode == 200) {

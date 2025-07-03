@@ -1,19 +1,21 @@
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:equatable/equatable.dart';
 
-class AuthState {
+class AuthState extends Equatable {
   final String userId;
-  final String? phoneNumber;
+  final String phoneNumber;
   final bool isAuthenticated;
-  final String? token;
-  Function? signIn;
-  Function? signOut;
+  final String token;
 
-  AuthState({
+  const AuthState({
     required this.userId,
-    this.phoneNumber,
+    required this.phoneNumber,
     required this.isAuthenticated,
-    this.token,
+    required this.token,
   });
+
+  @override
+  List<Object> get props => [userId, phoneNumber, isAuthenticated, token];
 
   factory AuthState.fromToken(String? token) {
     if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
@@ -24,6 +26,7 @@ class AuthState {
       final payload = JwtDecoder.decode(token);
       return AuthState(
         userId: payload['id'],
+        phoneNumber: payload['phoneNumber'],
         isAuthenticated: true,
         token: token,
       );
@@ -33,6 +36,11 @@ class AuthState {
   }
 
   factory AuthState.unauthenticated() {
-    return AuthState(userId: '', isAuthenticated: false);
+    return AuthState(
+      userId: '',
+      phoneNumber: '',
+      isAuthenticated: false,
+      token: '',
+    );
   }
 }
