@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/auth/api_exception.dart';
 
 class API {
   final Dio _dio = Dio();
@@ -39,6 +40,7 @@ class API {
     _dio.interceptors.addAll([
       _authInterceptor,
       DioCacheInterceptor(options: _cacheOptions),
+      _errorInterceptor,
     ]);
   }
 
@@ -49,7 +51,13 @@ class API {
       }
       return handler.next(options);
     },
-    onError: (e, handler) => handler.next(e),
+  );
+
+  InterceptorsWrapper get _errorInterceptor => InterceptorsWrapper(
+    onError: (error, handler) {
+      // Convert DioException to APIException and continue with error handling
+      handler.reject(APIException.fromDioException(error));
+    },
   );
 
   Future<Response> get(String path, {CachePolicy? policy}) => _dio.get(

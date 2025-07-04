@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -54,13 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       await api.sendOtp(_phoneController.text.trim());
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP sent successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
+        SnackBars.success(context, 'OTP sent successfully!');
         setState(() {
           _otpSent = true;
           _isLoading = false;
@@ -68,12 +63,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error sending OTP: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        print('Error sending OTP: $e');
+        SnackBars.error(context, 'Error sending OTP: ${e.toString()}');
         setState(() {
           _isLoading = false;
         });
@@ -97,19 +88,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
     } catch (e) {
       print('Error verifying OTP: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Invalid or expired OTP"),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Dismiss',
-              textColor: Colors.white,
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              },
-            ),
-          ),
-        );
+        SnackBars.error(context, 'Invalid or expired OTP');
       }
       setState(() {
         _isLoading = false;
