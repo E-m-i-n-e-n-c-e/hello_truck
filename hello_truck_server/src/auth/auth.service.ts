@@ -21,7 +21,7 @@ export class AuthService {
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
-    const { phoneNumber, otp, existingRefreshToken } = verifyOtpDto;
+    const { phoneNumber, otp, staleRefreshToken } = verifyOtpDto;
     // Verify OTP using OTP service
     await this.otpService.verifyOtp(phoneNumber, otp);
 
@@ -38,7 +38,7 @@ export class AuthService {
 
     // Generate tokens
     const accessToken = await this.generateAccessToken(user);
-    const newRefreshToken = await this.generateRefreshToken(user.id,existingRefreshToken);
+    const newRefreshToken = await this.generateRefreshToken(user.id, staleRefreshToken);
     return { accessToken, refreshToken: newRefreshToken };
   }
 
@@ -56,28 +56,26 @@ export class AuthService {
   }
 
   // Generate a refresh token and store it
-  async generateRefreshToken(userId: string, existingRefreshToken?: string): Promise<string> {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // valid for 30 days
+  async generateRefreshToken(userId: string, staleRefreshToken?: string): Promise<string> {
+    const newRefreshToken = crypto.randomBytes(64).toString('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 days
   
-    // Generate a new refresh token if one is not provided
-    const refreshToken = existingRefreshToken ?? crypto.randomBytes(64).toString('hex');
-  
-    await this.prisma.session.upsert({
-      where: {
-        refreshToken, // must be unique in your Prisma schema
-      },
-      update: {
-        expiresAt, // just update expiration if token already exists
-      },
-      create: {
+    // If an stale refresh token is provided, try to delete it first
+    if (staleRefreshToken) {
+      await this.prisma.session.deleteMany({
+        where: { refreshToken: staleRefreshToken },
+      });
+    }
+    // Create a new session
+    await this.prisma.session.create({
+      data: {
         userId,
-        refreshToken,
+        refreshToken: newRefreshToken,
         expiresAt,
       },
     });
   
-    return refreshToken;
+    return newRefreshToken;
   }
 
   // Refresh access token using refresh token

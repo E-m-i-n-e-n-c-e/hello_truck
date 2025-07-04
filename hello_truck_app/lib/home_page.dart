@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/auth/auth_providers.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class HelloTruck extends ConsumerWidget {
   const HelloTruck({super.key});
@@ -51,11 +50,7 @@ class HelloTruck extends ConsumerWidget {
 
               // Logout if confirmed
               if (shouldLogout == true) {
-                const storage = FlutterSecureStorage();
-                await storage.deleteAll();
-
-                final authSocket = ref.read(authSocketProvider);
-                authSocket.emitUnauthenticated();
+                await api.value!.signOut();
               }
             },
           ),

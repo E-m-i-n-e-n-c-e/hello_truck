@@ -47,10 +47,10 @@ class AuthSocket {
       final newAccessToken = data['accessToken'];
       final newRefreshToken = data['refreshToken'];
 
-      await _storage.write(key: 'accessToken', value: newAccessToken);
-      if (newRefreshToken != null) {
-        await _storage.write(key: 'refreshToken', value: newRefreshToken);
-      }
+      await Future.wait([
+        _storage.write(key: 'accessToken', value: newAccessToken),
+        _storage.write(key: 'refreshToken', value: newRefreshToken),
+      ]);
       _controller.add(AuthState.fromToken(newAccessToken));
     });
 

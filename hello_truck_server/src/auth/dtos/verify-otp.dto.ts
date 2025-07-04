@@ -11,5 +11,5 @@ export class VerifyOtpDto {
 
   @IsOptional()
   @IsString()
-  existingRefreshToken?: string;
+  staleRefreshToken?: string;
 }

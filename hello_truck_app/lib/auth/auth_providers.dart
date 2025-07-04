@@ -17,7 +17,10 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 
 // Single API instance that updates its token
 final apiProvider = FutureProvider<API>((ref) async {
-  final api = API(accessToken: ref.read(authStateProvider).value?.token);
+  final api = API(
+    accessToken: ref.read(authStateProvider).value?.token,
+    ref: ref,
+  );
   print("API initialized with token: ${api.accessToken}");
 
   // Listen to auth state changes and update token

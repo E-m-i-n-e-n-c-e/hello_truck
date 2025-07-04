@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/auth/auth_providers.dart';
 
@@ -21,7 +20,6 @@ class _LoginPageState extends ConsumerState<LoginPage>
   bool _otpSent = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  final storage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -53,28 +51,20 @@ class _LoginPageState extends ConsumerState<LoginPage>
     });
 
     try {
-      // Call the API to send OTP
-      final response = await api.post(
-        'http://10.0.2.2:3000/auth/send-otp',
-        data: {'phoneNumber': _phoneController.text.trim()},
-      );
+      await api.sendOtp(_phoneController.text.trim());
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('OTP sent successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
 
-      if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP sent successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-
-          setState(() {
-            _otpSent = true;
-            _isLoading = false;
-          });
-        }
-      } else {
-        throw Exception('Failed to send OTP');
+        setState(() {
+          _otpSent = true;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -100,33 +90,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
     });
 
     try {
-      // Call the API to verify OTP
-      final response = await api.post(
-        'http://10.0.2.2:3000/auth/verify-otp',
-        data: {
-          'phoneNumber': _phoneController.text,
-          'otp': _otpController.text,
-          'existingRefreshToken': await storage.read(key: 'refreshToken'),
-        },
+      await api.verifyOtp(
+        _phoneController.text.trim(),
+        _otpController.text.trim(),
       );
-
-      if (response.statusCode == 200) {
-        // For demo, we'll just emit an authenticated state
-        await Future.wait([
-          storage.write(
-            key: 'refreshToken',
-            value: response.data['refreshToken'],
-          ),
-          storage.write(
-            key: 'accessToken',
-            value: response.data['accessToken'],
-          ),
-        ]);
-        final authSocket = ref.read(authSocketProvider);
-        authSocket.emitAuthState(response.data['accessToken']);
-      } else {
-        throw Exception('Failed to verify OTP');
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
