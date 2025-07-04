@@ -60,7 +60,7 @@ export class AuthService {
     const newRefreshToken = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 days
   
-    // If an stale refresh token is provided, try to delete it first
+    // If a stale refresh token is provided, try to delete it first
     if (staleRefreshToken) {
       await this.prisma.session.deleteMany({
         where: { refreshToken: staleRefreshToken },
@@ -79,7 +79,7 @@ export class AuthService {
   }
 
   // Refresh access token using refresh token
-  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; }> {
     // Find session with this refresh token
     const session = await this.prisma.session.findUnique({
       where: { refreshToken },
@@ -90,15 +90,15 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    // Delete the used refresh token
-    await this.prisma.session.delete({
-      where: { id: session.id, },
+    // Extend session expiration
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: { expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) }, // Extend expiration by 30 days
     });
 
     // Generate new tokens
     const accessToken = await this.generateAccessToken(session.user);
-    const newRefreshToken = await this.generateRefreshToken(session.userId);
-    return { accessToken, refreshToken: newRefreshToken };
+    return { accessToken };
   }
 
   // Logout - invalidate refresh token

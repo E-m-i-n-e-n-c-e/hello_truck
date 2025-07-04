@@ -39,8 +39,6 @@ class AuthSocket {
 
     _socket.onDisconnect((_) {
       print('🔌 Socket disconnected');
-      _socket.auth = {'token': null}; // clear auth token
-      print('🔌 Socket auth: ${_socket.auth}');
       _refreshTimer?.cancel();
       _refreshTimer = null;
     });
@@ -55,20 +53,18 @@ class AuthSocket {
       if (!_hasEmittedOfflineState) {
         _hasEmittedOfflineState = true;
         // We are offline, so we read from storage and emit the auth state
-        final accessToken = await _storage.read(key: 'accessToken');
+        final [accessToken, refreshToken] = await Future.wait([
+          _storage.read(key: 'accessToken'),
+          _storage.read(key: 'refreshToken'),
+        ]);
+        _socket.auth = {'token': refreshToken};
         _controller.add(AuthState.fromToken(accessToken, isOffline: true));
       }
     });
 
     _socket.on('access-token', (data) async {
       final newAccessToken = data['accessToken'];
-      final newRefreshToken = data['refreshToken'];
-
-      await Future.wait([
-        _storage.write(key: 'accessToken', value: newAccessToken),
-        _storage.write(key: 'refreshToken', value: newRefreshToken),
-      ]);
-      _socket.auth = {'token': newRefreshToken};
+      await _storage.write(key: 'accessToken', value: newAccessToken);
       _controller.add(AuthState.fromToken(newAccessToken));
     });
 
@@ -91,8 +87,8 @@ class AuthSocket {
       _controller.add(AuthState.unauthenticated());
     }
 
-    // 🕒 Periodic refresh every 2 minute
-    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
+    // 🕒 Periodic refresh every 5 minutes
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (_) async {
       final refreshToken = await _storage.read(key: 'refreshToken');
       if (refreshToken != null) {
         _socket.emit('refresh-token', {'refreshToken': refreshToken});
@@ -105,11 +101,12 @@ class AuthSocket {
 
   void emitSignOut() {
     _socket.disconnect();
+    _socket.auth = {};
+    print("Socket auth: ${_socket.auth}");
     _controller.add(AuthState.unauthenticated());
   }
 
   void emitSignIn({required String accessToken, required String refreshToken}) {
-    _controller.add(AuthState.fromToken(accessToken));
     _socket.auth = {'token': refreshToken};
     _socket.connect();
   }
