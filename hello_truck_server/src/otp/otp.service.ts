@@ -78,17 +78,4 @@ export class OtpService {
 
     return true;
   }
-
-  // Cleanup expired OTPs every minute
-  @Cron('* * * * *')
-  async cleanupExpiredOtps() {
-    const result = await this.prisma.otpVerification.deleteMany({
-      where: {
-        expiresAt: {
-          lt: new Date(),
-        },
-      },
-    });
-    console.log(`Cleaned up ${result.count} expired OTPs`);
-  }
 }

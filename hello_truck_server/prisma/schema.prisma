@@ -27,6 +27,8 @@ model Session {
   expiresAt   DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([expiresAt])
 }
 
 model OtpVerification {
@@ -37,4 +39,7 @@ model OtpVerification {
   expiresAt   DateTime
   verified    Boolean  @default(false)
   createdAt   DateTime @default(now())
+  
+  @@index([phoneNumber, verified, expiresAt, createdAt])
+  @@index([expiresAt])
 } 

@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { OtpService } from './otp.service';
+import { CronService } from './cron.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],
-  providers: [OtpService],
-  exports: [OtpService]
+  providers: [CronService],
 })
-export class OtpModule {}
+export class CronModule {} 

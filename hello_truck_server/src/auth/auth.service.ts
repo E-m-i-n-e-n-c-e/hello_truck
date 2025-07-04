@@ -66,7 +66,6 @@ export class AuthService {
     await this.prisma.session.upsert({
       where: {
         refreshToken, // must be unique in your Prisma schema
-        userId,
       },
       update: {
         expiresAt, // just update expiration if token already exists
