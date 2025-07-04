@@ -6,7 +6,7 @@ import 'package:hello_truck_app/models/auth_state.dart';
 final authSocketProvider = Provider<AuthSocket>((ref) {
   final socket = AuthSocket();
   socket.connect(); // auto-connect
-  ref.onDispose(() => socket.disconnect());
+  ref.onDispose(() => socket.dispose());
   return socket;
 });
 

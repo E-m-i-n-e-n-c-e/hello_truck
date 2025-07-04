@@ -9,19 +9,19 @@ export class AuthController {
 
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
-  async sendOtp(@Body() body: SendOtpDto) {
+  sendOtp(@Body() body: SendOtpDto) {
     return this.authService.sendOtp(body.phoneNumber);
   }
 
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
-  async verifyOtp(@Body() body: VerifyOtpDto) {
+  verifyOtp(@Body() body: VerifyOtpDto) {
     return this.authService.verifyOtp(body);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Body() body: { refreshToken: string }) {
+  logout(@Body() body: { refreshToken: string }) {
     return this.authService.logout(body.refreshToken);
   }
 }

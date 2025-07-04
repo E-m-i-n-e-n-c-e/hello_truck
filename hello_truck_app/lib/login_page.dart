@@ -52,7 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
     try {
       await api.sendOtp(_phoneController.text.trim());
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -99,15 +99,22 @@ class _LoginPageState extends ConsumerState<LoginPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error verifying OTP: ${e.toString()}'),
+            content: Text("Invalid or expired OTP"),
             backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Dismiss',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
           ),
         );
       }
+      setState(() {
+        _isLoading = false;
+      });
     }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override

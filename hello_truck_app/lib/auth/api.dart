@@ -101,7 +101,6 @@ class API {
         'staleRefreshToken': staleRefreshToken,
       },
     );
-    print('Response from verifyOtp: ${response.data}');
     if (response.statusCode == 200) {
       await Future.wait([
         storage.write(
@@ -112,7 +111,8 @@ class API {
       ]);
 
       final socket = ref.read(authSocketProvider);
-      socket.emitAuthState(response.data['accessToken']);
+      socket.emitSignIn(response.data['accessToken']);
+      socket.connect();
     } else {
       throw Exception('Failed to verify OTP');
     }
@@ -134,7 +134,7 @@ class API {
           storage.delete(key: 'accessToken'),
         ]);
         final socket = ref.read(authSocketProvider);
-        socket.emitUnauthenticated();
+        socket.emitSignOut();
       }
     }
   }

@@ -121,4 +121,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token');
     }
   }
+
+  // Validate refresh token
+  async validateRefreshToken(refreshToken: string): Promise<any> {
+    const session = await this.prisma.session.findUnique({
+      where: { refreshToken },
+      include: { user: true },
+    });
+
+    if (!session || session.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    return session.user;
+  }
 }

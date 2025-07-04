@@ -20,8 +20,19 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(private authService: AuthService) {}
 
-  handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+  async handleConnection(client: Socket) {
+    try {
+      const refreshToken = client.handshake.auth?.token as string;
+      if (!refreshToken)
+        throw new UnauthorizedException('Missing authorization header');
+      const user = await this.authService.validateRefreshToken(refreshToken);
+      if (!user) throw new UnauthorizedException("Invalid refresh token");
+
+      client.data.user = user;
+    } catch (err) {
+      client.emit('unauthenticated');
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
@@ -31,18 +42,17 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('refresh-token')
   async handleRefreshToken(client: Socket, payload: { refreshToken: string }) {
     try {
-      const { accessToken, refreshToken } = await this.authService.refreshAccessToken(
-        payload.refreshToken,
-      );
+      const { accessToken, refreshToken } =
+        await this.authService.refreshAccessToken(payload.refreshToken);
 
       client.emit('access-token', { accessToken, refreshToken });
     } catch (error) {
       client.emit('auth-error', { message: 'Invalid refresh token' });
-      
+
       // Force logout if refresh token is invalid
       if (error instanceof UnauthorizedException) {
         client.emit('force-logout');
       }
     }
   }
-} 
+}

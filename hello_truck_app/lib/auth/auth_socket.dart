@@ -19,13 +19,28 @@ class AuthSocket {
   Future<void> connect() async {
     _socket = io.io('http://10.0.2.2:3000', {
       'transports': ['websocket'],
-      'autoConnect': true,
+      'autoConnect': false,
+      'reconnection': true,
     });
+
+    _socket.auth = {'token': await _storage.read(key: 'refreshToken')};
+    _socket.connect();
 
     _socket.onConnect((_) {
       print('🔌 Socket connected');
       _hasEmittedOfflineState = false;
       _startRefreshLoop(); // no need to pass refresh token anymore
+    });
+
+    _socket.on('unauthenticated', (_) {
+      print('🔒 Socket unauthenticated');
+      _controller.add(AuthState.unauthenticated());
+    });
+
+    _socket.onDisconnect((_) {
+      print('🔌 Socket disconnected');
+      _refreshTimer?.cancel();
+      _refreshTimer = null;
     });
 
     _socket.onReconnect((_) {
@@ -51,6 +66,7 @@ class AuthSocket {
         _storage.write(key: 'accessToken', value: newAccessToken),
         _storage.write(key: 'refreshToken', value: newRefreshToken),
       ]);
+      _socket.auth = {'token': newRefreshToken};
       _controller.add(AuthState.fromToken(newAccessToken));
     });
 
@@ -73,7 +89,7 @@ class AuthSocket {
     }
 
     // 🕒 Periodic refresh every 2 minute
-    _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
       final refreshToken = await _storage.read(key: 'refreshToken');
       if (refreshToken != null) {
         _socket.emit('refresh-token', {'refreshToken': refreshToken});
@@ -84,20 +100,20 @@ class AuthSocket {
     });
   }
 
-  void emitUnauthenticated() {
-    _refreshTimer?.cancel();
+  void emitSignOut() {
+    _socket.disconnect();
     _controller.add(AuthState.unauthenticated());
   }
 
-  void emitAuthState(String token) {
+  void emitSignIn(String token) {
     print('Emitting auth state with token: $token');
     _controller.add(AuthState.fromToken(token));
   }
 
-  void disconnect() {
+  void dispose() {
     _refreshTimer?.cancel();
     _refreshTimer = null;
-    _socket.disconnect();
+    _socket.destroy();
     _controller.close();
   }
 }

@@ -17,7 +17,13 @@ class AuthState extends Equatable {
   });
 
   @override
-  List<Object> get props => [userId, phoneNumber, isAuthenticated, token, isOffline];
+  List<Object> get props => [
+    userId,
+    phoneNumber,
+    isAuthenticated,
+    token,
+    isOffline,
+  ];
 
   factory AuthState.fromToken(String? token, {bool isOffline = false}) {
     if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
@@ -27,7 +33,7 @@ class AuthState extends Equatable {
     try {
       final payload = JwtDecoder.decode(token);
       return AuthState(
-        userId: payload['id'],
+        userId: payload['userId'],
         phoneNumber: payload['phoneNumber'],
         isAuthenticated: true,
         token: token,
