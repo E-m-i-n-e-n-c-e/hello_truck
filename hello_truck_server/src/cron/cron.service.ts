@@ -6,8 +6,10 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CronService {
   constructor(private prisma: PrismaService) {}
 
-  // Cleanup expired OTPs every minute
-  @Cron('* * * * *')
+  // @Cron('*/5 * * * * *') // Runs every 5 seconds for testing purposes
+
+  // Cleanup expired OTPs every 2 minutes
+  @Cron('*/2 * * * *')
   async cleanupExpiredOtps() {
     const result = await this.prisma.otpVerification.deleteMany({
       where: {

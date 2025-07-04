@@ -39,6 +39,8 @@ class AuthSocket {
 
     _socket.onDisconnect((_) {
       print('🔌 Socket disconnected');
+      _socket.auth = {'token': null}; // clear auth token
+      print('🔌 Socket auth: ${_socket.auth}');
       _refreshTimer?.cancel();
       _refreshTimer = null;
     });
@@ -54,7 +56,7 @@ class AuthSocket {
         _hasEmittedOfflineState = true;
         // We are offline, so we read from storage and emit the auth state
         final accessToken = await _storage.read(key: 'accessToken');
-        _controller.add(AuthState.fromToken(accessToken));
+        _controller.add(AuthState.fromToken(accessToken, isOffline: true));
       }
     });
 
@@ -71,6 +73,7 @@ class AuthSocket {
     });
 
     _socket.on('force-logout', (_) async {
+      print('🔒 Force logout received');
       await _storage.deleteAll();
       _controller.add(AuthState.unauthenticated());
     });
@@ -105,9 +108,10 @@ class AuthSocket {
     _controller.add(AuthState.unauthenticated());
   }
 
-  void emitSignIn(String token) {
-    print('Emitting auth state with token: $token');
-    _controller.add(AuthState.fromToken(token));
+  void emitSignIn({required String accessToken, required String refreshToken}) {
+    _controller.add(AuthState.fromToken(accessToken));
+    _socket.auth = {'token': refreshToken};
+    _socket.connect();
   }
 
   void dispose() {

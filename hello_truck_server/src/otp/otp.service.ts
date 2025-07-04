@@ -16,7 +16,7 @@ export class OtpService {
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
-    const expiresAt = new Date(Date.now() + 30 * 1000); // OTP valid for 30 seconds
+    const expiresAt = new Date(Date.now() + 60 * 1000); // OTP valid for 60 seconds
 
     // Store OTP in database
     await this.prisma.otpVerification.create({

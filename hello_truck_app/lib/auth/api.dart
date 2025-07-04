@@ -118,9 +118,10 @@ class API {
         storage.write(key: 'accessToken', value: response.data['accessToken']),
       ]);
 
-      final socket = ref.read(authSocketProvider);
-      socket.emitSignIn(response.data['accessToken']);
-      socket.connect();
+      ref.read(authSocketProvider).emitSignIn(
+        accessToken: response.data['accessToken'],
+        refreshToken: response.data['refreshToken'],
+      );
     } else {
       throw Exception('Failed to verify OTP');
     }
@@ -141,8 +142,7 @@ class API {
           storage.delete(key: 'refreshToken'),
           storage.delete(key: 'accessToken'),
         ]);
-        final socket = ref.read(authSocketProvider);
-        socket.emitSignOut();
+        ref.read(authSocketProvider).emitSignOut();
       }
     }
   }
