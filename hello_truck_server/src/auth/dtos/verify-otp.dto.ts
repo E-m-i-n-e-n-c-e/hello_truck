@@ -1,0 +1,15 @@
+import { IsNotEmpty, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
+
+export class VerifyOtpDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsPhoneNumber('IN')
+  phoneNumber: string;
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+
+  @IsOptional()
+  @IsString()
+  existingRefreshToken?: string;
+}

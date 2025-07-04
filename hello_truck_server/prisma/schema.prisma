@@ -33,6 +33,7 @@ model OtpVerification {
   id          String   @id @default(uuid())
   phoneNumber String
   otp         String
+  retryCount  Int      @default(0)
   expiresAt   DateTime
   verified    Boolean  @default(false)
   createdAt   DateTime @default(now())

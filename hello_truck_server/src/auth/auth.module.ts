@@ -5,11 +5,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthGateway } from './auth.gateway';
+import { OtpModule } from '../otp/otp.module';
 
 @Module({
   imports: [
     PrismaModule,
     ConfigModule,
+    OtpModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -20,7 +22,7 @@ import { AuthGateway } from './auth.gateway';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService,AuthGateway],
+  providers: [AuthService, AuthGateway],
   exports: [AuthService],
 })
 export class AuthModule {}

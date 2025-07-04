@@ -1,8 +1,11 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { OtpService } from '../otp/otp.service';
 import * as crypto from 'crypto';
+import { VerifyOtpDto } from './dtos/verify-otp.dto';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -10,63 +13,17 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private otpService: OtpService,
   ) {}
 
-  // Send OTP via MSG91 (this would be integrated with MSG91 API)
   async sendOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
-    // Validate phone number format
-    if (!this.isValidPhoneNumber(phoneNumber)) {
-      throw new BadRequestException('Invalid phone number format');
-    }
-
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 30 * 1000); // OTP valid for 30 seconds
-
-    // Store OTP in database
-    await this.prisma.otpVerification.create({
-      data: {
-        phoneNumber,
-        otp,
-        expiresAt,
-      },
-    });
-
-    // In a real implementation, you would call MSG91 API here
-    // For now, we'll just log the OTP (in production, never log OTPs)
-    console.log(`OTP for ${phoneNumber}: ${otp}`);
-
-    return { 
-      success: true, 
-      message: 'OTP sent successfully' 
-    };
+    return this.otpService.sendOtp(phoneNumber);
   }
 
-  // Verify OTP and create user if needed
-  async verifyOtp(phoneNumber: string, otp: string): Promise<{ accessToken: string; refreshToken: string }> {
-    // Find the most recent OTP for this phone number
-    const otpVerification = await this.prisma.otpVerification.findFirst({
-      where: {
-        phoneNumber,
-        verified: false,
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    if (!otpVerification || otpVerification.otp !== otp) {
-      throw new UnauthorizedException('Invalid or expired OTP');
-    }
-
-    // Mark OTP as verified
-    await this.prisma.otpVerification.update({
-      where: { id: otpVerification.id },
-      data: { verified: true },
-    });
+  async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
+    const { phoneNumber, otp, existingRefreshToken } = verifyOtpDto;
+    // Verify OTP using OTP service
+    await this.otpService.verifyOtp(phoneNumber, otp);
 
     // Find or create user
     let user = await this.prisma.user.findUnique({
@@ -80,40 +37,47 @@ export class AuthService {
     }
 
     // Generate tokens
-    return this.generateTokens(user.id,phoneNumber);
+    const accessToken = await this.generateAccessToken(user);
+    const newRefreshToken = await this.generateRefreshToken(user.id,existingRefreshToken);
+    return { accessToken, refreshToken: newRefreshToken };
   }
 
   // Generate access and refresh tokens
-  async generateTokens(userId: string, phoneNumber: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        { id: userId, phoneNumber },
-        {
-          secret: this.configService.get<string>('JWT_SECRET'),
-          expiresIn: '15m',
-        },
-      ),
-      this.generateRefreshToken(userId),
-    ]);
+  async generateAccessToken(user: User): Promise<string> {
+    const accessToken = await this.jwtService.signAsync(
+      { userId: user.id, userName: user.userName, phoneNumber: user.phoneNumber },
+      {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: '15m',
+      },
+    );
 
-    return { accessToken, refreshToken };
+    return accessToken;
   }
 
   // Generate a refresh token and store it
-  async generateRefreshToken(userId: string): Promise<string> {
-    const refreshToken = crypto.randomBytes(64).toString('hex');
+  async generateRefreshToken(userId: string, existingRefreshToken?: string): Promise<string> {
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // Refresh token valid for 30 days
-
-    // Store refresh token
-    await this.prisma.session.create({
-      data: {
+    expiresAt.setDate(expiresAt.getDate() + 30); // valid for 30 days
+  
+    // Generate a new refresh token if one is not provided
+    const refreshToken = existingRefreshToken ?? crypto.randomBytes(64).toString('hex');
+  
+    await this.prisma.session.upsert({
+      where: {
+        refreshToken, // must be unique in your Prisma schema
+        userId,
+      },
+      update: {
+        expiresAt, // just update expiration if token already exists
+      },
+      create: {
         userId,
         refreshToken,
         expiresAt,
       },
     });
-
+  
     return refreshToken;
   }
 
@@ -135,7 +99,9 @@ export class AuthService {
     });
 
     // Generate new tokens
-    return this.generateTokens(session.userId, session.user.phoneNumber);
+    const accessToken = await this.generateAccessToken(session.user);
+    const newRefreshToken = await this.generateRefreshToken(session.userId);
+    return { accessToken, refreshToken: newRefreshToken };
   }
 
   // Logout - invalidate refresh token
@@ -145,36 +111,5 @@ export class AuthService {
     });
 
     return { success: true };
-  }
-
-  // Validate phone number format
-  private isValidPhoneNumber(phoneNumber: string): boolean {
-    // Basic validation - can be enhanced based on requirements
-    return /^\+?[1-9]\d{9,14}$/.test(phoneNumber);
-  }
-
-  // Validate JWT token
-  async validateAccessToken(token: string): Promise<any> {  
-    try {
-      const payload = this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-      });
-      return await this.prisma.user.findUnique({ where: { id: payload.id } });
-    } catch (error) {
-      throw new UnauthorizedException('Invalid token');
-    }
-  }
-  // Validate refresh token
-  async validateRefreshToken(refreshToken: string): Promise<any> {
-    const session = await this.prisma.session.findUnique({
-      where: { refreshToken },
-      include: { user: true },
-    });
-
-    if (!session || session.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
-    }
-
-    return session.user;
   }
 }

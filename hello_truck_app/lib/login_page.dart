@@ -21,6 +21,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
   bool _otpSent = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final storage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -105,12 +106,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
         data: {
           'phoneNumber': _phoneController.text,
           'otp': _otpController.text,
+          'existingRefreshToken': await storage.read(key: 'refreshToken'),
         },
       );
 
       if (response.statusCode == 200) {
         // For demo, we'll just emit an authenticated state
-        final storage = FlutterSecureStorage();
         await Future.wait([
           storage.write(
             key: 'refreshToken',

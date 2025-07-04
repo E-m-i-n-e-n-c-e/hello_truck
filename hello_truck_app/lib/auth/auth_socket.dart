@@ -72,7 +72,7 @@ class AuthSocket {
       _controller.add(AuthState.unauthenticated());
     }
 
-    // 🕒 Periodic refresh every 1 minute
+    // 🕒 Periodic refresh every 2 minute
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
       final refreshToken = await _storage.read(key: 'refreshToken');
       if (refreshToken != null) {
