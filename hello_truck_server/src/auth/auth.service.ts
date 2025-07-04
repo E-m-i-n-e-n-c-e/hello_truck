@@ -109,4 +109,16 @@ export class AuthService {
 
     return { success: true };
   }
+
+  // Validate JWT token
+  async validateAccessToken(token: string): Promise<any> {  
+    try {
+      const payload = this.jwtService.verify(token, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+      return await this.prisma.user.findUnique({ where: { id: payload.id } });
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
 }

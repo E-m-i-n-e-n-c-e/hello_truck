@@ -19,12 +19,6 @@ export class AuthController {
     return this.authService.verifyOtp(body);
   }
 
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  async refreshToken(@Body() body: { refreshToken: string }) {
-    return this.authService.refreshAccessToken(body.refreshToken);
-  }
-
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Body() body: { refreshToken: string }) {

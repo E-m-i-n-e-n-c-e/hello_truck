@@ -73,7 +73,7 @@ class AuthSocket {
     }
 
     // 🕒 Periodic refresh every 2 minute
-    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
       final refreshToken = await _storage.read(key: 'refreshToken');
       if (refreshToken != null) {
         _socket.emit('refresh-token', {'refreshToken': refreshToken});
@@ -90,6 +90,7 @@ class AuthSocket {
   }
 
   void emitAuthState(String token) {
+    print('Emitting auth state with token: $token');
     _controller.add(AuthState.fromToken(token));
   }
 

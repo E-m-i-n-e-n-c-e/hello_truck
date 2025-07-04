@@ -95,6 +95,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
         _otpController.text.trim(),
       );
     } catch (e) {
+      print('Error verifying OTP: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -102,11 +103,11 @@ class _LoginPageState extends ConsumerState<LoginPage>
             backgroundColor: Colors.red,
           ),
         );
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override

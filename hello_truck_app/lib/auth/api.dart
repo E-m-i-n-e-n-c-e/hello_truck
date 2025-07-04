@@ -101,17 +101,14 @@ class API {
         'staleRefreshToken': staleRefreshToken,
       },
     );
-
+    print('Response from verifyOtp: ${response.data}');
     if (response.statusCode == 200) {
       await Future.wait([
         storage.write(
           key: 'refreshToken',
           value: response.data['refreshToken'],
         ),
-        storage.write(
-          key: 'accessToken',
-          value: response.data['accessToken'],
-        ),
+        storage.write(key: 'accessToken', value: response.data['accessToken']),
       ]);
 
       final socket = ref.read(authSocketProvider);
@@ -126,10 +123,7 @@ class API {
 
     if (refreshToken != null) {
       try {
-        await post(
-          '/auth/logout',
-          data: {'refreshToken': refreshToken},
-        );
+        await post('/auth/logout', data: {'refreshToken': refreshToken});
       } catch (e) {
         // If logout failed, save the refresh token to the storage
         await storage.write(key: 'staleRefreshToken', value: refreshToken);

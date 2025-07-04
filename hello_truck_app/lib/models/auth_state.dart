@@ -6,18 +6,20 @@ class AuthState extends Equatable {
   final String phoneNumber;
   final bool isAuthenticated;
   final String token;
+  final bool isOffline;
 
   const AuthState({
     required this.userId,
     required this.phoneNumber,
     required this.isAuthenticated,
     required this.token,
+    this.isOffline = false,
   });
 
   @override
-  List<Object> get props => [userId, phoneNumber, isAuthenticated, token];
+  List<Object> get props => [userId, phoneNumber, isAuthenticated, token, isOffline];
 
-  factory AuthState.fromToken(String? token) {
+  factory AuthState.fromToken(String? token, {bool isOffline = false}) {
     if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
       return AuthState.unauthenticated();
     }
@@ -29,6 +31,7 @@ class AuthState extends Equatable {
         phoneNumber: payload['phoneNumber'],
         isAuthenticated: true,
         token: token,
+        isOffline: isOffline,
       );
     } catch (_) {
       return AuthState.unauthenticated();

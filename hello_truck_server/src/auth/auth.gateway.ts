@@ -20,7 +20,7 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(private authService: AuthService) {}
 
-  async handleConnection(client: Socket) {
+  handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
   }
 

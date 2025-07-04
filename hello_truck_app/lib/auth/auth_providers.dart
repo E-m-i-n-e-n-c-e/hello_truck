@@ -12,7 +12,7 @@ final authSocketProvider = Provider<AuthSocket>((ref) {
 
 final authStateProvider = StreamProvider<AuthState>((ref) {
   final socket = ref.watch(authSocketProvider);
-  return socket.authStateStream.distinct();
+  return socket.authStateStream;
 });
 
 // Single API instance that updates its token
