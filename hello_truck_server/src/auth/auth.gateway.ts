@@ -42,10 +42,10 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('refresh-token')
   async handleRefreshToken(client: Socket, payload: { refreshToken: string }) {
     try {
-      const { accessToken} =
+      const { accessToken, refreshToken } =
         await this.authService.refreshAccessToken(payload.refreshToken);
 
-      client.emit('access-token', { accessToken });
+      client.emit('access-token', { accessToken, refreshToken });
     } catch (error) {
       client.emit('auth-error', { message: 'Invalid refresh token' });
 

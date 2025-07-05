@@ -57,54 +57,86 @@ export class AuthService {
 
   // Generate a refresh token and store it
   async generateRefreshToken(userId: string, staleRefreshToken?: string): Promise<string> {
-    const newRefreshToken = crypto.randomBytes(64).toString('hex');
+    const newToken = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 days
   
-    // If a stale refresh token is provided, try to delete it first
+    // If a stale refresh token is provided, delete the session
     if (staleRefreshToken) {
-      await this.prisma.session.deleteMany({
-        where: { refreshToken: staleRefreshToken },
+      await this.prisma.session.delete({
+        where: { id: staleRefreshToken.split('.')[0] },
       });
     }
+    
     // Create a new session
-    await this.prisma.session.create({
+    const session = await this.prisma.session.create({
       data: {
         userId,
-        refreshToken: newRefreshToken,
+        token: newToken,
         expiresAt,
       },
     });
   
-    return newRefreshToken;
+    return `${session.id}.${newToken}`;
   }
 
   // Refresh access token using refresh token
-  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; }> {
-    // Find session with this refresh token
+  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    if (!refreshToken || !refreshToken.includes('.')) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
+
+    const [sessionId, tokenValue] = refreshToken.split('.');
+    
+    // Find session with this  sessionID
     const session = await this.prisma.session.findUnique({
-      where: { refreshToken },
+      where: { id: sessionId },
       include: { user: true },
     });
 
     if (!session || session.expiresAt < new Date()) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+    // Check if token matches current token or old token
+    const isCurrentToken = session.token === tokenValue;
+    const isOldToken = session.oldToken === tokenValue;
 
-    // Extend session expiration
-    await this.prisma.session.update({
+    if (isCurrentToken || isOldToken) {
+      const newToken = crypto.randomBytes(64).toString('hex');
+      
+      // Update session with new token
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: {
+          token: newToken,
+          ...(isCurrentToken && { oldToken: session.token }), // Only set oldToken if current token was used
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // Extend expiration by 30 days
+        },
+      });
+
+      // Generate new access token
+      const accessToken = await this.generateAccessToken(session.user);
+      return { 
+        accessToken,
+        refreshToken: `${session.id}.${newToken}`
+      };
+    } 
+    // Neither current nor old token matches - potential security breach
+    await this.prisma.session.delete({
       where: { id: session.id },
-      data: { expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) }, // Extend expiration by 30 days
     });
-
-    // Generate new tokens
-    const accessToken = await this.generateAccessToken(session.user);
-    return { accessToken };
+    throw new UnauthorizedException('Invalid refresh token - session terminated');
   }
 
-  // Logout - invalidate refresh token
+  // Logout - invalidate session
   async logout(refreshToken: string): Promise<{ success: boolean }> {
-    await this.prisma.session.deleteMany({
-      where: { refreshToken },
+    if (!refreshToken || !refreshToken.includes('.')) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
+
+    const [sessionId] = refreshToken.split('.');
+    
+    await this.prisma.session.delete({
+      where: { id: sessionId },
     });
 
     return { success: true };
@@ -116,7 +148,7 @@ export class AuthService {
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
-      return await this.prisma.user.findUnique({ where: { id: payload.id } });
+      return await this.prisma.user.findUnique({ where: { id: payload.userId } });
     } catch (error) {
       throw new UnauthorizedException('Invalid token');
     }
@@ -124,13 +156,28 @@ export class AuthService {
 
   // Validate refresh token
   async validateRefreshToken(refreshToken: string): Promise<any> {
+    if (!refreshToken || !refreshToken.includes('.')) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
+
+    const [sessionId, tokenValue] = refreshToken.split('.');
+    
     const session = await this.prisma.session.findUnique({
-      where: { refreshToken },
+      where: { id: sessionId },
       include: { user: true },
     });
 
     if (!session || session.expiresAt < new Date()) {
       throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // Check if token matches either current or old token
+    if (session.token !== tokenValue && session.oldToken !== tokenValue) {
+      // Security breach - delete the session
+      await this.prisma.session.delete({
+        where: { id: sessionId },
+      });
+      throw new UnauthorizedException('Invalid refresh token - session terminated');
     }
 
     return session.user;

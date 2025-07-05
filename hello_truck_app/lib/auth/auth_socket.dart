@@ -29,7 +29,7 @@ class AuthSocket {
     _socket.onConnect((_) {
       print('🔌 Socket connected');
       _hasEmittedOfflineState = false;
-      _startRefreshLoop(); // no need to pass refresh token anymore
+      _startRefreshLoop();
     });
 
     _socket.on('unauthenticated', (_) {
@@ -64,7 +64,12 @@ class AuthSocket {
 
     _socket.on('access-token', (data) async {
       final newAccessToken = data['accessToken'];
-      await _storage.write(key: 'accessToken', value: newAccessToken);
+      final newRefreshToken = data['refreshToken'];
+      await Future.wait([
+        _storage.write(key: 'accessToken', value: newAccessToken),
+        _storage.write(key: 'refreshToken', value: newRefreshToken),
+      ]);
+      _socket.auth = {'token': newRefreshToken};
       _controller.add(AuthState.fromToken(newAccessToken));
     });
 
