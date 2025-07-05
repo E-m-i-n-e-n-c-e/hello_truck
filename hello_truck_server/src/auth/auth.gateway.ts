@@ -27,7 +27,7 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!refreshToken)
         throw new UnauthorizedException('Missing authorization header');
       const user = await this.tokenService.validateRefreshToken(refreshToken);
-      if (!user) throw new UnauthorizedException("Invalid refresh token");
+      // validateRefreshToken throws UnauthorizedException if invalid
 
       client.data.user = user;
     } catch (err) {

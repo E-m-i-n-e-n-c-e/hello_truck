@@ -43,7 +43,7 @@ export class AuthService {
 
     const [sessionId] = refreshToken.split('.', 2);
     
-    await this.prisma.session.delete({
+    await this.prisma.session.deleteMany({
       where: { id: sessionId },
     });
 
