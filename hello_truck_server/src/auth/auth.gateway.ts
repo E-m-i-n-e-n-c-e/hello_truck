@@ -8,6 +8,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { AuthService } from './auth.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { TokenService } from '../token/token.service';
 
 @WebSocketGateway({
   cors: {
@@ -18,14 +19,14 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private authService: AuthService) {}
+  constructor(private tokenService: TokenService) {}
 
   async handleConnection(client: Socket) {
     try {
       const refreshToken = client.handshake.auth?.token as string;
       if (!refreshToken)
         throw new UnauthorizedException('Missing authorization header');
-      const user = await this.authService.validateRefreshToken(refreshToken);
+      const user = await this.tokenService.validateRefreshToken(refreshToken);
       if (!user) throw new UnauthorizedException("Invalid refresh token");
 
       client.data.user = user;
@@ -43,7 +44,7 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleRefreshToken(client: Socket, payload: { refreshToken: string }) {
     try {
       const { accessToken, refreshToken } =
-        await this.authService.refreshAccessToken(payload.refreshToken);
+        await this.tokenService.refreshAccessToken(payload.refreshToken);
 
       client.emit('access-token', { accessToken, refreshToken });
     } catch (error) {
