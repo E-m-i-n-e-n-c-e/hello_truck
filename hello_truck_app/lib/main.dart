@@ -3,9 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/auth/auth_providers.dart';
 import 'package:hello_truck_app/home_page.dart';
 import 'package:hello_truck_app/login_page.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 
 void main() {
+  // Preserve splash screen until app is fully loaded
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -14,8 +19,20 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color.fromARGB(255, 255, 145, 77),
+    // Remove splash screen once the app is built
+    FlutterNativeSplash.remove();
+
+    // Professional color scheme based on the teal logo
+    final colorScheme = ColorScheme(
+      brightness: Brightness.light,
+      primary: const Color(0xFF1CB4B4), // Teal from logo
+      onPrimary: Colors.white,
+      secondary: const Color(0xFF0D5C5C), // Darker teal for accents
+      onSecondary: Colors.white,
+      error: const Color(0xFFE53935),
+      onError: Colors.white,
+      surface: Colors.white,
+      onSurface: const Color(0xFF212121),
     );
 
     final authState = ref.watch(authStateProvider);
@@ -24,19 +41,53 @@ class MyApp extends ConsumerWidget {
 
     if (isLoading) {
       return MaterialApp(
-        theme: ThemeData(colorScheme: colorScheme, useMaterial3: true),
+        theme: ThemeData(
+          colorScheme: colorScheme,
+          useMaterial3: true,
+          appBarTheme: AppBarTheme(
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            elevation: 0,
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.primary),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
         home: Scaffold(
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/hello_truck.png',
-                  width: 150,
-                  height: 150,
+                  'assets/images/logo.png',
+                  width: 100,
+                  height: 100,
                 ),
                 const SizedBox(height: 40),
-                const CircularProgressIndicator(),
+                CircularProgressIndicator(color: colorScheme.primary),
               ],
             ),
           ),
@@ -46,7 +97,42 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp(
       title: 'Hello Truck',
-      theme: ThemeData(colorScheme: colorScheme, useMaterial3: true),
+      theme: ThemeData(
+        colorScheme: colorScheme,
+        useMaterial3: true,
+        appBarTheme: AppBarTheme(
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          elevation: 0,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: colorScheme.primary),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.5)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+      themeMode: ThemeMode.light,
       home: authState.when(
         data: (authState) =>
             authState.isAuthenticated ? const HelloTruck() : const LoginPage(),
