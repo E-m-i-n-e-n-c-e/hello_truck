@@ -12,7 +12,8 @@ class API {
   String? accessToken;
   late CacheStore _cacheStore;
   late CacheOptions _cacheOptions;
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  // static const String baseUrl = 'http://10.0.2.2:3000';
+  static const String baseUrl = 'https://hello-truck-server.fly.dev';
   final storage = const FlutterSecureStorage();
   final Ref ref;
 

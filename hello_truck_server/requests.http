@@ -1,0 +1,11 @@
+
+
+# Check server url https://hello-truck-server.fly.dev/
+
+
+POST http://localhost:3000/auth/send-otp
+Content-Type: application/json
+
+{
+  "phoneNumber": "6300045929"
+}

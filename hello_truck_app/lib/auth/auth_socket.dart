@@ -15,9 +15,11 @@ class AuthSocket {
   late io.Socket _socket;
   Timer? _refreshTimer;
   bool _hasEmittedOfflineState = false;
+  // static const baseUrl = 'http://10.0.2.2:3000';
+  static const baseUrl = 'https://hello-truck-server.fly.dev';
 
   Future<void> connect() async {
-    _socket = io.io('http://10.0.2.2:3000', {
+    _socket = io.io(baseUrl, {
       'transports': ['websocket'],
       'autoConnect': false,
       'reconnection': true,

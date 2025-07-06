@@ -29,7 +29,22 @@ class MyApp extends ConsumerWidget {
             error: (error, stackTrace) => Scaffold(
               body: Center(child: Text('Error: ${error.toString()}')),
             ),
-            loading: () => const SizedBox(),
+            loading: () => Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/hello_truck.png',
+                      width: 150,
+                      height: 150,
+                    ),
+                    SizedBox(height: 40),
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              ),
+            ),
           ),
     );
   }

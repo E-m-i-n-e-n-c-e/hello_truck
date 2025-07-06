@@ -1,7 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Cron } from '@nestjs/schedule';
 import * as bcrypt from 'bcrypt';
+import axios from 'axios';
+import { randomInt } from 'crypto';
+import { ConfigService } from '@nestjs/config';
 
 // Run npm install bcrypt and npm install @types/bcrypt --save-dev
 
@@ -9,12 +11,13 @@ import * as bcrypt from 'bcrypt';
 export class OtpService {
   constructor(
     private prisma: PrismaService,
+    private configService: ConfigService, // Assuming you have a config service for environment variables
   ) {}
 
   // Send OTP
   async sendOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
     // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = randomInt(100000, 999999).toString(); // 6-digit OTP
     const hashedOtp = await bcrypt.hash(otp, 10);
     const expiresAt = new Date(Date.now() + 60 * 1000); // OTP valid for 60 seconds
 
@@ -26,14 +29,20 @@ export class OtpService {
         expiresAt,
       },
     });
+    // Send OTP via SMS using 2Factor API
+    const apiKey = this.configService.get<string>('TWO_FACTOR_API_KEY');
+    const url = `https://2factor.in/API/V1/${apiKey}/SMS/+91${phoneNumber}/${otp}/HelloTruckOtpTemplate`;
 
-    // In a real implementation, you would call MSG91 API here
-    // For now, we'll just log the OTP (in production, never log OTPs)
+    console.log(`Sending OTP to ${phoneNumber} via URL: ${url}`);
+    const resp = await axios.get(url);
+    // resp.data looks like: { Status: "Success", Details: "XXXX" }
+    console.log('SMS sent:', resp.data);
+
     console.log(`OTP for ${phoneNumber}: ${otp}`);
 
-    return { 
-      success: true, 
-      message: 'OTP sent successfully' 
+    return {
+      success: true,
+      message: 'OTP sent successfully'
     };
   }
 
