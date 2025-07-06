@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import axios from 'axios';
@@ -34,9 +34,14 @@ export class OtpService {
     const url = `https://2factor.in/API/V1/${apiKey}/SMS/+91${phoneNumber}/${otp}/HelloTruckOtpTemplate`;
 
     console.log(`Sending OTP to ${phoneNumber} via URL: ${url}`);
-    const resp = await axios.get(url);
-    // resp.data looks like: { Status: "Success", Details: "XXXX" }
-    console.log('SMS sent:', resp.data);
+    try {
+      const response = await axios.get(url);
+      if (response.data.Status !== 'Success') {
+        throw new InternalServerErrorException('Failed to send OTP');
+      }
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
 
     console.log(`OTP for ${phoneNumber}: ${otp}`);
 

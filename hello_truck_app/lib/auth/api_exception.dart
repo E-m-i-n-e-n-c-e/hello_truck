@@ -78,11 +78,13 @@ class APIException extends DioException {
     if (data == null) return null;
 
     if (data is Map) {
-      // Check common error message fields
-      return data['message'] ??
-          data['error'] ??
-          data['error_description'] ??
-          data['errorMessage'];
+      if (data['message'] is String) {
+        return data['message'];
+      } else if (data['message'][0] is String) {
+        return data['message'][0];
+      } else if (data['error'] is String) {
+        return data['error'];
+      }
     } else if (data is String) {
       return data;
     }
