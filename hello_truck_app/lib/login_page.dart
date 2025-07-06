@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/auth/auth_providers.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
@@ -19,6 +20,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _otpSent = false;
+  bool _canResendOtp = false;
+  int _resendCountdown = 30;
+  Timer? _resendTimer;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -35,17 +39,39 @@ class _LoginPageState extends ConsumerState<LoginPage>
     _animationController.forward();
   }
 
+  void _startResendTimer() {
+    setState(() {
+      _canResendOtp = false;
+      _resendCountdown = 30;
+    });
+
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendCountdown > 0) {
+        setState(() {
+          _resendCountdown--;
+        });
+      } else {
+        setState(() {
+          _canResendOtp = true;
+        });
+        timer.cancel();
+      }
+    });
+  }
+
   @override
   void dispose() {
     _phoneController.dispose();
     _otpController.dispose();
     _animationController.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
   // Send OTP
   Future<void> _sendOtp(API api) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_otpSent && !_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
@@ -60,6 +86,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
           _otpSent = true;
           _isLoading = false;
         });
+        _startResendTimer();
       }
     } catch (e) {
       if (mounted) {
@@ -88,7 +115,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
     } catch (e) {
       print('Error verifying OTP: $e');
       if (mounted) {
-        SnackBars.error(context, 'Invalid or expired OTP');
+        _otpController.clear(); // Clear OTP field on error
+        SnackBars.error(context, "Error verifying OTP: ${e.toString()}");
       }
       setState(() {
         _isLoading = false;
@@ -313,6 +341,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   setState(() {
                                     _otpSent = false;
                                     _otpController.clear();
+                                    _phoneController.clear();
                                   });
                                 },
                           child: Text(
@@ -324,13 +353,17 @@ class _LoginPageState extends ConsumerState<LoginPage>
                           ),
                         ),
                         TextButton(
-                          onPressed: _isLoading
+                          onPressed: (_isLoading || !_canResendOtp)
                               ? null
                               : () => _sendOtp(api.value!),
                           child: Text(
-                            'Resend OTP',
+                            _canResendOtp
+                              ? 'Resend OTP'
+                              : 'Resend OTP in ${_resendCountdown}s',
                             style: TextStyle(
-                              color: colorScheme.primary,
+                              color: _canResendOtp
+                                ? colorScheme.primary
+                                : colorScheme.onSurface.withValues(alpha: 0.5),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
