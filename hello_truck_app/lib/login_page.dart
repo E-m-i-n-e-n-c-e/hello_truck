@@ -191,18 +191,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           TextFormField(
                             controller: _phoneController,
                             focusNode: _phoneFocusNode,
                             keyboardType: TextInputType.phone,
                             style: textTheme.bodyLarge,
                             decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.phone),
                               prefixText: '+91 ',
-                              labelText: 'Mobile Number',
+                              labelText: 'Phone Number',
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 vertical: 16,
@@ -211,10 +210,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your mobile number';
+                                return 'Please enter your phone number';
                               }
                               if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
-                                return 'Please enter a valid 10-digit mobile number';
+                                return 'Please enter a valid 10-digit phone number';
                               }
                               return null;
                             },
@@ -281,7 +280,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               prefixIcon: const Icon(Icons.lock_outline),
                               hintText: '6-digit OTP',
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 vertical: 16,
