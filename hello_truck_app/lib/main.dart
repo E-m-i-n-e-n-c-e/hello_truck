@@ -25,7 +25,7 @@ class MyApp extends ConsumerWidget {
     // Professional color scheme based on the teal logo
     final colorScheme = ColorScheme(
       brightness: Brightness.light,
-      primary: const Color(0xFF1CB4B4), // Teal from logo
+      primary: const Color(0xFF22AAAE), // Teal from logo
       onPrimary: Colors.white,
       secondary: const Color(0xFF0D5C5C), // Darker teal for accents
       onSecondary: Colors.white,

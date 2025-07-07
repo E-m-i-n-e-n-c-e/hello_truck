@@ -102,21 +102,26 @@ flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
   remove_alpha_ios: true
-  image_path: "assets/images/icon_logo.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/icon_logo.png"
   min_sdk_android: 21
 
+  adaptive_icon_foreground: "assets/images/hello_truck.png"
+  adaptive_icon_background: "assets/images/logo_bg.png"
+
+  # Fallback icon for iOS and older Android versions
+  image_path_ios: "assets/images/logo_icon.png"
+  image_path_android: "assets/images/logo_icon.png"
+
+
 flutter_native_splash:
-  color: "#70C8C7"
-  image: assets/images/splash_logo.png
-  branding: assets/images/splash_logo.png
+  color: "#22AAAE"
+  image: assets/images/hello_truck.png
+  branding: assets/images/hello_truck.png
   color_dark: "#007f82"
-  image_dark: assets/images/splash_logo.png
-  branding_dark: assets/images/splash_logo.png
+  image_dark: assets/images/hello_truck.png
+  branding_dark: assets/images/hello_truck.png
 
   android_12:
-    image: assets/images/splash_logo.png
-    icon_background_color: "#70C8C7"
-    image_dark: assets/images/splash_logo.png
+    image: assets/images/hello_truck.png
+    icon_background_color: "#22AAAE"
+    image_dark: assets/images/hello_truck.png
     icon_background_color_dark: "#007f82"
