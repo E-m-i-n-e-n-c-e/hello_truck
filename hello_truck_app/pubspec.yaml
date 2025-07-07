@@ -114,14 +114,14 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#22AAAE"
-  image: assets/images/hello_truck.png
-  branding: assets/images/hello_truck.png
+  image: assets/images/invisible.png
+  branding: assets/images/invisible.png
   color_dark: "#007f82"
-  image_dark: assets/images/hello_truck.png
-  branding_dark: assets/images/hello_truck.png
+  image_dark: assets/images/invisible.png
+  branding_dark: assets/images/invisible.png
 
   android_12:
-    image: assets/images/hello_truck.png
+    image: assets/images/invisible.png
     icon_background_color: "#22AAAE"
-    image_dark: assets/images/hello_truck.png
+    image_dark: assets/images/invisible.png
     icon_background_color_dark: "#007f82"

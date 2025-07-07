@@ -4,7 +4,7 @@ import 'package:hello_truck_app/auth/auth_providers.dart';
 import 'package:hello_truck_app/home_page.dart';
 import 'package:hello_truck_app/login_page.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-
+import 'package:hello_truck_app/splash_screen.dart';
 
 void main() {
   // Preserve splash screen until app is fully loaded
@@ -38,60 +38,13 @@ class MyApp extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final api = ref.watch(apiProvider);
     final isLoading = authState.isLoading || api.isLoading;
+    final isAnimationComplete = ref.watch(AnimatedSplashScreenState.isAnimationComplete);
 
-    if (isLoading) {
-      return MaterialApp(
-        theme: ThemeData(
-          colorScheme: colorScheme,
-          useMaterial3: true,
-          appBarTheme: AppBarTheme(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            elevation: 0,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colorScheme.primary),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.5)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colorScheme.primary, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          ),
-        ),
-        home: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 100,
-                  height: 100,
-                ),
-                const SizedBox(height: 40),
-                CircularProgressIndicator(color: colorScheme.primary),
-              ],
-            ),
-          ),
-        ),
+    if (isLoading || !isAnimationComplete) {
+      return AnimatedSplashScreen(
+        backgroundColor: MediaQuery.of(context).platformBrightness == Brightness.dark
+            ? const Color(0xFF007F82)
+            : const Color(0xFF22AAAE),
       );
     }
 
