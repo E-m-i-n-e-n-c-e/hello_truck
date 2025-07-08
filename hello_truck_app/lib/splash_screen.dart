@@ -25,7 +25,7 @@ class AnimatedSplashScreenState extends ConsumerState<AnimatedSplashScreen>
     ref.read(isAnimationComplete.notifier).state = false;
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1000),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -38,7 +38,7 @@ class AnimatedSplashScreenState extends ConsumerState<AnimatedSplashScreen>
     _animationController.forward();
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        Future.delayed(const Duration(milliseconds: 800), () {
+        Future.delayed(const Duration(milliseconds: 1000), () {
           ref.read(isAnimationComplete.notifier).state = true;
         });
       }

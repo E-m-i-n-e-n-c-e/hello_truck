@@ -27,7 +27,7 @@ class MyApp extends ConsumerWidget {
       brightness: Brightness.light,
       primary: const Color(0xFF22AAAE), // Teal from logo
       onPrimary: Colors.white,
-      secondary: const Color(0xFF0D5C5C), // Darker teal for accents
+      secondary: const Color(0xFF007f82), // Darker teal for accents
       onSecondary: Colors.white,
       error: const Color(0xFFE53935),
       onError: Colors.white,
