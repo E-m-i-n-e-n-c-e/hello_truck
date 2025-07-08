@@ -17,6 +17,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _loadingState = ValueNotifier<bool>(false);
+  final FocusNode _phoneFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneFocusNode.addListener(() {
+      setState(() {});  // Trigger rebuild when focus changes
+    });
+  }
 
   @override
   void dispose() {
@@ -26,7 +35,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
-  // Send OTP and navigate to verification page
+  // Send OTP and show verification bottom sheet
   Future<void> _sendOtp(API api) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -40,13 +49,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         SnackBars.success(context, 'OTP sent successfully!');
         // Navigate to OTP verification page
         if (context.mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OtpVerificationPage(
-                phoneNumber: phoneNumber,
-              ),
-            ),
+          // Store the BuildContext for the modal sheet to close it later
+         await showModalBottomSheet<BuildContext>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.white,
+            builder: (context) => OtpVerificationPage(phoneNumber: phoneNumber),
           );
         }
       }
@@ -68,167 +76,178 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final textTheme = Theme.of(context).textTheme;
     final api = ref.watch(apiProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 40),
+    return PopScope(
+      canPop: !_phoneFocusNode.hasFocus,
+      onPopInvokedWithResult: (didPop, result) {
+        _phoneFocusNode.unfocus();
+      },
+      child: GestureDetector(
+        onTap: () {
+          _phoneFocusNode.unfocus();
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: Stack(
+            children: [
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 40),
 
-                    // Title
-                    Text(
-                      'Enter your phone number',
-                      style: textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Subtitle
-                    Text(
-                      "We will send you a verification code",
-                      style: textTheme.titleMedium?.copyWith(
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-
-                    // Phone Number Input
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
-                      ),
-                      child: TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        style: textTheme.titleMedium?.copyWith(
-                          letterSpacing: 1.5,
-                        ),
-                        decoration: InputDecoration(
-                          prefixIcon: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            margin: const EdgeInsets.only(right: 8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '+91',
-                                  style: textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  height: 24,
-                                  width: 1,
-                                  color: Colors.grey.shade300,
-                                ),
-                              ],
-                            ),
+                        // Title
+                        Text(
+                          'Enter your phone number',
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
                           ),
-                          hintText: 'Phone Number',
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Subtitle
+                        Text(
+                          "We will send you a verification code",
+                          style: textTheme.titleMedium?.copyWith(
+                            color: Colors.black54,
                             fontWeight: FontWeight.w500,
                           ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 16,
-                          ),
-                          counterText: '',
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your phone number';
-                          }
-                          if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
-                            return 'Please enter a valid 10-digit phone number';
-                          }
-                          return null;
-                        },
-                        maxLength: 10,
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(10),
-                          FilteringTextInputFormatter.digitsOnly,
+                        const SizedBox(height: 40),
+
+                        // Phone Number Input
+                        TextFormField(
+                          controller: _phoneController,
+                          focusNode: _phoneFocusNode,
+                          autofocus: true,
+                          keyboardType: TextInputType.phone,
+                          style: textTheme.titleMedium?.copyWith(
+                            letterSpacing: 1.5
+                          ),
+                          decoration: InputDecoration(
+                            prefixIcon: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              margin: const EdgeInsets.only(right: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '+91',
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    height: 24,
+                                    width: 1,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            hintText: 'Phone Number',
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: colorScheme.error, width: 1),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: colorScheme.error, width: 1),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 16,
+                            ),
+                            counterText: '',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your phone number';
+                            }
+                            if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+                              return 'Please enter a valid 10-digit phone number';
+                            }
+                            return null;
+                          },
+                          maxLength: 10,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(10),
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+
+                        const Spacer(),
+
+                        // Send OTP Button
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 80.0),
+                          child: ValueListenableBuilder<bool>(
+                            valueListenable: _loadingState,
+                            builder: (context, isLoading, child) {
+                              return ElevatedButton(
+                                onPressed: isLoading ? null : () => _sendOtp(api.value!),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colorScheme.secondary,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  minimumSize: const Size(double.infinity, 56),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  'Send OTP',
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Loading overlay
+              ValueListenableBuilder<bool>(
+                valueListenable: _loadingState,
+                builder: (context, isLoading, _) {
+                  return IgnorePointer(
+                    ignoring: !isLoading,
+                    child: AnimatedOpacity(
+                      opacity: isLoading ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Stack(
+                        children: [
+                          ModalBarrier(
+                            dismissible: false,
+                            color: Colors.black.withValues(alpha: 0.3),
+                          ),
+                          const Center(child: CircularProgressIndicator()),
                         ],
                       ),
                     ),
-
-                    const Spacer(),
-
-                    // Send OTP Button
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 80.0),
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: _loadingState,
-                        builder: (context, isLoading, child) {
-                          return ElevatedButton(
-                            onPressed: isLoading ? null : () => _sendOtp(api.value!),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colorScheme.secondary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              minimumSize: const Size(double.infinity, 56),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              'Send OTP',
-                              style: textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
-            ),
+            ],
           ),
-
-          // Loading overlay
-          ValueListenableBuilder<bool>(
-            valueListenable: _loadingState,
-            builder: (context, isLoading, _) {
-              return IgnorePointer(
-                ignoring: !isLoading,
-                child: AnimatedOpacity(
-                  opacity: isLoading ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Stack(
-                    children: [
-                      ModalBarrier(
-                        dismissible: false,
-                        color: Colors.black.withValues(alpha: 0.3),
-                      ),
-                      const Center(child: CircularProgressIndicator()),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }

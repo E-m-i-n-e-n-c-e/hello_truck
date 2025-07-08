@@ -101,10 +101,6 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
         _errorController?.add(ErrorAnimationType.shake);
         SnackBars.error(context, "Error verifying OTP: ${e.toString()}");
       }
-    } finally {
-      if (mounted) {
-        _loadingState.value = false;
-      }
     }
   }
 
@@ -113,179 +109,191 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final api = ref.watch(apiProvider);
+    if(api.value!= null && api.value!.accessToken != null && api.value!.accessToken!.isNotEmpty) {
+      // If the user is already authenticated, navigate to home page
+      print("Access token found: ${api.value!.accessToken}");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      });
+    }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const BackButton(color: Colors.black),
-        ),
-        title: Text(
-          'OTP Verification',
-          style: textTheme.titleLarge?.copyWith(
-            color: Colors.black,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      body: Stack(
+    return Stack(
         children: [
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 40),
-
-                  Text(
-                    'We have sent a verification code to',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon:  BackButton(color: Colors.black.withValues(alpha: 0.8)),
+                ),
+                Text(
+                  'OTP Verification',
+                  style: textTheme.titleLarge?.copyWith(
+                    color: Colors.black.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 8),
+                ),
+              ],
+              ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 40),
 
-                  Text(
-                    '+91-${widget.phoneNumber}',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                        Text(
+                          'We have sent a verification code to',
+                          style: textTheme.titleMedium?.copyWith(
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
 
-                  const SizedBox(height: 40),
+                        Text(
+                          '+91-${widget.phoneNumber}',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
 
-                  // PinCodeFields
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: PinCodeTextField(
-                      appContext: context,
-                      length: 6,
-                      controller: _otpController,
-                      errorAnimationController: _errorController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      animationType: AnimationType.scale,
-                      pinTheme: PinTheme(
-                        shape: PinCodeFieldShape.box,
-                        borderRadius: BorderRadius.circular(6),
-                        fieldHeight: 50,
-                        fieldWidth: 45,
-                        activeFillColor: Colors.white,
-                        inactiveFillColor: Colors.white,
-                        selectedFillColor: Colors.white,
-                        activeColor: colorScheme.primary,
-                        inactiveColor: Colors.grey.shade300,
-                        selectedColor: colorScheme.primary,
-                        borderWidth: 1,
-                        activeBorderWidth: 2,
-                        selectedBorderWidth: 2,
-                      ),
-                      animationDuration: const Duration(milliseconds: 100),
-                      enableActiveFill: true,
-                      enablePinAutofill: true,
-                      autoDisposeControllers: false,
-                      onCompleted: (value) {
-                        if (mounted) {
-                          _verifyOtp(api.value!);
-                        }
-                      },
-                      beforeTextPaste: (text) {
-                        // Allow only numbers12
-                        if (text == null) return false;
-                        return text.contains(RegExp(r'^[0-9]+$'));
-                      },
+                        const SizedBox(height: 40),
 
-                    ),
-                  ),
+                        // PinCodeFields
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: PinCodeTextField(
+                            appContext: context,
+                            length: 6,
+                            controller: _otpController,
+                            errorAnimationController: _errorController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            animationType: AnimationType.scale,
+                            pinTheme: PinTheme(
+                              shape: PinCodeFieldShape.box,
+                              borderRadius: BorderRadius.circular(6),
+                              fieldHeight: 50,
+                              fieldWidth: 45,
+                              activeFillColor: Colors.white,
+                              inactiveFillColor: Colors.white,
+                              selectedFillColor: Colors.white,
+                              activeColor: colorScheme.primary,
+                              inactiveColor: Colors.grey.shade300,
+                              selectedColor: colorScheme.primary,
+                              borderWidth: 1,
+                              activeBorderWidth: 2,
+                              selectedBorderWidth: 2,
+                            ),
+                            animationDuration: const Duration(milliseconds: 100),
+                            enableActiveFill: true,
+                            enablePinAutofill: true,
+                            autoDisposeControllers: false,
+                            onCompleted: (value) {
+                              if (mounted) {
+                                _verifyOtp(api.value!);
+                              }
+                            },
+                            beforeTextPaste: (text) {
+                              // Allow only numbers12
+                              if (text == null) return false;
+                              return text.contains(RegExp(r'^[0-9]+$'));
+                            },
 
-                  const SizedBox(height: 10),
+                          ),
+                        ),
 
-                  Text(
-                    'Check text messages for your OTP',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: Colors.blueAccent,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                        const SizedBox(height: 10),
 
-                  const SizedBox(height: 16),
+                        Text(
+                          'Check text messages for your OTP',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
 
-                  // Resend OTP section with ValueListenableBuilder
-                  ValueListenableBuilder<TimerState>(
-                    valueListenable: _timerState,
-                    builder: (context, timerState, _) {
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Didn't get the OTP? ",
-                            style: textTheme.titleMedium?.copyWith(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
+                        const SizedBox(height: 16),
+
+                        // Resend OTP section with ValueListenableBuilder
+                        ValueListenableBuilder<TimerState>(
+                          valueListenable: _timerState,
+                          builder: (context, timerState, _) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Didn't get the OTP? ",
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                ValueListenableBuilder<bool>(
+                                  valueListenable: _loadingState,
+                                  builder: (context, isLoading, _) {
+                                    return timerState.canResendOtp
+                                        ? TextButton(
+                                            onPressed: isLoading
+                                                ? null
+                                                : () => _resendOtp(api.value!),
+                                            style: TextButton.styleFrom(
+                                              padding: EdgeInsets.zero,
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                            child: Text(
+                                              'Resend SMS',
+                                              style: textTheme.titleMedium?.copyWith(
+                                                color: colorScheme.secondary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          )
+                                        : Text(
+                                            'Resend SMS in ${timerState.resendCountdown}s',
+                                            style: textTheme.titleMedium?.copyWith(
+                                              color: Colors.grey,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          );
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+
+                        const Spacer(),
+
+                        // Bottom button
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 80.0),
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Change phone number',
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                          ValueListenableBuilder<bool>(
-                            valueListenable: _loadingState,
-                            builder: (context, isLoading, _) {
-                              return timerState.canResendOtp
-                                  ? TextButton(
-                                      onPressed: isLoading
-                                          ? null
-                                          : () => _resendOtp(api.value!),
-                                      style: TextButton.styleFrom(
-                                        padding: EdgeInsets.zero,
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Text(
-                                        'Resend SMS',
-                                        style: textTheme.titleMedium?.copyWith(
-                                          color: colorScheme.secondary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    )
-                                  : Text(
-                                      'Resend SMS in ${timerState.resendCountdown}s',
-                                      style: textTheme.titleMedium?.copyWith(
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    );
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-
-                  const Spacer(),
-
-                  // Bottom button
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 80.0),
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Change phone number',
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.secondary,
-                          fontWeight: FontWeight.w700,
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
@@ -311,9 +319,9 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
             },
           ),
         ],
-      ),
-    );
+      );
   }
+
 }
 
 // Class to hold timer state
