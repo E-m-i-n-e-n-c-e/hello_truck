@@ -18,19 +18,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _loadingState = ValueNotifier<bool>(false);
   final FocusNode _phoneFocusNode = FocusNode();
+  bool _hasFocus = false;  // Track focus state locally
 
   @override
   void initState() {
     super.initState();
-    _phoneFocusNode.addListener(() {
-      setState(() {});  // Trigger rebuild when focus changes
-    });
+    _phoneFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    final newHasFocus = _phoneFocusNode.hasFocus;
+    if (_hasFocus != newHasFocus) {
+      setState(() => _hasFocus = newHasFocus);
+    }
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
     _loadingState.dispose();
+    _phoneFocusNode.removeListener(_onFocusChange);
+    _phoneFocusNode.dispose();
     _formKey.currentState?.dispose();
     super.dispose();
   }
@@ -40,29 +48,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
 
     _loadingState.value = true;
-
     try {
       final phoneNumber = _phoneController.text.trim();
       await api.sendOtp(phoneNumber);
 
-      if (mounted) {
-        SnackBars.success(context, 'OTP sent successfully!');
-        // Navigate to OTP verification page
-        if (context.mounted) {
-          // Store the BuildContext for the modal sheet to close it later
-         await showModalBottomSheet<BuildContext>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.white,
-            builder: (context) => OtpVerificationPage(phoneNumber: phoneNumber),
-          );
-        }
-      }
+      if (!mounted) return;
+
+      await showModalBottomSheet<BuildContext>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        enableDrag: false,
+        backgroundColor: Colors.white,
+        builder: (context) => OtpVerificationPage(phoneNumber: phoneNumber),
+      );
     } catch (e) {
-      if (mounted) {
-        print('Error sending OTP: $e');
-        SnackBars.error(context, 'Error sending OTP: ${e.toString()}');
-      }
+      if (!mounted) return;
+      print('Error sending OTP: $e');
+      SnackBars.error(context, 'Error sending OTP: ${e.toString()}');
     } finally {
       if (mounted) {
         _loadingState.value = false;
@@ -74,180 +77,192 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final api = ref.watch(apiProvider);
+    // Only watch API when needed
+    final api = ref.watch(apiProvider.select((value) => value.value));
 
     return PopScope(
-      canPop: !_phoneFocusNode.hasFocus,
+      canPop: !_hasFocus,  // Use local focus state
       onPopInvokedWithResult: (didPop, result) {
         _phoneFocusNode.unfocus();
       },
       child: GestureDetector(
-        onTap: () {
-          _phoneFocusNode.unfocus();
-        },
+        onTap: () => _phoneFocusNode.unfocus(),
         child: Scaffold(
           backgroundColor: Colors.white,
           body: Stack(
             children: [
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 40),
+              _buildMainContent(textTheme, colorScheme, api),
+              _buildLoadingOverlay(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                        // Title
-                        Text(
-                          'Enter your phone number',
-                          style: textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+  // Extract main content to avoid rebuilds from loading state
+  Widget _buildMainContent(TextTheme textTheme, ColorScheme colorScheme, API? api) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 40),
+              _buildTitle(textTheme),
+              const SizedBox(height: 12),
+              _buildSubtitle(textTheme),
+              const SizedBox(height: 40),
+              _buildPhoneInput(textTheme, colorScheme),
+              const Spacer(),
+              _buildSendOtpButton(textTheme, colorScheme, api),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                        // Subtitle
-                        Text(
-                          "We will send you a verification code",
-                          style: textTheme.titleMedium?.copyWith(
-                            color: Colors.black54,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 40),
+  Widget _buildLoadingOverlay() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _loadingState,
+      builder: (context, isLoading, _) {
+        return IgnorePointer(
+          ignoring: !isLoading,
+          child: AnimatedOpacity(
+            opacity: isLoading ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: Stack(
+              children: [
+                ModalBarrier(
+                  dismissible: false,
+                  color: Colors.black.withValues(alpha: 0.3),
+                ),
+                const Center(child: CircularProgressIndicator()),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-                        // Phone Number Input
-                        TextFormField(
-                          controller: _phoneController,
-                          focusNode: _phoneFocusNode,
-                          autofocus: true,
-                          keyboardType: TextInputType.phone,
-                          style: textTheme.titleMedium?.copyWith(
-                            letterSpacing: 1.5
-                          ),
-                          decoration: InputDecoration(
-                            prefixIcon: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              margin: const EdgeInsets.only(right: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '+91',
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    height: 24,
-                                    width: 1,
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            hintText: 'Phone Number',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: colorScheme.error, width: 1),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: colorScheme.error, width: 1),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 16,
-                            ),
-                            counterText: '',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your phone number';
-                            }
-                            if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
-                              return 'Please enter a valid 10-digit phone number';
-                            }
-                            return null;
-                          },
-                          maxLength: 10,
-                          inputFormatters: [
-                            LengthLimitingTextInputFormatter(10),
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                        ),
+  Widget _buildTitle(TextTheme textTheme) {
+    return Text(
+      'Enter your phone number',
+      style: textTheme.headlineSmall?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: Colors.black87,
+      ),
+    );
+  }
 
-                        const Spacer(),
+  Widget _buildSubtitle(TextTheme textTheme) {
+    return Text(
+      "We'll send you a verification code",
+      style: textTheme.titleMedium?.copyWith(
+        color: Colors.black54,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
 
-                        // Send OTP Button
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 80.0),
-                          child: ValueListenableBuilder<bool>(
-                            valueListenable: _loadingState,
-                            builder: (context, isLoading, child) {
-                              return ElevatedButton(
-                                onPressed: isLoading ? null : () => _sendOtp(api.value!),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: colorScheme.secondary,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  minimumSize: const Size(double.infinity, 56),
-                                  elevation: 0,
-                                ),
-                                child: Text(
-                                  'Send OTP',
-                                  style: textTheme.titleMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+  Widget _buildPhoneInput(TextTheme textTheme, ColorScheme colorScheme) {
+    return TextFormField(
+      controller: _phoneController,
+      focusNode: _phoneFocusNode,
+      keyboardType: TextInputType.phone,
+      style: textTheme.titleMedium?.copyWith(
+        letterSpacing: 1.5
+      ),
+      decoration: InputDecoration(
+        prefixIcon: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.only(right: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '+91',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
                 ),
               ),
-
-              // Loading overlay
-              ValueListenableBuilder<bool>(
-                valueListenable: _loadingState,
-                builder: (context, isLoading, _) {
-                  return IgnorePointer(
-                    ignoring: !isLoading,
-                    child: AnimatedOpacity(
-                      opacity: isLoading ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: Stack(
-                        children: [
-                          ModalBarrier(
-                            dismissible: false,
-                            color: Colors.black.withValues(alpha: 0.3),
-                          ),
-                          const Center(child: CircularProgressIndicator()),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              const SizedBox(width: 8),
+              Container(
+                height: 24,
+                width: 1,
+                color: Colors.grey.shade300,
               ),
             ],
           ),
         ),
+        hintText: 'Phone Number',
+        hintStyle: TextStyle(
+          color: Colors.grey.shade400,
+          fontWeight: FontWeight.w500,
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: colorScheme.error, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: colorScheme.error, width: 1),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        ),
+        counterText: '',
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your phone number';
+        }
+        if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+          return 'Please enter a valid 10-digit phone number';
+        }
+        return null;
+      },
+      maxLength: 10,
+      inputFormatters: [
+        LengthLimitingTextInputFormatter(10),
+        FilteringTextInputFormatter.digitsOnly,
+      ],
+    );
+  }
+
+  Widget _buildSendOtpButton(TextTheme textTheme, ColorScheme colorScheme, API? api) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 80.0),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _loadingState,
+        builder: (context, isLoading, child) {
+          return ElevatedButton(
+            onPressed: isLoading ? null : () => _sendOtp(api!),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.secondary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              minimumSize: const Size(double.infinity, 56),
+              elevation: 0,
+            ),
+            child: Text(
+              'Send OTP',
+              style: textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
