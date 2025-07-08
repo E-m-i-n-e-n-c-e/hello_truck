@@ -46,13 +46,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await api.sendOtp(phoneNumber);
 
       if (mounted) {
-        SnackBars.success(context, 'OTP sent successfully!');
         // Navigate to OTP verification page
         if (context.mounted) {
           // Store the BuildContext for the modal sheet to close it later
          await showModalBottomSheet<BuildContext>(
             context: context,
             isScrollControlled: true,
+            useSafeArea: true,
+            enableDrag: false,
             backgroundColor: Colors.white,
             builder: (context) => OtpVerificationPage(phoneNumber: phoneNumber),
           );
@@ -111,7 +112,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                         // Subtitle
                         Text(
-                          "We will send you a verification code",
+                          "We'll send you a verification code",
                           style: textTheme.titleMedium?.copyWith(
                             color: Colors.black54,
                             fontWeight: FontWeight.w500,
