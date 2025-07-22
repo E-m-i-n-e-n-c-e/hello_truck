@@ -1,0 +1,6 @@
+import { Customer, CustomerSession, Driver, DriverSession } from '@prisma/client';
+
+export type UserType = 'customer' | 'driver';
+export type User = Customer | Driver;
+export type Session = CustomerSession | DriverSession;
+export type SessionWithUser = Session & { user: User };

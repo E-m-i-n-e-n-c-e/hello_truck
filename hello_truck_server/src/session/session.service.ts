@@ -1,12 +1,7 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Customer, Driver, CustomerSession, DriverSession, Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
-
-export type UserType = 'customer' | 'driver';
-export type User = Customer | Driver;
-export type Session = CustomerSession | DriverSession;
-export type SessionWithUser = Session & { user: User };
+import { UserType, Session, SessionWithUser } from 'src/common/types/user-session.types';
 
 @Injectable()
 export class SessionService {

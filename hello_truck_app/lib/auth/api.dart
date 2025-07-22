@@ -90,7 +90,7 @@ class API {
   // Auth Methods
   Future<void> sendOtp(String phoneNumber) async {
     final response = await post(
-      '/auth/send-otp',
+      '/auth/customer/send-otp',
       data: {'phoneNumber': phoneNumber},
     );
 
@@ -103,7 +103,7 @@ class API {
     final staleRefreshToken = await storage.read(key: 'staleRefreshToken');
 
     final response = await post(
-      '/auth/verify-otp',
+      '/auth/customer/verify-otp',
       data: {
         'phoneNumber': phoneNumber,
         'otp': otp,
@@ -119,7 +119,7 @@ class API {
         storage.write(key: 'accessToken', value: response.data['accessToken']),
       ]);
 
-      ref.read(authSocketProvider).emitSignIn(
+      ref.read(authClientProvider).emitSignIn(
         accessToken: response.data['accessToken'],
         refreshToken: response.data['refreshToken'],
       );
@@ -143,7 +143,7 @@ class API {
           storage.delete(key: 'refreshToken'),
           storage.delete(key: 'accessToken'),
         ]);
-        ref.read(authSocketProvider).emitSignOut();
+        ref.read(authClientProvider).emitSignOut();
       }
     }
   }

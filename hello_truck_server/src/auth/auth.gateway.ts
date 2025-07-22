@@ -6,7 +6,6 @@ import {
   SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { AuthService } from './auth.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { TokenService } from '../token/token.service';
 

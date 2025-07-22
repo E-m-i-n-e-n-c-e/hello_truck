@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import { CustomerAuthController } from './customer-auth.controller';
+import { DriverAuthController } from './driver-auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthGateway } from './auth.gateway';
 import { OtpModule } from '../otp/otp.module';
@@ -12,7 +13,7 @@ import { TokenModule } from '../token/token.module';
     OtpModule,
     TokenModule,
   ],
-  controllers: [AuthController],
+  controllers: [CustomerAuthController, DriverAuthController],
   providers: [AuthService, AuthGateway],
   exports: [AuthService],
 })

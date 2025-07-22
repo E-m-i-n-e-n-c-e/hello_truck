@@ -1,12 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
-import { Customer, Driver } from '@prisma/client';
 import { SessionService } from 'src/session/session.service';
-
-type User = Customer | Driver;
-type UserType = 'customer' | 'driver';
+import { UserType, User } from 'src/common/types/user-session.types';
 
 @Injectable()
 export class TokenService {

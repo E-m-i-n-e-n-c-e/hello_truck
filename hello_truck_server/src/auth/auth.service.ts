@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OtpService } from '../otp/otp.service';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { TokenService } from '../token/token.service';
+import { UserType } from 'src/common/types/user-session.types';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +13,7 @@ export class AuthService {
     private tokenService: TokenService,
   ) {}
 
-  async sendCustomerOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
+  async sendOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
     return this.otpService.sendOtp(phoneNumber);
   }
 
@@ -47,5 +48,43 @@ export class AuthService {
     });
 
     return { success: true };
+  }
+
+  async verifyDriverOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
+    const { phoneNumber, otp, staleRefreshToken } = verifyOtpDto;
+
+    await this.otpService.verifyOtp(phoneNumber, otp);
+
+    let driver = await this.prisma.driver.findUnique({
+      where: { phoneNumber },
+    });
+
+    if (!driver) {
+      driver = await this.prisma.driver.create({
+        data: { phoneNumber },
+      });
+    }
+
+    const accessToken = await this.tokenService.generateAccessToken(driver, 'driver');
+    const newRefreshToken = await this.tokenService.generateRefreshToken(driver.id, 'driver', staleRefreshToken);
+    return { accessToken, refreshToken: newRefreshToken };
+  }
+
+  async logoutDriver(refreshToken: string): Promise<{ success: boolean }> {
+    if (!refreshToken || !refreshToken.includes('.')) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
+
+    const [sessionId] = refreshToken.split('.', 2);
+    await this.prisma.driverSession.deleteMany({
+      where: { id: sessionId },
+    });
+
+    return { success: true };
+  }
+
+  async refreshToken(refreshToken: string, userType: UserType): Promise<{ accessToken: string; refreshToken: string }> {
+    const { accessToken, refreshToken: newRefreshToken } = await this.tokenService.refreshAccessToken(refreshToken, userType);
+    return { accessToken, refreshToken: newRefreshToken };
   }
 }

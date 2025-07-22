@@ -1,18 +1,38 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/auth/api.dart';
-import 'package:hello_truck_app/auth/auth_socket.dart';
+import 'package:hello_truck_app/auth/auth_client.dart';
 import 'package:hello_truck_app/models/auth_state.dart';
+import 'package:hello_truck_app/services/connectivity_service.dart';
 
-final authSocketProvider = Provider<AuthSocket>((ref) {
-  final socket = AuthSocket();
-  socket.connect(); // auto-connect
-  ref.onDispose(() => socket.dispose());
-  return socket;
+final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
+  final service = ConnectivityService();
+  ref.onDispose(() => service.dispose());
+  return service;
+});
+
+final connectivityProvider = StreamProvider<bool>((ref) {
+  final service = ref.watch(connectivityServiceProvider);
+  return service.connectivityStream.distinct();
+});
+
+final authClientProvider = Provider<AuthClient>((ref) {
+  final client = AuthClient();
+
+  // Listen to connectivity changes
+  ref.listen<AsyncValue<bool>>(connectivityProvider, (_, next) {
+    next.whenData((isOnline) {
+        client.refreshTokens();
+    });
+  });
+
+  client.initialize(); // auto-initialize
+  ref.onDispose(() => client.dispose());
+  return client;
 });
 
 final authStateProvider = StreamProvider<AuthState>((ref) {
-  final socket = ref.watch(authSocketProvider);
-  return socket.authStateStream.distinct();
+  final client = ref.watch(authClientProvider);
+  return client.authStateStream.distinct();
 });
 
 // Single API instance that updates its token
