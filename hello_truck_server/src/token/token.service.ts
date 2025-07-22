@@ -12,8 +12,9 @@ type UserType = 'customer' | 'driver';
 export class TokenService {
   constructor(private sessionService: SessionService, private jwtService: JwtService) {}
 
-  async generateAccessToken(user: User): Promise<string> {
+  async generateAccessToken(user: User, userType: UserType): Promise<string> {
     const accessToken = await this.jwtService.signAsync({
+      userType,
       userId: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -63,7 +64,7 @@ export class TokenService {
         expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // Extend 30 days
     });
 
-    const accessToken = await this.generateAccessToken(session.user);
+    const accessToken = await this.generateAccessToken(session.user, userType);
 
     return {
       accessToken,

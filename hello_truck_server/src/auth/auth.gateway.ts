@@ -26,7 +26,7 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const refreshToken = client.handshake.auth?.token as string;
       if (!refreshToken)
         throw new UnauthorizedException('Missing authorization header');
-      const user = await this.tokenService.validateRefreshToken(refreshToken);
+      const user = await this.tokenService.validateRefreshToken(refreshToken, 'customer');
       // validateRefreshToken throws UnauthorizedException if invalid
 
       client.data.user = user;
@@ -44,7 +44,7 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleRefreshToken(client: Socket, payload: { refreshToken: string }) {
     try {
       const { accessToken, refreshToken } =
-        await this.tokenService.refreshAccessToken(payload.refreshToken);
+        await this.tokenService.refreshAccessToken(payload.refreshToken, 'customer');
 
       client.emit('access-token', { accessToken, refreshToken });
     } catch (error) {

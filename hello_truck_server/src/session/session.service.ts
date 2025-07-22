@@ -12,17 +12,9 @@ export type SessionWithUser = Session & { user: User };
 export class SessionService {
   constructor(private prisma: PrismaService) {}
 
-  private generateToken(): string {
-    return crypto.randomBytes(64).toString('hex');
-  }
-
-  private getExpiryDate(): Date {
-    return new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 days
-  }
-
   async createSession(userId: string, userType: UserType): Promise<Session> {
-    const token = this.generateToken();
-    const expiresAt = this.getExpiryDate();
+    const token = crypto.randomBytes(64).toString('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 days
 
     if (userType === 'customer') {
       const session = await this.prisma.customerSession.create({
@@ -32,9 +24,7 @@ export class SessionService {
           expiresAt,
         },
       });
-      return {
-        ...session,
-      };
+      return session;
     } else {
       const session = await this.prisma.driverSession.create({
         data: {

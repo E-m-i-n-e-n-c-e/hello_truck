@@ -31,7 +31,7 @@ export class AuthService {
       });
     }
 
-    const accessToken = await this.tokenService.generateAccessToken(customer);
+    const accessToken = await this.tokenService.generateAccessToken(customer, 'customer');
     const newRefreshToken = await this.tokenService.generateRefreshToken(customer.id, 'customer', staleRefreshToken);
     return { accessToken, refreshToken: newRefreshToken };
   }
