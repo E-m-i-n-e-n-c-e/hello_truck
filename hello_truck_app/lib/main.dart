@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/hello_truck.dart';
 import 'package:hello_truck_app/login_page.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';

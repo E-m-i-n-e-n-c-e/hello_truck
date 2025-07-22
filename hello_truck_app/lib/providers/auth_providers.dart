@@ -2,18 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/auth/auth_client.dart';
 import 'package:hello_truck_app/models/auth_state.dart';
-import 'package:hello_truck_app/services/connectivity_service.dart';
-
-final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
-  final service = ConnectivityService();
-  ref.onDispose(() => service.dispose());
-  return service;
-});
-
-final connectivityProvider = StreamProvider<bool>((ref) {
-  final service = ref.watch(connectivityServiceProvider);
-  return service.connectivityStream.distinct();
-});
+import 'package:hello_truck_app/providers/connectivity_providers.dart';
 
 final authClientProvider = Provider<AuthClient>((ref) {
   final client = AuthClient();

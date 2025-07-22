@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'dart:async';
 import 'package:hello_truck_app/auth/api.dart';
-import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class OtpVerificationPage extends ConsumerStatefulWidget {

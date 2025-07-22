@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/pages/otp_verification_page.dart';
 import 'package:hello_truck_app/auth/api.dart';
-import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class LoginPage extends ConsumerStatefulWidget {

@@ -9,12 +9,11 @@ export class TokenService {
   constructor(private sessionService: SessionService, private jwtService: JwtService) {}
 
   async generateAccessToken(user: User, userType: UserType): Promise<string> {
+    const hasCompletedOnboarding = user.firstName !== null;
     const accessToken = await this.jwtService.signAsync({
       userType,
       userId: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phoneNumber: user.phoneNumber,
+      hasCompletedOnboarding,
     });
 
     return accessToken;

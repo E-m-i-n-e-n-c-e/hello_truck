@@ -15,9 +15,9 @@ export class AccessTokenGuard implements CanActivate {
 
     const token = authHeader.split(' ')[1];
     try {
-      const payload = await this.tokenService.validateAccessToken(token);
+      const user = await this.tokenService.validateAccessToken(token);
       // Add decoded payload to request for use in decorators
-      request.user = payload;
+      request.user = user;
       return true;
     } catch (error) {
       throw new UnauthorizedException('Invalid token');

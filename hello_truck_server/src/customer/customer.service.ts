@@ -13,9 +13,10 @@ export class CustomerService {
         firstName: true,
         lastName: true,
         email: true,
-        isBusiness: true,
+        phoneNumber: true,
         referralCode: true,
-      },
+        isBusiness: true,
+      }
     });
 
     if (!customer) {
@@ -28,14 +29,7 @@ export class CustomerService {
   async updateProfile(userId: string, updateCustomerDto: UpdateCustomerDto) {
     const customer = await this.prisma.customer.update({
       where: { id: userId },
-      data: updateCustomerDto,
-      select: {
-        firstName: true,
-        lastName: true,
-        email: true,
-        isBusiness: true,
-        referralCode: true,
-      },
+      data: updateCustomerDto
     });
 
     return customer;

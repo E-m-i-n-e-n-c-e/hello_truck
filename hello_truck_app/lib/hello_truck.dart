@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/screens/home_screen.dart';
 import 'package:hello_truck_app/screens/profile_screen.dart';
 import 'package:hello_truck_app/screens/map_screen.dart';
@@ -10,6 +10,11 @@ import 'package:hello_truck_app/widgets/snackbars.dart';
 
 // Navigation state provider
 final navigationIndexProvider = StateProvider<int>((ref) => 0); // Start with Home selected
+final screens=[
+  const HomeScreen(),
+  const MapScreen(),
+  const ProfileScreen(),
+];
 
 class HelloTruck extends ConsumerWidget {
   const HelloTruck({super.key});
@@ -34,25 +39,17 @@ class HelloTruck extends ConsumerWidget {
       return Scaffold(
         backgroundColor: colorScheme.surface,
         body: Center(
-          child: CircularProgressIndicator(color: colorScheme.primary),
+          child: CircularProgressIndicator(color: colorScheme.secondary),
         ),
       );
     }
 
-    // // Show onboarding if firstName is null
-    // if (authState.value?.firstName == null) {
-    //   return const OnboardingScreen();
-    // }
+    if (authState.value?.hasCompletedOnboarding!=true) {
+      return const OnboardingScreen();
+    }
 
     return Scaffold(
-      body: IndexedStack(
-        index: selectedIndex,
-        children: const [
-          HomeScreen(),     // Home (left)
-          ProfileScreen(), // Profile (center)
-          MapScreen(),     // Map (right)
-        ],
-      ),
+      body: screens[selectedIndex],
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: selectedIndex,
         onItemSelected: (index) => ref.read(navigationIndexProvider.notifier).state = index,

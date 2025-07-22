@@ -4,7 +4,7 @@ import 'package:http_cache_hive_store/http_cache_hive_store.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/auth/api_exception.dart';
 
 class API {
