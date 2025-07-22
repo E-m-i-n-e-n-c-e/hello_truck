@@ -8,23 +8,23 @@ import { SendOtpDto } from './dtos/send-otp.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Throttle({ default: { ttl: seconds(60), limit: 3 } })
+  @Throttle({ default: { ttl: seconds(60), limit: 5 } })
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
-  sendOtp(@Body() body: SendOtpDto) {
-    return this.authService.sendOtp(body.phoneNumber);
+  sendCustomerOtp(@Body() body: SendOtpDto) {
+    return this.authService.sendCustomerOtp(body.phoneNumber);
   }
 
-  @Throttle({ default: { ttl: seconds(60), limit: 3 } })
+  @Throttle({ default: { ttl: seconds(60), limit: 5 } })
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
-  verifyOtp(@Body() body: VerifyOtpDto) {
-    return this.authService.verifyOtp(body);
+  verifyCustomerOtp(@Body() body: VerifyOtpDto) {
+    return this.authService.verifyCustomerOtp(body);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout(@Body() body: { refreshToken: string }) {
-    return this.authService.logout(body.refreshToken);
+  logoutCustomer(@Body() body: { refreshToken: string }) {
+    return this.authService.logoutCustomer(body.refreshToken);
   }
 }

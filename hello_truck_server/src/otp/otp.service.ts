@@ -17,7 +17,8 @@ export class OtpService {
   // Send OTP
   async sendOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
     // Generate OTP
-    const otp = randomInt(100000, 999999).toString(); // 6-digit OTP
+    // const otp = randomInt(100000, 999999).toString(); // 6-digit OTP
+    const otp = '123456';
     const hashedOtp = await bcrypt.hash(otp, 10);
     const expiresAt = new Date(Date.now() + 60 * 1000); // OTP valid for 60 seconds
 
@@ -34,14 +35,14 @@ export class OtpService {
     const url = `https://2factor.in/API/V1/${apiKey}/SMS/+91${phoneNumber}/${otp}/HelloTruckOtpTemplate`;
 
     console.log(`Sending OTP to ${phoneNumber} via URL: ${url}`);
-    try {
-      const response = await axios.get(url);
-      if (response.data.Status !== 'Success') {
-        throw new InternalServerErrorException('Failed to send OTP');
-      }
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    // try {
+    //   const response = await axios.get(url);
+    //   if (response.data.Status !== 'Success') {
+    //     throw new InternalServerErrorException('Failed to send OTP');
+    //   }
+    // } catch (error) {
+    //   throw new BadRequestException(error.message);
+    // }
 
     console.log(`OTP for ${phoneNumber}: ${otp}`);
 

@@ -10,19 +10,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          String   @id @default(uuid())
-  phoneNumber String   @unique
-  userName    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  sessions    Session[]
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }
 
-model Session {
+model Customer {
   id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  phoneNumber String   @unique
+  firstName   String?
+  lastName    String?
+  email       String?
+  isBusiness  Boolean  @default(false)
+  referralCode String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sessions    CustomerSession[]
+}
+
+model CustomerSession {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
   token       String   @unique
   oldToken    String?  @unique
   expiresAt   DateTime
@@ -40,7 +51,33 @@ model OtpVerification {
   expiresAt   DateTime
   verified    Boolean  @default(false)
   createdAt   DateTime @default(now())
-  
+
   @@index([phoneNumber, verified, expiresAt, createdAt])
   @@index([expiresAt])
-} 
+}
+model Driver {
+  id          String   @id @default(uuid())
+  phoneNumber String   @unique
+  firstName   String?
+  lastName    String?
+  email       String?
+  referalCode String?
+  isActive    Boolean  @default(true)
+  verificationStatus VerificationStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sessions    DriverSession[]
+}
+
+model DriverSession {
+  id          String   @id @default(uuid())
+  driverId    String
+  driver      Driver   @relation(fields: [driverId], references: [id])
+  token       String   @unique
+  oldToken    String?  @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([expiresAt])
+}

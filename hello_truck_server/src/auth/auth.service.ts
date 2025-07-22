@@ -12,38 +12,37 @@ export class AuthService {
     private tokenService: TokenService,
   ) {}
 
-  async sendOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
+  async sendCustomerOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
     return this.otpService.sendOtp(phoneNumber);
   }
 
-  async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
+  async verifyCustomerOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
     const { phoneNumber, otp, staleRefreshToken } = verifyOtpDto;
 
     await this.otpService.verifyOtp(phoneNumber, otp);
 
-    let user = await this.prisma.user.findUnique({
+    let customer = await this.prisma.customer.findUnique({
       where: { phoneNumber },
     });
 
-    if (!user) {
-      user = await this.prisma.user.create({
+    if (!customer) {
+      customer = await this.prisma.customer.create({
         data: { phoneNumber },
       });
     }
 
-    const accessToken = await this.tokenService.generateAccessToken(user);
-    const newRefreshToken = await this.tokenService.generateRefreshToken(user.id, staleRefreshToken);
+    const accessToken = await this.tokenService.generateAccessToken(customer);
+    const newRefreshToken = await this.tokenService.generateRefreshToken(customer.id, 'customer', staleRefreshToken);
     return { accessToken, refreshToken: newRefreshToken };
   }
 
-  async logout(refreshToken: string): Promise<{ success: boolean }> {
+  async logoutCustomer(refreshToken: string): Promise<{ success: boolean }> {
     if (!refreshToken || !refreshToken.includes('.')) {
       throw new UnauthorizedException('Invalid refresh token format');
     }
 
     const [sessionId] = refreshToken.split('.', 2);
-    
-    await this.prisma.session.deleteMany({
+    await this.prisma.customerSession.deleteMany({
       where: { id: sessionId },
     });
 

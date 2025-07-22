@@ -24,7 +24,7 @@ export class CronService {
   // Cleanup expired sessions every day at midnight
   @Cron('0 0 * * *')
   async cleanupExpiredSessions() {
-    const result = await this.prisma.session.deleteMany({
+    const result = await this.prisma.customerSession.deleteMany({
       where: {
         expiresAt: {
           lt: new Date(),

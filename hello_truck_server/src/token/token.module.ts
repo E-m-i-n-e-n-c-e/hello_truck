@@ -3,10 +3,10 @@ import { TokenService } from './token.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-
+import { SessionModule } from '../session/session.module';
 @Module({
   imports: [
-    PrismaModule,
+    SessionModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
