@@ -1,0 +1,43 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { UpdateCustomerDto } from './dtos/update-profile.dto';
+
+@Injectable()
+export class CustomerService {
+  constructor(private prisma: PrismaService) {}
+
+  async getProfile(userId: string) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: userId },
+      select: {
+        firstName: true,
+        lastName: true,
+        email: true,
+        isBusiness: true,
+        referralCode: true,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return customer;
+  }
+
+  async updateProfile(userId: string, updateCustomerDto: UpdateCustomerDto) {
+    const customer = await this.prisma.customer.update({
+      where: { id: userId },
+      data: updateCustomerDto,
+      select: {
+        firstName: true,
+        lastName: true,
+        email: true,
+        isBusiness: true,
+        referralCode: true,
+      },
+    });
+
+    return customer;
+  }
+}

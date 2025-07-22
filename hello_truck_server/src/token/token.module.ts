@@ -3,6 +3,8 @@ import { TokenService } from './token.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SessionModule } from '../session/session.module';
+import { AccessTokenGuard } from './guards/access-token.guard';
+
 @Module({
   imports: [
     SessionModule,
@@ -15,7 +17,7 @@ import { SessionModule } from '../session/session.module';
       }),
     }),
   ],
-  providers: [TokenService],
-  exports: [TokenService],
+  providers: [TokenService, AccessTokenGuard],
+  exports: [TokenService, AccessTokenGuard],
 })
 export class TokenModule {}

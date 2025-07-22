@@ -90,4 +90,9 @@ export class TokenService {
 
     return session.user;
   }
+
+  async validateAccessToken(token: string): Promise<User | undefined> {
+    const user = await this.jwtService.verifyAsync(token);
+    return user;
+  }
 }

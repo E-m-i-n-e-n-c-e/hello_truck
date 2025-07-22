@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { CronModule } from './cron/cron.module';
 import { APP_GUARD } from '@nestjs/core';
 import { SessionModule } from './session/session.module';
+import { CustomerModule } from './customer/customer.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SessionModule } from './session/session.module';
     AuthModule,
     CronModule,
     SessionModule,
+    CustomerModule,
   ],
   controllers: [AppController],
   providers: [AppService, {
