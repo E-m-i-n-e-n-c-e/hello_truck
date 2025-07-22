@@ -27,6 +27,7 @@ export class DriverAuthController {
     return this.authService.logoutDriver(body.refreshToken);
   }
 
+  @Throttle({ default: { ttl: seconds(60), limit: 10 } })
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   refreshDriverToken(@Body() body: { refreshToken: string }) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/auth/auth_providers.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class HelloTruck extends ConsumerWidget {
   const HelloTruck({super.key});
@@ -11,6 +12,15 @@ class HelloTruck extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final api = ref.watch(apiProvider);
     final authState = ref.watch(authStateProvider);
+
+    ref.listen(authStateProvider, (previous, next) {
+      if (next.value?.isOffline == true) {
+        SnackBars.error(context, 'You are offline. Please check your internet connection.');
+      }
+      else if (previous?.value?.isOffline == true && next.value?.isOffline == false) {
+        SnackBars.success(context, 'You are back online');
+      }
+    });
 
     if (authState.isLoading || api.isLoading) {
       return Scaffold(
