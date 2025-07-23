@@ -46,10 +46,10 @@ class AuthClient with WidgetsBindingObserver {
     _isRefreshing = true;
     try {
       final refreshToken = await _storage.read(key: 'refreshToken');
-      if (refreshToken == null) {
-        _controller.add(AuthState.unauthenticated());
-        return;
-      }
+      // if (refreshToken == null) {
+      //   _controller.add(AuthState.unauthenticated());
+      //   return;
+      // }
 
       final response = await _dio.post(
         '$baseUrl/auth/customer/refresh-token',

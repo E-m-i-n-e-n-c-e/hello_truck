@@ -25,6 +25,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
   late final TextEditingController _emailController;
+  late final TextEditingController _referralCodeController;
   late bool _isBusiness;
 
   @override
@@ -33,6 +34,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _firstNameController = TextEditingController();
     _lastNameController = TextEditingController();
     _emailController = TextEditingController();
+    _referralCodeController = TextEditingController();
     _isBusiness = false;
   }
 
@@ -41,6 +43,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -48,6 +51,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _firstNameController.text = customer.firstName;
     _lastNameController.text = customer.lastName;
     _emailController.text = customer.email;
+    _referralCodeController.text = customer.referralCode;
     _isBusiness = customer.isBusiness;
   }
 
@@ -59,8 +63,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final api = ref.read(apiProvider).value!;
       await api.put('/customer/profile', data: {
         'firstName': _firstNameController.text.trim(),
-        'lastName': _lastNameController.text.trim(),
-        'email': _emailController.text.trim(),
+        if (_lastNameController.text.trim().isNotEmpty)
+          'lastName': _lastNameController.text.trim(),
+        if (_emailController.text.trim().isNotEmpty)
+          'email': _emailController.text.trim(),
+        if (_referralCodeController.text.trim().isNotEmpty)
+          'referralCode': _referralCodeController.text.trim(),
         'isBusiness': _isBusiness,
       });
 
@@ -187,12 +195,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         hintText: 'Enter your last name',
                       ),
                       enabled: _isEditing && !_isLoading,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Last name is required';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -206,13 +208,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Email is required';
+                          return null;
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                           return 'Please enter a valid email';
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: _referralCodeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Referral Code',
+                        hintText: 'Enter your referral code',
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -312,9 +323,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Text('Error loading profile: $error'),
-        ),
+        error: (error, stack) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading profile: $error',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.error,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => ref.invalidate(customerProvider),
+                  child: const Text('Try Again'),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

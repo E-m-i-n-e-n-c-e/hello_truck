@@ -30,8 +30,10 @@ class API {
 
     _cacheOptions = CacheOptions(
       store: _cacheStore,
+      hitCacheOnNetworkFailure: true,
       policy: CachePolicy.request,
       hitCacheOnErrorCodes: [
+        429,  // Too many requests
         408, 499,  // Client timeouts
         500, 501, 502, 503, 504, 505, 506, 507, 509,  // Server errors
         521, 522, 523, 524,  // Cloudflare specific network errors
@@ -59,15 +61,16 @@ class API {
   );
 
   InterceptorsWrapper get _errorInterceptor => InterceptorsWrapper(
-    onError: (error, handler) async {
+    onError: (error, handler) {
+      if (error.response?.statusCode == 401) {
+        // Schedule sign out after 2 seconds if the error is an unauthorized error
+        Future.delayed(const Duration(seconds: 2), () {
+          signOut();
+        });
+      }
+
       // Convert DioException to APIException and continue with error handling
       handler.reject(APIException.fromDioException(error));
-
-      // If the error is an unauthorized error, sign out
-      if (error.response?.statusCode == 401) {
-        await Future.delayed(const Duration(seconds: 2));
-        await signOut();
-      }
     },
   );
 
