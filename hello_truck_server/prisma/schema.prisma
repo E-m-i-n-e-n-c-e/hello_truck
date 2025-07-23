@@ -28,6 +28,22 @@ model Customer {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   sessions    CustomerSession[]
+  gstDetails  CustomerGstDetails[]
+}
+
+model CustomerGstDetails {
+  id              String      @id @default(uuid())
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  gstNumber       String      @unique
+  businessName    String
+  businessAddress String
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([customerId, isActive])
+  @@index([createdAt])
 }
 
 model CustomerSession {
@@ -55,6 +71,7 @@ model OtpVerification {
   @@index([phoneNumber, verified, expiresAt, createdAt])
   @@index([expiresAt])
 }
+
 model Driver {
   id          String   @id @default(uuid())
   phoneNumber String   @unique

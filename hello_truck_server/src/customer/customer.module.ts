@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
-import { CustomerController } from './customer.controller';
-import { CustomerService } from './customer.service';
-import { PrismaModule } from '../prisma/prisma.module';
-import { TokenModule } from '../token/token.module';
+import { GstModule } from './gst/gst.module';
+import { ProfileModule } from './profile/profile.module';
+import { CustomerProfileController } from './customer-profile.controller';
+import { CustomerGstController } from './customer-gst.controller';
+import { TokenModule } from 'src/token/token.module';
 
 @Module({
-  imports: [PrismaModule, TokenModule],
-  controllers: [CustomerController],
-  providers: [CustomerService],
-  exports: [CustomerService],
+  imports: [GstModule, ProfileModule, TokenModule],
+  controllers: [CustomerProfileController, CustomerGstController],
 })
 export class CustomerModule {}
