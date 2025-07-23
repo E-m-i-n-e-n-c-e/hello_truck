@@ -132,7 +132,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           radius: 50,
                           backgroundColor: colorScheme.primary.withValues(alpha:0.1),
                           child: Text(
-                            '${customer.firstName[0]}${customer.lastName[0]}'.toUpperCase(),
+                            ('${customer.firstName.isNotEmpty ? customer.firstName[0] : ''}'
+                                    '${customer.lastName.isNotEmpty ? customer.lastName[0] : ''}')
+                                .toUpperCase(),
                             style: textTheme.headlineMedium?.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.bold,

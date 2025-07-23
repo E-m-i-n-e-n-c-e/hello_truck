@@ -48,6 +48,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     } catch (e) {
       if (mounted) {
         SnackBars.error(context, 'Failed to update profile: $e');
+        setState(() => _isLoading = false);
       }
     }
   }

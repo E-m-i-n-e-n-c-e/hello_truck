@@ -9,7 +9,7 @@ import 'package:hello_truck_app/widgets/bottom_navbar.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
 // Navigation state provider
-final navigationIndexProvider = StateProvider<int>((ref) => 0); // Start with Home selected
+final navigationIndexProvider = StateProvider.autoDispose<int>((ref) => 0); // Start with Home selected
 final screens=[
   const HomeScreen(),
   const MapScreen(),
