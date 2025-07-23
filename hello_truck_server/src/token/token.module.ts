@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SessionModule } from '../session/session.module';
 import { AccessTokenGuard } from './guards/access-token.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { AccessTokenGuard } from './guards/access-token.guard';
       }),
     }),
   ],
-  providers: [TokenService, AccessTokenGuard],
-  exports: [TokenService, AccessTokenGuard],
+  providers: [TokenService, AccessTokenGuard, RolesGuard],
+  exports: [TokenService, AccessTokenGuard, RolesGuard],
 })
 export class TokenModule {}

@@ -5,10 +5,12 @@ import { AccessTokenGuard } from '../token/guards/access-token.guard';
 import { User } from '../token/decorators/user.decorator';
 import { Roles } from 'src/token/decorators/roles.decorator';
 import { RolesGuard } from 'src/token/guards/roles.guard';
+import { seconds, Throttle } from '@nestjs/throttler';
 
 @Controller('customer')
 @UseGuards(AccessTokenGuard, RolesGuard)
 @Roles('customer')
+@Throttle({ default: { ttl: seconds(60), limit: 40 } })
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
