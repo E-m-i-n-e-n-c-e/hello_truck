@@ -27,7 +27,12 @@ class AuthClient with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed ) {
-      refreshTokens();
+      print('App resumed, Reinitializing');
+      initialize();
+    }
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      print('App is inactive, stopping refresh loop');
+      _refreshTimer?.cancel();
     }
   }
 
