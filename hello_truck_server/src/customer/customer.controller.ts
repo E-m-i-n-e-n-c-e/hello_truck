@@ -3,9 +3,12 @@ import { CustomerService } from './customer.service';
 import { UpdateCustomerDto } from './dtos/update-profile.dto';
 import { AccessTokenGuard } from '../token/guards/access-token.guard';
 import { User } from '../token/decorators/user.decorator';
+import { Roles } from 'src/token/decorators/roles.decorator';
+import { RolesGuard } from 'src/token/guards/roles.guard';
 
 @Controller('customer')
-@UseGuards(AccessTokenGuard)
+@UseGuards(AccessTokenGuard, RolesGuard)
+@Roles('customer')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 

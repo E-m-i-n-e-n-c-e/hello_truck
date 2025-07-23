@@ -8,10 +8,10 @@ final authClientProvider = Provider<AuthClient>((ref) {
   final client = AuthClient();
 
   // Listen to connectivity changes
-  ref.listen<AsyncValue<bool>>(connectivityProvider, (_, next) {
-    next.whenData((isOnline) {
-        client.refreshTokens();
-    });
+  ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
+    if (previous?.value == false && next.value == true) {
+      client.refreshTokens();
+    }
   });
 
   client.initialize(); // auto-initialize

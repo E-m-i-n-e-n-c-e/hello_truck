@@ -2,11 +2,14 @@ import 'dart:async';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import '../models/auth_state.dart';
+import 'package:flutter/widgets.dart';
 
-class AuthClient {
+class AuthClient with WidgetsBindingObserver {
   static final AuthClient _instance = AuthClient._();
   factory AuthClient() => _instance;
-  AuthClient._();
+  AuthClient._() {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   final _controller = StreamController<AuthState>.broadcast();
   Stream<AuthState> get authStateStream => _controller.stream;
@@ -21,8 +24,15 @@ class AuthClient {
   static const baseUrl = 'https://hello-truck-server.fly.dev';
   // static const baseUrl = 'http://10.0.2.2:3000';
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed ) {
+      refreshTokens();
+    }
+  }
+
   Future<void> initialize() async {
-    // Initial token refresh is handled when the connectivity provider emits a value
+    await refreshTokens();
     _startRefreshLoop();
   }
 
@@ -40,23 +50,17 @@ class AuthClient {
         '$baseUrl/auth/customer/refresh-token',
         data: {'refreshToken': refreshToken},
       );
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final newAccessToken = data['accessToken'];
-        final newRefreshToken = data['refreshToken'];
+      final data = response.data;
+      final newAccessToken = data['accessToken'];
+      final newRefreshToken = data['refreshToken'];
 
-        await Future.wait([
-          _storage.write(key: 'accessToken', value: newAccessToken),
-          _storage.write(key: 'refreshToken', value: newRefreshToken),
-        ]);
+      await Future.wait([
+        _storage.write(key: 'accessToken', value: newAccessToken),
+        _storage.write(key: 'refreshToken', value: newRefreshToken),
+      ]);
 
-        _controller.add(AuthState.fromToken(newAccessToken));
-        _retryDelay = 0;
-      } else {
-        // If refresh fails, clear tokens and mark as unauthenticated
-        await _storage.deleteAll();
-        _controller.add(AuthState.unauthenticated());
-      }
+      _controller.add(AuthState.fromToken(newAccessToken));
+      _retryDelay = 0;
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
@@ -70,7 +74,7 @@ class AuthClient {
         _retryTimer = Timer(Duration(seconds: _retryDelay.clamp(1, 8)), () {
          refreshTokens();
         });
-      } else {
+      } else if (e.response?.statusCode == 401) { // If the error is an unauthorized error, sign out
         print('🔄 Token refresh error: $e');
         await _storage.deleteAll();
         _controller.add(AuthState.unauthenticated());
@@ -109,6 +113,7 @@ class AuthClient {
   }
 
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _retryDelay = 0;
     _retryTimer?.cancel();
     _retryTimer = null;

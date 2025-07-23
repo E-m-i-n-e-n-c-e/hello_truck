@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { SessionService } from 'src/session/session.service';
-import { UserType, User } from 'src/common/types/user-session.types';
+import { UserType, User, UserToken } from 'src/common/types/user-session.types';
 
 @Injectable()
 export class TokenService {
@@ -90,8 +90,12 @@ export class TokenService {
     return session.user;
   }
 
-  async validateAccessToken(token: string): Promise<User | undefined> {
-    const user = await this.jwtService.verifyAsync(token);
-    return user;
+  async validateAccessToken(token: string): Promise<UserToken> {
+    try {
+      const user = await this.jwtService.verifyAsync(token);
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid access token');
+    }
   }
 }

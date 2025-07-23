@@ -22,10 +22,11 @@ class AuthState extends Equatable {
     isAuthenticated,
     token,
     isOffline,
+    hasCompletedOnboarding,
   ];
 
   factory AuthState.fromToken(String? token, {bool isOffline = false}) {
-    if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
+    if (token == null || token.isEmpty) {
       return AuthState.unauthenticated();
     }
 
@@ -36,7 +37,7 @@ class AuthState extends Equatable {
         isAuthenticated: true,
         token: token,
         isOffline: isOffline,
-        hasCompletedOnboarding: payload['hasCompletedOnboarding']
+        hasCompletedOnboarding: payload['hasCompletedOnboarding'],
       );
     } catch (_) {
       return AuthState.unauthenticated();
