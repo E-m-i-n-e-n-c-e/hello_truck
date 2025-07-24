@@ -1,19 +1,18 @@
 import { IsString, IsEmail, IsOptional, ValidateNested } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 import { CreateGstDetailsDto } from './gst-details.dto';
+import { Customer } from '@prisma/client';
 
 export class CreateProfileDto {
   @IsString()
-  @IsOptional()
-  firstName?: string;
+  firstName: string;
 
   @IsString()
   @IsOptional()
   lastName?: string;
 
   @IsEmail()
-  @IsOptional()
-  email?: string;
+  email: string;
 
   @IsString()
   @IsOptional()
@@ -39,7 +38,7 @@ export class UpdateProfileDto {
   email?: string;
 }
 
-export class GetProfileResponseDto {
+export class GetProfileResponseDto implements Partial<Customer> {
   @Expose()
   firstName: string | null;
   @Expose()
@@ -52,4 +51,9 @@ export class GetProfileResponseDto {
   referralCode: string | null;
   @Expose()
   phoneNumber: string;
+  @Expose()
+  createdAt: Date;
+  @Expose()
+  updatedAt: Date;
+  // Exclude id, isActive
 }

@@ -16,6 +16,8 @@ export class ProfileService {
         phoneNumber: true,
         referralCode: true,
         isBusiness: true,
+        createdAt: true,
+        updatedAt: true,
       }
     });
 

@@ -1,3 +1,5 @@
+import { CustomerGstDetails } from '@prisma/client';
+import { Expose } from 'class-transformer';
 import { IsString, IsNotEmpty, Matches, IsOptional } from 'class-validator';
 
 export class CreateGstDetailsDto {
@@ -38,4 +40,22 @@ export class DeactivateGstDetailsDto {
   @IsNotEmpty()
   @IsString()
   id: string;
+}
+
+export class GstDetailsResponseDto implements CustomerGstDetails {
+  customerId: string;
+  isActive: boolean;
+
+  @Expose()
+  id: string;
+  @Expose()
+  gstNumber: string;
+  @Expose()
+  businessName: string;
+  @Expose()
+  businessAddress: string;
+  @Expose()
+  createdAt: Date;
+  @Expose()
+  updatedAt: Date;
 }

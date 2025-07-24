@@ -17,6 +17,11 @@ export class SerializeInterceptor implements NestInterceptor {
     //Run something before a request is handled by the controller
     return handler.handle().pipe(
       map((data: any) => {
+        if (Array.isArray(data)) {
+          return data.map((item) => plainToInstance(this.dto, item, {
+            excludeExtraneousValues: true, // Exclude properties not decorated with @Expose()
+          }));
+        }
         //Run something before the response is sent out
         return plainToInstance(this.dto, data, {
           excludeExtraneousValues: true, // Exclude properties not decorated with @Expose()
