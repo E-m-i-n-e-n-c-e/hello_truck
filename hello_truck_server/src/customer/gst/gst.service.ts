@@ -54,10 +54,21 @@ export class GstService {
   }
 
   async updateGstDetails(userId: string, id: string, updateGstDetailsDto: UpdateGstDetailsDto) {
-    const gstDetails = await this.prisma.customerGstDetails.updateMany({
-      where: { id, customerId: userId, isActive: true },
-      data: updateGstDetailsDto,
-    });
+    let gstDetails: Prisma.BatchPayload;
+
+    try {
+      gstDetails = await this.prisma.customerGstDetails.updateMany({
+        where: { id, customerId: userId, isActive: true },
+        data: updateGstDetailsDto,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new BadRequestException('GST number already exists');
+        }
+      }
+      throw error;
+    }
 
     if(gstDetails.count === 0) {
       throw new NotFoundException('GST details not found');
