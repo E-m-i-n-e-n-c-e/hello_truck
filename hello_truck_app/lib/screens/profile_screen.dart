@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/customer.dart';
+import 'package:hello_truck_app/models/gst_details.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/utils/api/customer_api.dart' as customer_api;
+import 'package:hello_truck_app/utils/api/gst_details_api.dart' as gst_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
 final customerProvider = FutureProvider.autoDispose<Customer>((ref) async {
   final api = await ref.watch(apiProvider.future);
-  final response = await api.get('/customer/profile');
-  return Customer.fromJson(response.data);
+  return customer_api.getCustomerProfile(api);
+});
+
+final gstDetailsProvider = FutureProvider.autoDispose<List<GstDetails>>((ref) async {
+  final api = await ref.watch(apiProvider.future);
+  return gst_api.getGstDetails(api);
 });
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -25,8 +32,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
   late final TextEditingController _emailController;
-  late final TextEditingController _referralCodeController;
-  late bool _isBusiness;
 
   @override
   void initState() {
@@ -34,8 +39,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _firstNameController = TextEditingController();
     _lastNameController = TextEditingController();
     _emailController = TextEditingController();
-    _referralCodeController = TextEditingController();
-    _isBusiness = false;
   }
 
   @override
@@ -43,7 +46,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -51,8 +53,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _firstNameController.text = customer.firstName;
     _lastNameController.text = customer.lastName;
     _emailController.text = customer.email;
-    _referralCodeController.text = customer.referralCode;
-    _isBusiness = customer.isBusiness;
   }
 
   Future<void> _updateProfile() async {
@@ -61,16 +61,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     setState(() => _isLoading = true);
     try {
       final api = ref.read(apiProvider).value!;
-      await api.put('/customer/profile', data: {
-        'firstName': _firstNameController.text.trim(),
-        if (_lastNameController.text.trim().isNotEmpty)
-          'lastName': _lastNameController.text.trim(),
-        if (_emailController.text.trim().isNotEmpty)
-          'email': _emailController.text.trim(),
-        if (_referralCodeController.text.trim().isNotEmpty)
-          'referralCode': _referralCodeController.text.trim(),
-        'isBusiness': _isBusiness,
-      });
+      await customer_api.updateCustomerProfile(
+        api,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+      );
 
       if (mounted) {
         setState(() => _isEditing = false);
@@ -89,11 +85,178 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _showGstDetailsDialog({GstDetails? existingDetails}) async {
+    final gstNumberController = TextEditingController(text: existingDetails?.gstNumber ?? '');
+    final businessNameController = TextEditingController(text: existingDetails?.businessName ?? '');
+    final businessAddressController = TextEditingController(text: existingDetails?.businessAddress ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(existingDetails == null ? 'Add GST Details' : 'Edit GST Details'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: gstNumberController,
+                    decoration: const InputDecoration(
+                      labelText: 'GST Number',
+                      hintText: 'Enter GST number',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'GST number is required';
+                      }
+                      if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$')
+                          .hasMatch(value)) {
+                        return 'Invalid GST number format';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: businessNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Business Name',
+                      hintText: 'Enter business name',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Business name is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: businessAddressController,
+                    decoration: const InputDecoration(
+                      labelText: 'Business Address',
+                      hintText: 'Enter business address',
+                    ),
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Business address is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+
+                      setState(() => isLoading = true);
+                      try {
+                        final api = ref.read(apiProvider).value!;
+
+                        if (existingDetails != null) {
+                          await gst_api.updateGstDetails(
+                            api,
+                            id: existingDetails.id ?? '',
+                            gstNumber: gstNumberController.text.trim(),
+                            businessName: businessNameController.text.trim(),
+                            businessAddress: businessAddressController.text.trim(),
+                          );
+                        } else {
+                          await gst_api.addGstDetails(
+                            api,
+                            gstNumber: gstNumberController.text.trim(),
+                            businessName: businessNameController.text.trim(),
+                            businessAddress: businessAddressController.text.trim(),
+                          );
+                        }
+
+                        if (context.mounted) {
+                          Navigator.pop(context, true);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          SnackBars.error(context,
+                              'Failed to ${existingDetails == null ? 'add' : 'update'} GST details: $e');
+                        }
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(existingDetails == null ? 'ADD' : 'UPDATE'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      ref.invalidate(gstDetailsProvider);
+    }
+  }
+
+  Future<void> _deactivateGstDetails(String id) async {
+    final shouldDeactivate = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Deactivate GST Details'),
+        content: const Text('Are you sure you want to deactivate these GST details?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'DEACTIVATE',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDeactivate == true) {
+      try {
+        final api = ref.read(apiProvider).value!;
+        await gst_api.deactivateGstDetails(api, id);
+        ref.invalidate(gstDetailsProvider);
+        if (mounted) {
+          SnackBars.success(context, 'GST details deactivated successfully');
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBars.error(context, 'Failed to deactivate GST details: $e');
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final customer = ref.watch(customerProvider);
+    final gstDetails = ref.watch(gstDetailsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -118,9 +281,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showGstDetailsDialog(),
+        child: const Icon(Icons.add),
+      ),
       body: customer.when(
         data: (customer) {
-          // Initialize controllers with current data if not editing
           if (!_isEditing) {
             _initializeControllers(customer);
           }
@@ -158,12 +324,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            customer.email,
-                            style: textTheme.titleMedium?.copyWith(
-                              color: colorScheme.onSurface.withValues(alpha:0.7),
+                          if (customer.email.isNotEmpty)
+                            Text(
+                              customer.email,
+                              style: textTheme.titleMedium?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha:0.7),
+                              ),
                             ),
-                          ),
                         ],
                       ],
                     ),
@@ -216,23 +383,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-
-                    TextFormField(
-                      controller: _referralCodeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Referral Code',
-                        hintText: 'Enter your referral code',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    SwitchListTile(
-                      title: const Text('Business Account'),
-                      subtitle: const Text('Enable for business use'),
-                      value: _isBusiness,
-                      onChanged: _isLoading ? null : (value) => setState(() => _isBusiness = value),
-                    ),
                     const SizedBox(height: 32),
 
                     ElevatedButton(
@@ -256,27 +406,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ] else ...[
                     // Profile Info
                     _InfoTile(
-                      icon: Icons.business,
-                      title: 'Account Type',
-                      subtitle: customer.isBusiness ? 'Business' : 'Personal',
-                    ),
-                    const SizedBox(height: 16),
-
-                    _InfoTile(
                       icon: Icons.phone,
                       title: 'Phone Number',
                       subtitle: customer.phoneNumber.isEmpty ? 'Not set' : customer.phoneNumber,
                     ),
+                    const SizedBox(height: 32),
+
+                    // GST Details Section
+                    Text(
+                      'GST Details',
+                      style: textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 16),
 
-                    if (customer.referralCode.isNotEmpty) ...[
-                      _InfoTile(
-                        icon: Icons.card_giftcard,
-                        title: 'Referral Code',
-                        subtitle: customer.referralCode,
+                    gstDetails.when(
+                      data: (details) {
+                        if (details.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'No GST details added yet',
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha:0.7),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: details.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            final detail = details[index];
+                            return _GstDetailCard(
+                              gstDetail: detail,
+                              onEdit: () => _showGstDetailsDialog(existingDetails: detail),
+                              onDeactivate: () => _deactivateGstDetails(detail.id ?? ''),
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (error, _) => Center(
+                        child: Text(
+                          'Error loading GST details: $error',
+                          style: textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.error,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                    ],
+                    ),
                   ],
 
                   // Logout Button
@@ -412,6 +592,90 @@ class _InfoTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GstDetailCard extends StatelessWidget {
+  final GstDetails gstDetail;
+  final VoidCallback onEdit;
+  final VoidCallback onDeactivate;
+
+  const _GstDetailCard({
+    required this.gstDetail,
+    required this.onEdit,
+    required this.onDeactivate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  gstDetail.businessName,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                PopupMenuButton(
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit),
+                          SizedBox(width: 8),
+                          Text('Edit'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'deactivate',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Deactivate', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      onEdit();
+                    } else if (value == 'deactivate') {
+                      onDeactivate();
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'GST Number: ${gstDetail.gstNumber}',
+              style: textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              gstDetail.businessAddress,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha:0.7),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

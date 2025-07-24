@@ -79,7 +79,7 @@ class AuthClient with WidgetsBindingObserver {
         _retryTimer = Timer(Duration(seconds: _retryDelay.clamp(1, 8)), () {
          refreshTokens();
         });
-      } else if (e.response?.statusCode == 401) { // If the error is an unauthorized error, sign out
+      } else if (e.response?.statusCode != null && e.response!.statusCode! < 500) { // If the error is a client error, sign out
         print('🔄 Token refresh error: $e');
         await _storage.deleteAll();
         _controller.add(AuthState.unauthenticated());
