@@ -13,22 +13,25 @@ export class GstService {
     });
 
     if (existingGst) {
+      // If the GST details are not active, reactivate them
+      if(!existingGst.isActive && existingGst.customerId === userId) {
+        await this.prisma.customerGstDetails.update({
+          where: { id: existingGst.id },
+          data: { isActive: true }
+        });
+        return {success:true, message:'GST details reactivated'};
+      }
       throw new BadRequestException('GST number already exists');
     }
-    await this.prisma.$transaction(async (tx) => {
-      await tx.customerGstDetails.create({
-        data: {
-          ...createGstDetailsDto,
+
+    await this.prisma.customerGstDetails.create({
+      data: {
+        ...createGstDetailsDto,
         customer: {
             connect: { id: userId }
           }
         },
       });
-      await tx.customer.update({
-        where: { id: userId },
-        data: { isBusiness: true }
-      });
-    });
 
     return {success:true, message:'GST details added successfully'};
   }

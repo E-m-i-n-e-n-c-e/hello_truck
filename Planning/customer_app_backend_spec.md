@@ -121,7 +121,7 @@ Retrieves all active GST details for the authenticated customer.
 [
   {
     "id": "uuid",
-    "customerId": "customer-uuid", 
+    "customerId": "customer-uuid",
     "gstNumber": "29ABCDE1234F1Z5",
     "businessName": "My Business Name",
     "businessAddress": "Business Complete Address",
@@ -145,7 +145,7 @@ Retrieves specific GST details by ID.
 {
   "id": "uuid",
   "customerId": "customer-uuid",
-  "gstNumber": "29ABCDE1234F1Z5", 
+  "gstNumber": "29ABCDE1234F1Z5",
   "businessName": "My Business Name",
   "businessAddress": "Business Complete Address",
   "isActive": true,

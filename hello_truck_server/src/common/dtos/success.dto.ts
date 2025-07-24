@@ -1,6 +1,6 @@
 import { Expose } from "class-transformer";
 
-export class SuccessDto {
+export class SuccessResponseDto {
   @Expose()
   success: boolean;
 

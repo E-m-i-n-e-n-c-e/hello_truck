@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { SendOtpDto } from './dtos/send-otp.dto';
 import { Serialize } from 'src/common/interceptors/serialize.interceptor';
-import { SuccessDto } from 'src/common/dtos/success.dto';
+import { SuccessResponseDto } from 'src/common/dtos/success.dto';
 import { refreshTokenDto, TokenResponseDto } from './dtos/tokens.dto';
 
 @Controller('auth/driver')
@@ -13,9 +13,9 @@ export class DriverAuthController {
 
   @Throttle({ default: { ttl: seconds(60), limit: 5 } })
   @Post('send-otp')
-  @Serialize(SuccessDto)
+  @Serialize(SuccessResponseDto)
   @HttpCode(HttpStatus.OK)
-  sendDriverOtp(@Body() body: SendOtpDto): Promise<SuccessDto> {
+  sendDriverOtp(@Body() body: SendOtpDto): Promise<SuccessResponseDto> {
     return this.authService.sendOtp(body.phoneNumber);
   }
 
@@ -29,9 +29,9 @@ export class DriverAuthController {
 
   @Throttle({ default: { ttl: seconds(60), limit: 20 } })
   @Post('logout')
-  @Serialize(SuccessDto)
+  @Serialize(SuccessResponseDto)
   @HttpCode(HttpStatus.OK)
-  logoutDriver(@Body() body: { refreshToken: string }): Promise<SuccessDto> {
+  logoutDriver(@Body() body: refreshTokenDto): Promise<SuccessResponseDto> {
     return this.authService.logoutDriver(body.refreshToken);
   }
 
