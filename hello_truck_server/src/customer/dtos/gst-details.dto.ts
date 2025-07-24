@@ -2,7 +2,7 @@ import { CustomerGstDetails } from '@prisma/client';
 import { Expose } from 'class-transformer';
 import { IsString, IsNotEmpty, Matches, IsOptional } from 'class-validator';
 
-export class CreateGstDetailsDto {
+export class CreateGstDetailsDto implements Partial<CustomerGstDetails> {
   @IsNotEmpty()
   @IsString()
   @Matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, {
@@ -19,7 +19,7 @@ export class CreateGstDetailsDto {
   businessAddress: string;
 }
 
-export class UpdateGstDetailsDto {
+export class UpdateGstDetailsDto implements Partial<CustomerGstDetails> {
   @IsOptional()
   @IsString()
   @Matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, {

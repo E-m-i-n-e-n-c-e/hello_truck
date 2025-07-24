@@ -1,21 +1,21 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateGstDetailsDto, UpdateGstDetailsDto } from '../dtos/gst-details.dto';
-import { CustomerGstDetails } from '@prisma/client';
+import { CustomerGstDetails, Prisma } from '@prisma/client';
 
 @Injectable()
 export class GstService {
   constructor(private prisma: PrismaService) {}
 
-  async addGstDetails(userId: string, createGstDetailsDto: CreateGstDetailsDto) {
-    const existingGst = await this.prisma.customerGstDetails.findUnique({
+  async addGstDetails(userId: string, createGstDetailsDto: CreateGstDetailsDto, tx: Prisma.TransactionClient= this.prisma) {
+    const existingGst = await tx.customerGstDetails.findUnique({
       where: { gstNumber: createGstDetailsDto.gstNumber }
     });
 
     if (existingGst) {
       // If the GST details are not active, reactivate them
       if(!existingGst.isActive && existingGst.customerId === userId) {
-        await this.prisma.customerGstDetails.update({
+        await tx.customerGstDetails.update({
           where: { id: existingGst.id },
           data: { isActive: true }
         });
@@ -24,7 +24,7 @@ export class GstService {
       throw new BadRequestException('GST number already exists');
     }
 
-    await this.prisma.customerGstDetails.create({
+    await tx.customerGstDetails.create({
       data: {
         ...createGstDetailsDto,
         customer: {
