@@ -89,12 +89,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reactivate GST Details'),
-        content: const Text('Are you sure you want to reactivate this GST details?'),
+        title: const Text('GST Details Already Exists'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'We found an existing GST registration with this number that is currently inactive.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Would you like to reactivate these GST details?',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'GST Number: $gstNumber',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL'),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reactivate'),
           ),
         ],
       ),
@@ -122,8 +155,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final businessAddressController = TextEditingController(text: existingDetails?.businessAddress ?? '');
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
+    const kDialogCancel = 'Cancel';
 
-    final result = await showDialog<bool>(
+    final error = await showDialog<String?>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
@@ -186,7 +220,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(context, kDialogCancel),
               child: const Text('CANCEL'),
             ),
             TextButton(
@@ -217,15 +251,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         }
 
                         if (context.mounted) {
-                          Navigator.pop(context, true);
+                          Navigator.pop(context, null);
                         }
                       } catch (e) {
                         if (context.mounted) {
                           if(e.toString().contains('GST number already exists but is inactive. Please reactivate it.')) {
+                            // Cancel the dialog and show the reactivate dialog
+                            Navigator.pop(context, kDialogCancel);
                             _showReactivateGstDetailsDialog(gstNumber: gstNumberController.text.trim());
                           }
-                          SnackBars.error(context,
-                              'Failed to ${existingDetails == null ? 'add' : 'update'} GST details: $e');
+                          else{
+                            Navigator.pop(context, e.toString());
+                          }
                         }
                       }
                     },
@@ -242,8 +279,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
 
-    if (result == true) {
+    if (error == null) {
+      if(mounted){
+        SnackBars.success(context, 'GST details ${existingDetails == null ? 'added' : 'updated'} successfully');
+      }
       ref.invalidate(gstDetailsProvider);
+    }
+    else if (mounted && error != kDialogCancel){
+      SnackBars.error(context, 'Failed to ${existingDetails == null ? 'add' : 'update'} GST details: $error');
     }
   }
 
