@@ -37,7 +37,7 @@ export class AuthService {
     return { accessToken, refreshToken: newRefreshToken };
   }
 
-  async logoutCustomer(refreshToken: string): Promise<{ success: boolean }> {
+  async logoutCustomer(refreshToken: string): Promise<{ success: boolean, message: string }> {
     if (!refreshToken || !refreshToken.includes('.')) {
       throw new UnauthorizedException('Invalid refresh token format');
     }
@@ -47,7 +47,7 @@ export class AuthService {
       where: { id: sessionId },
     });
 
-    return { success: true };
+    return { success: true, message: 'Logged out successfully' };
   }
 
   async verifyDriverOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
@@ -70,7 +70,7 @@ export class AuthService {
     return { accessToken, refreshToken: newRefreshToken };
   }
 
-  async logoutDriver(refreshToken: string): Promise<{ success: boolean }> {
+  async logoutDriver(refreshToken: string): Promise<{ success: boolean, message: string }> {
     if (!refreshToken || !refreshToken.includes('.')) {
       throw new UnauthorizedException('Invalid refresh token format');
     }
@@ -80,7 +80,7 @@ export class AuthService {
       where: { id: sessionId },
     });
 
-    return { success: true };
+    return { success: true, message: 'Logged out successfully' };
   }
 
   async refreshToken(refreshToken: string, userType: UserType): Promise<{ accessToken: string; refreshToken: string }> {
