@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OtpService } from '../otp/otp.service';
+import { OtpService } from './otp/otp.service';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { TokenService } from '../token/token.service';
 import { UserType } from 'src/common/types/user-session.types';
