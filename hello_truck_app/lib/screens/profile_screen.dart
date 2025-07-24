@@ -85,6 +85,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _showReactivateGstDetailsDialog({required String gstNumber}) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reactivate GST Details'),
+        content: const Text('Are you sure you want to reactivate this GST details?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      final api = ref.read(apiProvider).value!;
+      try {
+        await gst_api.reactivateGstDetails(api, gstNumber);
+        ref.invalidate(gstDetailsProvider);
+        if (mounted) {
+          SnackBars.success(context, 'GST details reactivated successfully');
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBars.error(context, 'Failed to reactivate GST details: $e');
+        }
+      }
+    }
+  }
+
   Future<void> _showGstDetailsDialog({GstDetails? existingDetails}) async {
     final gstNumberController = TextEditingController(text: existingDetails?.gstNumber ?? '');
     final businessNameController = TextEditingController(text: existingDetails?.businessName ?? '');
@@ -190,6 +221,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         }
                       } catch (e) {
                         if (context.mounted) {
+                          if(e.toString().contains('GST number already exists but is inactive. Please reactivate it.')) {
+                            _showReactivateGstDetailsDialog(gstNumber: gstNumberController.text.trim());
+                          }
                           SnackBars.error(context,
                               'Failed to ${existingDetails == null ? 'add' : 'update'} GST details: $e');
                         }

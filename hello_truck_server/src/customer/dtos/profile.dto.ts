@@ -3,7 +3,7 @@ import { Expose, Type } from 'class-transformer';
 import { CreateGstDetailsDto } from './gst-details.dto';
 import { Customer } from '@prisma/client';
 
-export class CreateProfileDto {
+export class CreateProfileDto implements Partial<Customer> {
   @IsString()
   firstName: string;
 
@@ -24,7 +24,7 @@ export class CreateProfileDto {
   gstDetails?: CreateGstDetailsDto;
 }
 
-export class UpdateProfileDto {
+export class UpdateProfileDto implements Partial<Customer> {
   @IsString()
   @IsOptional()
   firstName?: string;

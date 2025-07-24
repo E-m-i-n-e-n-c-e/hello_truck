@@ -52,22 +52,18 @@ export class ProfileService {
 
     const { gstDetails, ...profileData } = createProfileDto;
 
-    if(gstDetails) {
-      await this.gstService.addGstDetails(userId, gstDetails);
-    }
-    try {
-      await this.prisma.customer.update({
+    await this.prisma.$transaction(async (tx) => {
+      if(gstDetails) {
+        await this.gstService.addGstDetails(userId, gstDetails, tx);
+      }
+      await tx.customer.update({
         where: { id: userId },
         data: {
-        ...profileData,
-        isBusiness: gstDetails ? true : false
-      }
+          ...profileData,
+          isBusiness: gstDetails ? true : false
+        }
+      });
     });
-    } catch (error) {
-      await this.gstService.deleteAllGstDetails(userId);
-      throw error;
-    }
-
     return {success:true, message:'Profile created successfully'};
   }
 }

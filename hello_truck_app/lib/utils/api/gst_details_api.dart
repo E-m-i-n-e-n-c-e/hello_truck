@@ -40,3 +40,8 @@ Future<void> updateGstDetails(
 Future<void> deactivateGstDetails(API api, String id) async {
   await api.post('/customer/gst/deactivate', data: {'id': id});
 }
+
+/// Reactivate GST details
+Future<void> reactivateGstDetails(API api, String gstNumber) async {
+  await api.post('/customer/gst/reactivate', data: {'gstNumber': gstNumber});
+}

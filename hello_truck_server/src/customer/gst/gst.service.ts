@@ -15,11 +15,7 @@ export class GstService {
     if (existingGst) {
       // If the GST details are not active, reactivate them
       if(!existingGst.isActive && existingGst.customerId === userId) {
-        await tx.customerGstDetails.update({
-          where: { id: existingGst.id },
-          data: { isActive: true }
-        });
-        return {success:true, message:'GST details reactivated'};
+        throw new BadRequestException('GST number already exists but is inactive. Please reactivate it.');
       }
       throw new BadRequestException('GST number already exists');
     }
@@ -83,9 +79,16 @@ export class GstService {
     return {success:true, message:'GST details deactivated successfully'};
   }
 
-  async deleteAllGstDetails(userId: string) {
-    await this.prisma.customerGstDetails.deleteMany({
-      where: { customerId: userId }
+  async reactivateGstDetails(userId: string, gstNumber: string) {
+    const gstDetails = await this.prisma.customerGstDetails.updateMany({
+      where: { gstNumber, customerId: userId, isActive: false },
+      data: { isActive: true }
     });
+
+    if(gstDetails.count === 0) {
+      throw new NotFoundException('GST details not found');
+    }
+
+    return {success:true, message:'GST details reactivated successfully'};
   }
 }

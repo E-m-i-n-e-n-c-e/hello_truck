@@ -42,6 +42,15 @@ export class DeactivateGstDetailsDto {
   id: string;
 }
 
+export class ReactivateGstDetailsDto {
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, {
+    message: 'Invalid GST number format',
+  })
+  gstNumber: string;
+}
+
 export class GstDetailsResponseDto implements CustomerGstDetails {
   customerId: string;
   isActive: boolean;
