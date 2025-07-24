@@ -1,5 +1,5 @@
 import { Expose } from "class-transformer";
-
+import { IsNotEmpty, IsString } from "class-validator";
 export class TokenResponseDto {
   @Expose()
   accessToken: string;
@@ -9,6 +9,7 @@ export class TokenResponseDto {
 }
 
 export class refreshTokenDto {
-  @Expose()
+  @IsString()
+  @IsNotEmpty()
   refreshToken: string;
 }
