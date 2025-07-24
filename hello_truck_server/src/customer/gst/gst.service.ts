@@ -82,4 +82,10 @@ export class GstService {
 
     return {success:true, message:'GST details deactivated successfully'};
   }
+
+  async deleteAllGstDetails(userId: string) {
+    await this.prisma.customerGstDetails.deleteMany({
+      where: { customerId: userId }
+    });
+  }
 }
