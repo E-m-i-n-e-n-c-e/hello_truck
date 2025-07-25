@@ -88,6 +88,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _showReactivateGstDetailsDialog({required String gstNumber}) async {
     final result = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('GST Details Already Exists'),
         content: Column(
@@ -155,10 +156,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final businessAddressController = TextEditingController(text: existingDetails?.businessAddress ?? '');
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
-    const kDialogCancel = 'Cancel';
+    const kDialogCancel = null;
+    const kDialogSuccess = 'Success';
 
-    final error = await showDialog<String?>(
+    final result = await showDialog<String?>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(existingDetails == null ? 'Add GST Details' : 'Edit GST Details'),
@@ -251,7 +254,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         }
 
                         if (context.mounted) {
-                          Navigator.pop(context, null);
+                          Navigator.pop(context, kDialogSuccess);
                         }
                       } catch (e) {
                         if (context.mounted) {
@@ -279,20 +282,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
 
-    if (error == null) {
+    if(result == kDialogCancel) return;
+
+    if (result == kDialogSuccess) {
       if(mounted){
         SnackBars.success(context, 'GST details ${existingDetails == null ? 'added' : 'updated'} successfully');
       }
       ref.invalidate(gstDetailsProvider);
     }
-    else if (mounted && error != kDialogCancel){
-      SnackBars.error(context, 'Failed to ${existingDetails == null ? 'add' : 'update'} GST details: $error');
+    else if (mounted) {
+      SnackBars.error(context, 'Failed to ${existingDetails == null ? 'add' : 'update'} GST details: $result');
     }
   }
 
   Future<void> _deactivateGstDetails(String id) async {
     final shouldDeactivate = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Deactivate GST Details'),
         content: const Text('Are you sure you want to deactivate these GST details?'),
@@ -543,6 +549,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       onPressed: () async {
                         final shouldLogout = await showDialog<bool>(
                           context: context,
+                          barrierDismissible: false,
                           builder: (context) => AlertDialog(
                             title: const Text('Logout'),
                             content: const Text('Are you sure you want to logout?'),

@@ -71,7 +71,7 @@ export class GstService {
     }
 
     if(gstDetails.count === 0) {
-      throw new NotFoundException('GST details not found');
+      throw new NotFoundException('No active GST details found to update');
     }
 
     return {success:true, message:'GST details updated successfully'};
