@@ -30,6 +30,8 @@ model Customer {
   sessions    CustomerSession[]
   gstDetails  CustomerGstDetails[]
   addresses   CustomerAddress[]
+
+  @@index([isActive])
 }
 
 model CustomerAddress {
@@ -97,17 +99,44 @@ model OtpVerification {
 }
 
 model Driver {
-  id          String   @id @default(uuid())
-  phoneNumber String   @unique
-  firstName   String?
-  lastName    String?
-  email       String?
-  referalCode String?
-  isActive    Boolean  @default(true)
+  id                 String             @id @default(uuid())
+  phoneNumber        String             @unique
+  firstName          String?
+  lastName           String?
+  email              String?
+  alternatePhone     String?
+  referalCode        String?
+  photo              String?
+  isActive           Boolean            @default(true)
   verificationStatus VerificationStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  sessions    DriverSession[]
+  documents          DriverDocuments?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  sessions           DriverSession[]
+
+  @@index([isActive, verificationStatus])
+}
+
+model DriverDocuments {
+  id              String    @id @default(uuid())
+  driverId        String    @unique
+  driver          Driver    @relation(fields: [driverId], references: [id])
+  licenseUrl      String?
+  licenseExpiry   DateTime?
+  rcBookUrl       String?
+  fcUrl           String?
+  fcExpiry        DateTime?
+  insuranceUrl    String?
+  insuranceExpiry DateTime?
+  aadharUrl       String?
+  panNumber       String?   @unique
+  ebBillUrl       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([licenseExpiry])
+  @@index([fcExpiry])
+  @@index([insuranceExpiry])
 }
 
 model DriverSession {

@@ -12,7 +12,8 @@ export class CreateProfileDto implements Partial<Customer> {
   lastName?: string;
 
   @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString()
   @IsOptional()

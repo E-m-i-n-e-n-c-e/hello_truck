@@ -7,7 +7,7 @@ POST http://localhost:3000/auth/customer/send-otp
 Content-Type: application/json
 
 {
-  "phoneNumber": "6300045929"
+  "phoneNumber": "6300041123"
 }
 
 ### Verify OTP
@@ -15,13 +15,29 @@ POST http://localhost:3000/auth/customer/verify-otp
 Content-Type: application/json
 
 {
-  "phoneNumber": "6300045929",
+  "phoneNumber": "6300041123",
   "otp": "123456"
 }
 
+### Create user profile
+POST http://localhost:3000/customer/profile
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiZWE5M2NiZTYtZDZhZS00Mzg0LWEwZWYtMjE4NDEyMzhlNjliIiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6ZmFsc2UsImlhdCI6MTc1MzM1ODE1NCwiZXhwIjoxNzUzMzU5MDU0fQ.08X4TzVfxXBsZZD7zJMO5g3rD-_625CfIMgzN4WO9c0
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "referralCode": "123456",
+  "gstDetails": {
+    "gstNumber": "27AAACF2234C1Z7",
+    "businessName": "Hello Truck Pvt Ltd",
+    "businessAddress": "123, Main Street, Mumbai, Maharashtra, 400001"
+  }
+}
 ### Get user profile
 GET http://localhost:3000/customer/profile
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiNzM0ZDJjMDQtM2ViZC00NTI4LTg1ZmQtNGYxYmRhZmJmMTczIiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6dHJ1ZSwiaWF0IjoxNzUzMjk1NDg1LCJleHAiOjE3NTMyOTYzODV9.F5TC3lWHZS3sBdjPIyB5nNdhQJL1x3f-ZaEP9eMxuw8
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiZWE5M2NiZTYtZDZhZS00Mzg0LWEwZWYtMjE4NDEyMzhlNjliIiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6ZmFsc2UsImlhdCI6MTc1MzM1ODE1NCwiZXhwIjoxNzUzMzU5MDU0fQ.08X4TzVfxXBsZZD7zJMO5g3rD-_625CfIMgzN4WO9c0
 
 ### Update user profile
 PUT http://localhost:3000/customer/profile
@@ -33,24 +49,24 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c
 }
 
 ### get gst details
-GET http://localhost:3000/customer/gst
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiNzM0ZDJjMDQtM2ViZC00NTI4LTg1ZmQtNGYxYmRhZmJmMTczIiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6dHJ1ZSwiaWF0IjoxNzUzMjk1NDg1LCJleHAiOjE3NTMyOTYzODV9.F5TC3lWHZS3sBdjPIyB5nNdhQJL1x3f-ZaEP9eMxuw8
+GET http://localhost:3000/customer/gst/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiMTRhMWM4YmEtOTA1My00MmEzLWJjZmMtZmU3MzJlMDFlYjA2IiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6ZmFsc2UsImlhdCI6MTc1MzM4NzA0MywiZXhwIjoxNzUzMzg3OTQzfQ.jsEU0SpQGI9OwKcWYaIHxbO6b3K6xRr7ajcrCeElzHI
 
 ### Add GST details
 POST http://localhost:3000/customer/gst
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiNzM0ZDJjMDQtM2ViZC00NTI4LTg1ZmQtNGYxYmRhZmJmMTczIiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6dHJ1ZSwiaWF0IjoxNzUzMjk0MjkyLCJleHAiOjE3NTMyOTUxOTJ9.TSD2Kb7CXsOxH4HzIzEkFVo-UEncVnEWNO900Ph3qc4
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiMTRhMWM4YmEtOTA1My00MmEzLWJjZmMtZmU3MzJlMDFlYjA2IiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6ZmFsc2UsImlhdCI6MTc1MzM4NzA0MywiZXhwIjoxNzUzMzg3OTQzfQ.jsEU0SpQGI9OwKcWYaIHxbO6b3K6xRr7ajcrCeElzHI
 
 {
-  "gstNumber": "27AAACF2234C1Z5",
+  "gstNumber": "27AAACF2234C1Z8",
   "businessName": "Hello Truck Pvt Ltd",
   "businessAddress": "123, Main Street, Mumbai, Maharashtra, 400001"
 }
 
 ### Update GST details
-PUT http://localhost:3000/customer/gst/da41269f-9325-492b-9aad-045432a1003a
+PUT http://localhost:3000/customer/gst/b394e6f4-e40f-4a5e-a6ca-1cf715c4f95c
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiNzM0ZDJjMDQtM2ViZC00NTI4LTg1ZmQtNGYxYmRhZmJmMTczIiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6dHJ1ZSwiaWF0IjoxNzUzMjk1MjcwLCJleHAiOjE3NTMyOTYxNzB9.rtGT_UtIZ_9yQfsJmNRV6l4v_PoUS-L9MyDFZ_kADys
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVHlwZSI6ImN1c3RvbWVyIiwidXNlcklkIjoiMTRhMWM4YmEtOTA1My00MmEzLWJjZmMtZmU3MzJlMDFlYjA2IiwiaGFzQ29tcGxldGVkT25ib2FyZGluZyI6ZmFsc2UsImlhdCI6MTc1MzM4NzA0MywiZXhwIjoxNzUzMzg3OTQzfQ.jsEU0SpQGI9OwKcWYaIHxbO6b3K6xRr7ajcrCeElzHI
 
 {
 
