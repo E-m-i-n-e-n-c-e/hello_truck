@@ -10,6 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CustomerModule } from './customer/customer.module';
 import { TokenModule } from './token/token.module';
 import { CustomThrottlerGuard } from './token/guards/custom-throttler.guard';
+import { DriverModule } from './driver/driver.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CustomThrottlerGuard } from './token/guards/custom-throttler.guard';
     CronModule,
     TokenModule,
     CustomerModule,
+    DriverModule,
   ],
   controllers: [AppController],
   providers: [AppService, {

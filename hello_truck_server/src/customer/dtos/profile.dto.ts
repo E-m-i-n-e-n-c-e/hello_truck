@@ -39,7 +39,10 @@ export class UpdateProfileDto implements Partial<Customer> {
   email?: string;
 }
 
-export class GetProfileResponseDto implements Partial<Customer> {
+export class GetProfileResponseDto implements Customer {
+  id: string;
+  isActive: boolean;
+
   @Expose()
   firstName: string | null;
   @Expose()
@@ -56,5 +59,4 @@ export class GetProfileResponseDto implements Partial<Customer> {
   createdAt: Date;
   @Expose()
   updatedAt: Date;
-  // Exclude id, isActive
 }
