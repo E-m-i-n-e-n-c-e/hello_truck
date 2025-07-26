@@ -11,14 +11,14 @@ Future<Customer> getCustomerProfile(API api) async {
 Future<void> createCustomerProfile(API api, {
   required String firstName,
   String? lastName,
-  required String email,
+  String? googleIdToken,
   String? referralCode,
   GstDetails? gstDetails,
 }) async {
   await api.post('/customer/profile', data: {
     'firstName': firstName,
     if (lastName?.isNotEmpty ?? false) 'lastName': lastName,
-    'email': email,
+    if (googleIdToken?.isNotEmpty ?? false) 'googleIdToken': googleIdToken,
     if (referralCode?.isNotEmpty ?? false) 'referralCode': referralCode,
     if (gstDetails != null) 'gstDetails': {
       'gstNumber': gstDetails.gstNumber,
@@ -33,11 +33,11 @@ Future<void> updateCustomerProfile(
   API api, {
   String? firstName,
   String? lastName,
-  String? email,
+  String? googleIdToken,
 }) async {
   await api.put('/customer/profile', data: {
     if (firstName?.isNotEmpty ?? false) 'firstName': firstName,
     if (lastName?.isNotEmpty ?? false) 'lastName': lastName,
-    if (email?.isNotEmpty ?? false) 'email': email,
+    if (googleIdToken?.isNotEmpty ?? false) 'googleIdToken': googleIdToken,
   });
 }

@@ -4,7 +4,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/screens/home_screen.dart';
 import 'package:hello_truck_app/screens/profile_screen.dart';
 import 'package:hello_truck_app/screens/map_screen.dart';
-import 'package:hello_truck_app/screens/onboarding_screen.dart';
+import 'package:hello_truck_app/screens/onboarding/onboarding_screen.dart';
 import 'package:hello_truck_app/widgets/bottom_navbar.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 

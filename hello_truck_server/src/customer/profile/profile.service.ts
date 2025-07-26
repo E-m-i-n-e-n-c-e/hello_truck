@@ -3,10 +3,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateProfileDto, CreateProfileDto } from '../dtos/profile.dto';
 import { GstService } from '../gst/gst.service';
 import { Customer } from '@prisma/client';
+import { FirebaseService } from 'src/auth/firebase/firebase.service';
 
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService, private gstService: GstService) {}
+  constructor(private prisma: PrismaService, private gstService: GstService, private firebaseService: FirebaseService) {}
 
   async getProfile(userId: string): Promise<Customer> {
     const customer = await this.prisma.customer.findUnique({
@@ -21,9 +22,19 @@ export class ProfileService {
   }
 
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
+
+    const {googleIdToken, ...profileData } = updateProfileDto;
+    let email: string | undefined;
+    if(googleIdToken) {
+      email = await this.firebaseService.getEmailFromGoogleIdToken(googleIdToken);
+    }
+
     await this.prisma.customer.update({
       where: { id: userId },
-      data: updateProfileDto
+      data: {
+        ...profileData,
+        ...(email && { email }),
+      }
     });
 
     return {success:true, message:'Profile updated successfully'};
@@ -42,7 +53,11 @@ export class ProfileService {
       throw new BadRequestException('Profile already exists');
     }
 
-    const { gstDetails, ...profileData } = createProfileDto;
+    const {googleIdToken, gstDetails, ...profileData } = createProfileDto;
+    let email: string | undefined;
+    if(googleIdToken) {
+      email = await this.firebaseService.getEmailFromGoogleIdToken(googleIdToken);
+    }
 
     await this.prisma.$transaction(async (tx) => {
       if(gstDetails) {
@@ -52,7 +67,8 @@ export class ProfileService {
         where: { id: userId },
         data: {
           ...profileData,
-          isBusiness: gstDetails ? true : false
+          isBusiness: gstDetails ? true : false,
+          ...(email && { email }),
         }
       });
     });

@@ -65,7 +65,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         api,
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
-        email: _emailController.text.trim(),
       );
 
       if (mounted) {
@@ -454,7 +453,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         labelText: 'Email',
                         hintText: 'Enter your email address',
                       ),
-                      enabled: _isEditing && !_isLoading,
+                      enabled: false,
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {

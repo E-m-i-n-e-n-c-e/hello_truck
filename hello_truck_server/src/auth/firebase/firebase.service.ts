@@ -83,4 +83,12 @@ export class FirebaseService implements OnModuleInit {
       throw new BadRequestException('Invalid Google ID token');
     }
   }
+
+  async getEmailFromGoogleIdToken(idToken: string): Promise<string> {
+    const googleData = await this.verifyGoogleIdToken(idToken);
+    if (!googleData.email || !googleData.emailVerified) {
+      throw new BadRequestException('Email not verified or not found');
+    }
+    return googleData.email;
+  }
 }

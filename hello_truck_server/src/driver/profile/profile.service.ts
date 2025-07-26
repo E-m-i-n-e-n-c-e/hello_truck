@@ -29,11 +29,7 @@ export class ProfileService {
     // Extract email from Google ID token if provided
     let email: string | undefined;
     if (googleIdToken) {
-      const googleData = await this.firebaseService.verifyGoogleIdToken(googleIdToken);
-      if (!googleData.email || !googleData.emailVerified) {
-        throw new BadRequestException('Email not verified or not found');
-      }
-      email = googleData.email;
+      email = await this.firebaseService.getEmailFromGoogleIdToken(googleIdToken);
     }
 
     await this.prisma.driver.update({

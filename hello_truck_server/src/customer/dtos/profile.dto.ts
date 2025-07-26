@@ -11,9 +11,9 @@ export class CreateProfileDto implements Partial<Customer> {
   @IsOptional()
   lastName?: string;
 
-  @IsEmail()
+  @IsString()
   @IsOptional()
-  email?: string;
+  googleIdToken?: string;
 
   @IsString()
   @IsOptional()
@@ -34,9 +34,9 @@ export class UpdateProfileDto implements Partial<Customer> {
   @IsOptional()
   lastName?: string;
 
-  @IsEmail()
+  @IsString()
   @IsOptional()
-  email?: string;
+  googleIdToken?: string;
 }
 
 export class GetProfileResponseDto implements Customer {
