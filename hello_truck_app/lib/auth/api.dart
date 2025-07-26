@@ -123,22 +123,18 @@ class API {
         'staleRefreshToken': staleRefreshToken,
       },
     );
-    if (response.statusCode == 200) {
-      await Future.wait([
-        storage.write(
-          key: 'refreshToken',
-          value: response.data['refreshToken'],
-        ),
-        storage.write(key: 'accessToken', value: response.data['accessToken']),
-      ]);
+    await Future.wait([
+      storage.write(
+        key: 'refreshToken',
+        value: response.data['refreshToken'],
+      ),
+      storage.write(key: 'accessToken', value: response.data['accessToken']),
+    ]);
 
-      ref.read(authClientProvider).emitSignIn(
-        accessToken: response.data['accessToken'],
-        refreshToken: response.data['refreshToken'],
-      );
-    } else {
-      throw Exception('Failed to verify OTP');
-    }
+    ref.read(authClientProvider).emitSignIn(
+      accessToken: response.data['accessToken'],
+      refreshToken: response.data['refreshToken'],
+    );
   }
 
   Future<void> signOut() async {
@@ -146,7 +142,7 @@ class API {
 
     if (refreshToken != null) {
       try {
-        await post('/auth/logout', data: {'refreshToken': refreshToken});
+        await post('/auth/customer/logout', data: {'refreshToken': refreshToken});
       } catch (e) {
         // If logout failed, save the refresh token to the storage
         await storage.write(key: 'staleRefreshToken', value: refreshToken);

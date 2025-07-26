@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
-import { SessionService } from 'src/session/session.service';
+import { SessionService } from './session/session.service';
 import { UserType, User, UserToken } from 'src/common/types/user-session.types';
 
 @Injectable()

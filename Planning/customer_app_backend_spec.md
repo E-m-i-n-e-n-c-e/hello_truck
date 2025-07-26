@@ -6,29 +6,53 @@ This document outlines the backend API endpoints required to support the functio
 
 ## **POST /auth/customer/send-otp**
 
-Sends OTP to the customer’s phone number for login or registration.
+Sends OTP to the customer's phone number for login or registration.
 
 ### **Request Parameters**
 
-· phone: string – customer's phone number
+· phoneNumber: string – customer's phone number
 
-### **Response Example**
+### **Response**
 
-{"status": "OTP sent"}
+{ success: boolean, message: string }
 
 ## **POST /auth/customer/verify-otp**
 
-Verifies the OTP entered by the customer.
+Verifies the OTP entered by the customer and returns authentication tokens.
 
 ### **Request Parameters**
 
-· phone: string
+· phoneNumber: string
+· otp: string
+· staleRefreshToken?: string (optional) - Previous refresh token if available
 
-· otp: string
+### **Response**
 
-### **Response Example**
+{ accessToken: string, refreshToken: string }
 
-{"token": "jwt_token", "isNewCustomer": true/false}
+## **POST /auth/customer/logout**
+
+Logs out the customer by invalidating the refresh token.
+
+### **Request Parameters**
+
+· refreshToken: string
+
+### **Response**
+
+{ success: boolean }
+
+## **POST /auth/customer/refresh-token**
+
+Refreshes the access token using a valid refresh token.
+
+### **Request Parameters**
+
+· refreshToken: string
+
+### **Response**
+
+{ accessToken: string, refreshToken: string }
 
 # **2. Customer Profile**
 
@@ -58,19 +82,110 @@ Updates customer name or email.
 
 ### **Response Example**
 
-{"status": "updated"}
+{
+  "success": true,
+  "message": "Profile updated successfully"
+}
+
+
+# **2.1 GST Management**
 
 ## **POST /customer/gst**
 
-Adds a GST entry for commercial bookings.
+Adds new GST details for a customer.
 
 ### **Request Parameters**
 
-· gstNumber: string
+· Authorization: Bearer token
+· gstNumber: string - Must follow Indian GST format (e.g. 29ABCDE1234F1Z5)
+· businessName: string
+· businessAddress: string
 
 ### **Response Example**
 
-{"status": "GST added"}
+{
+  "success": true,
+  "message": "GST details added successfully"
+}
+
+## **GET /customer/gst**
+
+Retrieves all active GST details for the authenticated customer.
+
+### **Request Parameters**
+
+· Authorization: Bearer token
+
+### **Response Example**
+
+[
+  {
+    "id": "uuid",
+    "customerId": "customer-uuid",
+    "gstNumber": "29ABCDE1234F1Z5",
+    "businessName": "My Business Name",
+    "businessAddress": "Business Complete Address",
+    "isActive": true,
+    "createdAt": "2024-03-20T10:00:00Z",
+    "updatedAt": "2024-03-20T10:00:00Z"
+  }
+]
+
+## **GET /customer/gst/:id**
+
+Retrieves specific GST details by ID.
+
+### **Request Parameters**
+
+· Authorization: Bearer token
+· id: string - GST details UUID
+
+### **Response Example**
+
+{
+  "id": "uuid",
+  "customerId": "customer-uuid",
+  "gstNumber": "29ABCDE1234F1Z5",
+  "businessName": "My Business Name",
+  "businessAddress": "Business Complete Address",
+  "isActive": true,
+  "createdAt": "2024-03-20T10:00:00Z",
+  "updatedAt": "2024-03-20T10:00:00Z"
+}
+
+## **PUT /customer/gst/:id**
+
+Updates existing GST details.
+
+### **Request Parameters**
+
+· Authorization: Bearer token
+· id: string - GST details UUID
+· businessName: string
+· businessAddress: string
+
+### **Response Example**
+
+{
+  "success": true,
+  "message": "GST details updated successfully"
+}
+
+## **POST /customer/gst/deactivate**
+
+Deactivates (soft deletes) existing GST details.
+
+### **Request Parameters**
+
+· Authorization: Bearer token
+· id: string - GST details UUID
+
+### **Response Example**
+
+{
+  "success": true,
+  "message": "GST details deactivated successfully"
+}
 
 # **3. Saved Addresses**
 

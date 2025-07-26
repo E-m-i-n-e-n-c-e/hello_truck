@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TokenService } from './token.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SessionModule } from '../session/session.module';
+import { SessionModule } from './session/session.module';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { RolesGuard } from './guards/roles.guard';
 

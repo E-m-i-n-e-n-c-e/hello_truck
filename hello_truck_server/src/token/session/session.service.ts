@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import * as crypto from 'crypto';
 import { UserType, Session, SessionWithUser } from 'src/common/types/user-session.types';
 

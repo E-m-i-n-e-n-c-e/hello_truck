@@ -4,7 +4,7 @@ import { CustomerAuthController } from './customer-auth.controller';
 import { DriverAuthController } from './driver-auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthGateway } from './auth.gateway';
-import { OtpModule } from '../otp/otp.module';
+import { OtpModule } from './otp/otp.module';
 import { TokenModule } from '../token/token.module';
 
 @Module({
@@ -15,6 +15,5 @@ import { TokenModule } from '../token/token.module';
   ],
   controllers: [CustomerAuthController, DriverAuthController],
   providers: [AuthService, AuthGateway],
-  exports: [AuthService],
 })
 export class AuthModule {}

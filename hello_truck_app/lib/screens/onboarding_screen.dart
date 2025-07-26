@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/gst_details.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/utils/api/customer_api.dart' as customer_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -16,6 +18,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _referralController = TextEditingController();
+  final _gstNumberController = TextEditingController();
+  final _companyNameController = TextEditingController();
+  final _addressController = TextEditingController();
   bool _isBusiness = false;
   bool _isLoading = false;
 
@@ -25,6 +30,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _referralController.dispose();
+    _gstNumberController.dispose();
+    _companyNameController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -34,20 +42,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() => _isLoading = true);
     try {
       final api = await ref.read(apiProvider.future);
-      await api.put('/customer/profile', data: {
-        'firstName': _firstNameController.text.trim(),
-        if (_lastNameController.text.trim().isNotEmpty)
-          'lastName': _lastNameController.text.trim(),
-        if (_emailController.text.trim().isNotEmpty)
-          'email': _emailController.text.trim(),
-        'isBusiness': _isBusiness,
-        if (_referralController.text.trim().isNotEmpty)
-          'referralCode': _referralController.text.trim(),
-      });
+
+      // Add GST details if business account
+      GstDetails? gstDetails;
+      if (_isBusiness) {
+        gstDetails = GstDetails(
+          gstNumber: _gstNumberController.text.trim(),
+          businessName: _companyNameController.text.trim(),
+          businessAddress: _addressController.text.trim(),
+        );
+      }
+      customer_api.createCustomerProfile(
+        api,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        referralCode: _referralController.text.trim(),
+        gstDetails: _isBusiness ? gstDetails : null,
+      );
       ref.read(authClientProvider).refreshTokens();
     } catch (e) {
       if (mounted) {
-        SnackBars.error(context, 'Failed to update profile: $e');
+        SnackBars.error(context, 'Failed to create profile: $e');
         setState(() => _isLoading = false);
       }
     }
@@ -115,13 +131,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
-                  labelText: 'Email (Optional)',
+                  labelText: 'Email',
                   hintText: 'Enter your email address',
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return null;
+                    return 'Email is required';
                   }
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                     return 'Please enter a valid email';
@@ -140,6 +156,73 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onChanged: (value) => setState(() => _isBusiness = value),
               ),
               const SizedBox(height: 16),
+
+              // GST Details Section (Visible only when business account is selected)
+              if (_isBusiness) ...[
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Business Details',
+                    style: textTheme.titleMedium,
+                  ),
+                ),
+                TextFormField(
+                  controller: _gstNumberController,
+                  decoration: const InputDecoration(
+                    labelText: 'GST Number',
+                    hintText: 'Enter your GST number',
+                  ),
+                  validator: _isBusiness
+                      ? (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'GST number is required for business accounts';
+                          }
+                          if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(value)) {
+                            return 'Please enter a valid GST number';
+                          }
+                          return null;
+                        }
+                      : null,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _companyNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Company Name',
+                    hintText: 'Enter your company name',
+                  ),
+                  validator: _isBusiness
+                      ? (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Company name is required for business accounts';
+                          }
+                          return null;
+                        }
+                      : null,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _addressController,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Address',
+                    hintText: 'Enter your business address',
+                  ),
+                  validator: _isBusiness
+                      ? (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Business address is required for business accounts';
+                          }
+                          return null;
+                        }
+                      : null,
+                  maxLines: 3,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+              ],
 
               // Referral Code (Optional)
               TextFormField(
