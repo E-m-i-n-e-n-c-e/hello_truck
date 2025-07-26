@@ -13,6 +13,7 @@ export class TokenService {
     const accessToken = await this.jwtService.signAsync({
       userType,
       userId: user.id,
+      phoneNumber: user.phoneNumber,
       hasCompletedOnboarding,
     });
 

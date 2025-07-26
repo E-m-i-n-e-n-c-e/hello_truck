@@ -4,6 +4,7 @@ import { OtpService } from './otp/otp.service';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { TokenService } from '../token/token.service';
 import { UserType } from 'src/common/types/user-session.types';
+import { FirebaseService } from './firebase/firebase.service';
 
 @Injectable()
 export class AuthService {
@@ -11,13 +12,14 @@ export class AuthService {
     private prisma: PrismaService,
     private otpService: OtpService,
     private tokenService: TokenService,
+    private firebaseService: FirebaseService,
   ) {}
 
-  async sendOtp(phoneNumber: string): Promise<{ success: boolean; message: string }> {
+  async sendOtp(phoneNumber: string) {
     return this.otpService.sendOtp(phoneNumber);
   }
 
-  async verifyCustomerOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
+  async verifyCustomerOtp(verifyOtpDto: VerifyOtpDto) {
     const { phoneNumber, otp, staleRefreshToken } = verifyOtpDto;
 
     await this.otpService.verifyOtp(phoneNumber, otp);
@@ -34,10 +36,11 @@ export class AuthService {
 
     const accessToken = await this.tokenService.generateAccessToken(customer, 'customer');
     const newRefreshToken = await this.tokenService.generateRefreshToken(customer.id, 'customer', staleRefreshToken);
-    return { accessToken, refreshToken: newRefreshToken };
+    const firebaseToken = await this.firebaseService.createCustomToken(customer.id);
+    return { accessToken, refreshToken: newRefreshToken, firebaseToken };
   }
 
-  async logoutCustomer(refreshToken: string): Promise<{ success: boolean, message: string }> {
+  async logoutCustomer(refreshToken: string) {
     if (!refreshToken || !refreshToken.includes('.')) {
       throw new UnauthorizedException('Invalid refresh token format');
     }
@@ -50,7 +53,7 @@ export class AuthService {
     return { success: true, message: 'Logged out successfully' };
   }
 
-  async verifyDriverOtp(verifyOtpDto: VerifyOtpDto): Promise<{ accessToken: string; refreshToken: string }> {
+  async verifyDriverOtp(verifyOtpDto: VerifyOtpDto) {
     const { phoneNumber, otp, staleRefreshToken } = verifyOtpDto;
 
     await this.otpService.verifyOtp(phoneNumber, otp);
@@ -67,10 +70,11 @@ export class AuthService {
 
     const accessToken = await this.tokenService.generateAccessToken(driver, 'driver');
     const newRefreshToken = await this.tokenService.generateRefreshToken(driver.id, 'driver', staleRefreshToken);
-    return { accessToken, refreshToken: newRefreshToken };
+    const firebaseToken = await this.firebaseService.createCustomToken(driver.id);
+    return { accessToken, refreshToken: newRefreshToken, firebaseToken };
   }
 
-  async logoutDriver(refreshToken: string): Promise<{ success: boolean, message: string }> {
+  async logoutDriver(refreshToken: string) {
     if (!refreshToken || !refreshToken.includes('.')) {
       throw new UnauthorizedException('Invalid refresh token format');
     }
@@ -83,7 +87,7 @@ export class AuthService {
     return { success: true, message: 'Logged out successfully' };
   }
 
-  async refreshToken(refreshToken: string, userType: UserType): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(refreshToken: string, userType: UserType) {
     const { accessToken, refreshToken: newRefreshToken } = await this.tokenService.refreshAccessToken(refreshToken, userType);
     return { accessToken, refreshToken: newRefreshToken };
   }
