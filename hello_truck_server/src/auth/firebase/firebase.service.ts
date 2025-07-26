@@ -1,11 +1,13 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   private readonly logger = new Logger(FirebaseService.name);
   private app: admin.app.App;
+  private googleClient: OAuth2Client;
 
   constructor(private configService: ConfigService) {}
 
@@ -42,6 +44,11 @@ export class FirebaseService implements OnModuleInit {
         });
       }
 
+      // Initialize Google Auth Client
+      this.googleClient = new OAuth2Client(
+        this.configService.get<string>('GOOGLE_CLIENT_ID') || '691159300275-37gn4bpd7jrkld0cmot36vl181s3tsf3.apps.googleusercontent.com'
+      );
+
       this.logger.log('Firebase Admin SDK initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize Firebase Admin SDK', error);
@@ -49,8 +56,31 @@ export class FirebaseService implements OnModuleInit {
     }
   }
 
-  async createCustomToken(uid: string): Promise<string> {
+  async createCustomFirebaseToken(uid: string): Promise<string> {
     const customToken = await this.app.auth().createCustomToken(uid);
     return customToken;
+  }
+
+  async verifyGoogleIdToken(idToken: string): Promise<{ email: string; emailVerified: boolean; name?: string }> {
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: this.configService.get<string>('GOOGLE_CLIENT_ID') || '691159300275-37gn4bpd7jrkld0cmot36vl181s3tsf3.apps.googleusercontent.com',
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        throw new BadRequestException('Invalid token payload');
+      }
+
+      return {
+        email: payload.email!,
+        emailVerified: payload.email_verified || false,
+        name: payload.name,
+      };
+    } catch (error) {
+      this.logger.error('Failed to verify Google ID token', error);
+      throw new BadRequestException('Invalid Google ID token');
+    }
   }
 }

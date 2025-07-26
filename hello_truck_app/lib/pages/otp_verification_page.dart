@@ -80,7 +80,6 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
       _startResendTimer();
     } catch (e) {
       if (!mounted) return;
-      print('Error sending OTP: $e');
       SnackBars.error(context, 'Error sending OTP: ${e.toString()}');
     } finally {
       if (mounted) {
@@ -99,7 +98,6 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
       // The auth provider will handle the navigation if verification is successful
     } catch (e) {
       if (!mounted) return;
-      print('Error verifying OTP: $e');
       if (mounted) {
         _otpController.clear();
         _errorController?.add(ErrorAnimationType.shake);

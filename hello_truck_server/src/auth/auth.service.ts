@@ -36,7 +36,7 @@ export class AuthService {
 
     const accessToken = await this.tokenService.generateAccessToken(customer, 'customer');
     const newRefreshToken = await this.tokenService.generateRefreshToken(customer.id, 'customer', staleRefreshToken);
-    const firebaseToken = await this.firebaseService.createCustomToken(customer.id);
+    const firebaseToken = await this.firebaseService.createCustomFirebaseToken(customer.id);
     return { accessToken, refreshToken: newRefreshToken, firebaseToken };
   }
 
@@ -70,7 +70,7 @@ export class AuthService {
 
     const accessToken = await this.tokenService.generateAccessToken(driver, 'driver');
     const newRefreshToken = await this.tokenService.generateRefreshToken(driver.id, 'driver', staleRefreshToken);
-    const firebaseToken = await this.firebaseService.createCustomToken(driver.id);
+    const firebaseToken = await this.firebaseService.createCustomFirebaseToken(driver.id);
     return { accessToken, refreshToken: newRefreshToken, firebaseToken };
   }
 

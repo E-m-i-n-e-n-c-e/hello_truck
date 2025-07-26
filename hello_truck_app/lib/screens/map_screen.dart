@@ -15,7 +15,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   LatLng? _deliveryLocation;
   final Set<Marker> _markers = {};
   bool _isLoading = true;
-  String _pickupAddress = '24, Ocean avenue';
+  final String _pickupAddress = '24, Ocean avenue';
   String _deliveryAddress = 'Kings Cross Underground';
   int _selectedVehicleIndex = 1; // Default to Small Van
   final TextEditingController _addressController = TextEditingController();
@@ -386,7 +386,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha:0.08),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -405,7 +405,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.green.withOpacity(0.3),
+                      color: Colors.green.withValues(alpha:0.3),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -436,7 +436,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.3),
+                      color: Colors.red.withValues(alpha:0.3),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -492,8 +492,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           boxShadow: [
             BoxShadow(
               color: isSelected
-                ? vehicle['gradient'][0].withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
+                ? vehicle['gradient'][0].withValues(alpha:0.3)
+                : Colors.black.withValues(alpha:0.05),
               blurRadius: isSelected ? 15 : 10,
               offset: const Offset(0, 4),
             ),
@@ -504,7 +504,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.2) : Colors.grey.shade100,
+                color: isSelected ? Colors.white.withValues(alpha:0.2) : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -531,7 +531,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     vehicle['description'],
                     style: TextStyle(
                       fontSize: 13,
-                      color: isSelected ? Colors.white.withOpacity(0.9) : Colors.grey.shade600,
+                      color: isSelected ? Colors.white.withValues(alpha:0.9) : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -540,28 +540,28 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       Icon(
                         Icons.access_time,
                         size: 14,
-                        color: isSelected ? Colors.white.withOpacity(0.8) : Colors.grey.shade500,
+                        color: isSelected ? Colors.white.withValues(alpha:0.8) : Colors.grey.shade500,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         vehicle['time'],
                         style: TextStyle(
                           fontSize: 12,
-                          color: isSelected ? Colors.white.withOpacity(0.8) : Colors.grey.shade500,
+                          color: isSelected ? Colors.white.withValues(alpha:0.8) : Colors.grey.shade500,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Icon(
                         Icons.fitness_center,
                         size: 14,
-                        color: isSelected ? Colors.white.withOpacity(0.8) : Colors.grey.shade500,
+                        color: isSelected ? Colors.white.withValues(alpha:0.8) : Colors.grey.shade500,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         vehicle['capacity'],
                         style: TextStyle(
                           fontSize: 12,
-                          color: isSelected ? Colors.white.withOpacity(0.8) : Colors.grey.shade500,
+                          color: isSelected ? Colors.white.withValues(alpha:0.8) : Colors.grey.shade500,
                         ),
                       ),
                     ],
@@ -585,7 +585,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha:0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -619,7 +619,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 8,
-          shadowColor: const Color(0xFF22AAAE).withOpacity(0.3),
+          shadowColor: const Color(0xFF22AAAE).withValues(alpha:0.3),
         ),
         child: const Text(
           'Book Transportation',
@@ -751,7 +751,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF22AAAE).withOpacity(0.1),
+                                      color: const Color(0xFF22AAAE).withValues(alpha:0.1),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: const Row(
@@ -783,7 +783,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                                 children: [
                                   ..._vehicles.asMap().entries.map((entry) {
                                     return _buildVehicleCard(entry.value, entry.key);
-                                  }).toList(),
+                                  }),
 
                                   _buildBookButton(),
 

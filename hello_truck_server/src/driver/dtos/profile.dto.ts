@@ -1,6 +1,6 @@
 import { $Enums, Driver } from "@prisma/client";
 import { Expose } from "class-transformer";
-import { IsEmail, IsOptional, IsPhoneNumber, IsString } from "class-validator";
+import { IsEmail, IsOptional, IsPhoneNumber, IsString, IsUrl } from "class-validator";
 
 export class UpdateProfileDto implements Partial<Driver> {
   @IsString()
@@ -11,9 +11,9 @@ export class UpdateProfileDto implements Partial<Driver> {
   @IsOptional()
   lastName?: string;
 
-  @IsEmail()
+  @IsString()
   @IsOptional()
-  email?: string;
+  googleIdToken?: string; // For email verification
 
   @IsString()
   @IsOptional()
@@ -22,7 +22,8 @@ export class UpdateProfileDto implements Partial<Driver> {
 
   @IsString()
   @IsOptional()
-  photo?: string;
+  @IsUrl()
+  photo?: string; // Firebase Storage URL
 }
 
 export class ProfileResponseDto implements Driver {

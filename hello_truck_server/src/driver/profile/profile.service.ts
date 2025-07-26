@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { FirebaseService } from 'src/auth/firebase/firebase.service';
 import { UpdateProfileDto } from '../dtos/profile.dto';
 import { Driver } from '@prisma/client';
 
 @Injectable()
 export class ProfileService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly firebaseService: FirebaseService,
+  ) {}
 
   async getProfile(userId: string): Promise<Driver> {
     const driver = await this.prisma.driver.findUnique({
@@ -20,11 +24,26 @@ export class ProfileService {
   }
 
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
+    const { googleIdToken, ...profileData } = updateProfileDto;
+
+    // Extract email from Google ID token if provided
+    let email: string | undefined;
+    if (googleIdToken) {
+      const googleData = await this.firebaseService.verifyGoogleIdToken(googleIdToken);
+      if (!googleData.email || !googleData.emailVerified) {
+        throw new BadRequestException('Email not verified or not found');
+      }
+      email = googleData.email;
+    }
+
     await this.prisma.driver.update({
       where: { id: userId },
-      data: updateProfileDto,
+      data: {
+        ...profileData,
+        ...(email && { email }),
+      },
     });
 
-    return {success:true, message:'Profile updated successfully'};
+    return { success: true, message: 'Profile updated successfully' };
   }
 }

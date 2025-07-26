@@ -64,7 +64,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      print('Error sending OTP: $e');
       SnackBars.error(context, 'Error sending OTP: ${e.toString()}');
     } finally {
       if (mounted) {
