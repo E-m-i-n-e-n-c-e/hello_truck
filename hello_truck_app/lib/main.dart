@@ -6,8 +6,9 @@ import 'package:hello_truck_app/login_page.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:hello_truck_app/splash_screen.dart';
 
+
+
 void main() {
-  // Preserve splash screen until app is fully loaded
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
