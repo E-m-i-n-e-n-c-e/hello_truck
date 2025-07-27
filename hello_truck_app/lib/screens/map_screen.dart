@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -15,6 +16,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   LatLng? _deliveryLocation;
   final Set<Marker> _markers = {};
   bool _isLoading = true;
+  bool _isGeocodingDelivery = false;
   String _pickupAddress = '24, Ocean avenue';
   String _deliveryAddress = 'Kings Cross Underground';
   int _selectedVehicleIndex = 1; // Default to Small Van
@@ -24,8 +26,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   late AnimationController _panelController;
   late Animation<double> _panelAnimation;
   double _panelHeight = 0.4; // Initial panel height (40% of screen)
-  final double _minPanelHeight = 0.3; // Minimum panel height (30% of screen)
-  final double _maxPanelHeight = 0.8; // Maximum panel height (80% of screen)
+  final double _minPanelHeight = 0.0; // Minimum panel height (0% - fully removable)
+  final double _maxPanelHeight = 0.85; // Maximum panel height (85% of screen)
 
   // Vehicle options for goods transportation
   final List<Map<String, dynamic>> _vehicles = [
@@ -95,7 +97,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     if (_mapController == null || _currentPosition == null) return;
 
     // Adjust zoom based on panel height
-    double zoomLevel = _panelHeight < 0.5 ? 15.0 : 13.0;
+    double zoomLevel = _panelHeight < 0.3 ? 16.0 : _panelHeight < 0.6 ? 14.0 : 12.0;
 
     _mapController!.animateCamera(
       CameraUpdate.newLatLngZoom(
@@ -103,6 +105,38 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         zoomLevel,
       ),
     );
+  }
+
+  Future<String> _getAddressFromCoordinates(LatLng location) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        location.latitude,
+        location.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        List<String> addressParts = [];
+
+        if (place.name != null && place.name!.isNotEmpty) {
+          addressParts.add(place.name!);
+        }
+        if (place.street != null && place.street!.isNotEmpty && place.street != place.name) {
+          addressParts.add(place.street!);
+        }
+        if (place.locality != null && place.locality!.isNotEmpty) {
+          addressParts.add(place.locality!);
+        }
+        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+          addressParts.add(place.administrativeArea!);
+        }
+
+        return addressParts.join(', ');
+      }
+    } catch (e) {
+      print('Error getting address: $e');
+    }
+    return 'Unknown location';
   }
 
   Future<void> _getCurrentLocation() async {
@@ -134,8 +168,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      // Get formatted address for current location
+      String currentAddress = await _getAddressFromCoordinates(
+        LatLng(position.latitude, position.longitude)
+      );
+
       setState(() {
         _currentPosition = position;
+        _pickupAddress = currentAddress;
         _isLoading = false;
         _markers.add(
           Marker(
@@ -156,8 +196,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         position.longitude + 0.01,
       );
 
+      // Get formatted address for delivery location
+      String deliveryAddr = await _getAddressFromCoordinates(dummyDelivery);
+
       setState(() {
         _deliveryLocation = dummyDelivery;
+        _deliveryAddress = deliveryAddr;
         _markers.add(
           Marker(
             markerId: const MarkerId('delivery_location'),
@@ -181,21 +225,44 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _onMapTapped(LatLng location) {
+  Future<void> _onMapTapped(LatLng location) async {
     setState(() {
       _deliveryLocation = location;
+      _isGeocodingDelivery = true;
 
-      // Remove existing delivery marker if any
+      // Remove existing delivery marker
       _markers.removeWhere((marker) => marker.markerId.value == 'delivery_location');
 
-      // Add new delivery marker
+      // Add temporary marker while geocoding
       _markers.add(
         Marker(
           markerId: const MarkerId('delivery_location'),
           position: location,
           infoWindow: const InfoWindow(
+            title: 'Getting address...',
+            snippet: 'Please wait',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
+    });
+
+    // Get formatted address
+    String address = await _getAddressFromCoordinates(location);
+
+    setState(() {
+      _isGeocodingDelivery = false;
+      _deliveryAddress = address;
+
+      // Update marker with real address
+      _markers.removeWhere((marker) => marker.markerId.value == 'delivery_location');
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('delivery_location'),
+          position: location,
+          infoWindow: InfoWindow(
             title: 'Delivery Location',
-            snippet: 'Tap to edit address',
+            snippet: _deliveryAddress,
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           onTap: () => _showAddressDialog(),
@@ -210,20 +277,49 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Enter Delivery Address'),
-        content: TextField(
-          controller: _addressController,
-          decoration: InputDecoration(
-            hintText: 'Enter the complete address...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        title: const Text('Edit Delivery Address'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _addressController,
+              decoration: InputDecoration(
+                labelText: 'Delivery Address',
+                hintText: 'Enter the complete address...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF22AAAE), width: 2),
+                ),
+              ),
+              maxLines: 3,
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF22AAAE), width: 2),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.grey, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You can also tap directly on the map to select a new location',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          maxLines: 3,
+          ],
         ),
         actions: [
           TextButton(
@@ -234,6 +330,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             onPressed: () {
               setState(() {
                 _deliveryAddress = _addressController.text;
+
+                // Update marker with new address
+                if (_deliveryLocation != null) {
+                  _markers.removeWhere((marker) => marker.markerId.value == 'delivery_location');
+                  _markers.add(
+                    Marker(
+                      markerId: const MarkerId('delivery_location'),
+                      position: _deliveryLocation!,
+                      infoWindow: InfoWindow(
+                        title: 'Delivery Location',
+                        snippet: _deliveryAddress,
+                      ),
+                      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                      onTap: () => _showAddressDialog(),
+                    ),
+                  );
+                }
               });
               Navigator.pop(context);
             },
@@ -242,7 +355,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Save'),
+            child: const Text('Update Address'),
           ),
         ],
       ),
@@ -260,12 +373,15 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vehicle: ${selectedVehicle['name']}', style: const TextStyle(fontSize: 16)),
-            Text('Price: ${selectedVehicle['price']}', style: const TextStyle(fontSize: 16)),
+            Text('Vehicle: ${selectedVehicle['name']}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            Text('Price: ${selectedVehicle['price']}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             Text('Capacity: ${selectedVehicle['capacity']}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 12),
+            const Text('Pickup:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            Text(_pickupAddress, style: const TextStyle(fontSize: 14)),
             const SizedBox(height: 8),
-            Text('Pickup: $_pickupAddress', style: const TextStyle(fontSize: 14)),
-            Text('Delivery: $_deliveryAddress', style: const TextStyle(fontSize: 14)),
+            const Text('Delivery:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            Text(_deliveryAddress, style: const TextStyle(fontSize: 14)),
           ],
         ),
         actions: [
@@ -278,10 +394,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Booking confirmed! Driver will arrive soon.'),
+                  content: Text('${selectedVehicle['name']} booked! Driver will arrive in ${selectedVehicle['time']}.'),
                   backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 4),
                 ),
               );
             },
@@ -290,7 +407,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Confirm'),
+            child: const Text('Confirm Booking'),
           ),
         ],
       ),
@@ -447,13 +564,34 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               Expanded(
                 child: GestureDetector(
                   onTap: _showAddressDialog,
-                  child: Text(
-                    _deliveryAddress,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2C2C2C),
-                    ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _deliveryAddress,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2C2C2C),
+                          ),
+                        ),
+                      ),
+                      if (_isGeocodingDelivery)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF22AAAE),
+                          ),
+                        )
+                      else
+                        const Icon(
+                          Icons.edit,
+                          size: 16,
+                          color: Color(0xFF22AAAE),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -693,11 +831,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   child: _buildLocationCard(),
                 ),
 
-                // Scrollable bottom panel
+                // Scrollable bottom panel (fully removable)
                 DraggableScrollableSheet(
                   initialChildSize: _panelHeight,
-                  minChildSize: _minPanelHeight,
-                  maxChildSize: _maxPanelHeight,
+                  minChildSize: _minPanelHeight, // 0% - fully removable
+                  maxChildSize: _maxPanelHeight, // 85% maximum
                   builder: (context, scrollController) {
                     return NotificationListener<DraggableScrollableNotification>(
                       onNotification: (notification) {
@@ -799,18 +937,64 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 ),
 
                 // Custom location button
-                Positioned(
-                  bottom: MediaQuery.of(context).size.height * _panelHeight + 20,
-                  right: 20,
-                  child: FloatingActionButton(
-                    mini: true,
-                    onPressed: _getCurrentLocation,
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF22AAAE),
-                    elevation: 8,
-                    child: const Icon(Icons.my_location),
+                if (_panelHeight > 0.1) // Only show when panel is visible
+                  Positioned(
+                    bottom: MediaQuery.of(context).size.height * _panelHeight + 20,
+                    right: 20,
+                    child: FloatingActionButton(
+                      mini: true,
+                      onPressed: _getCurrentLocation,
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF22AAAE),
+                      elevation: 8,
+                      child: const Icon(Icons.my_location),
+                    ),
                   ),
-                ),
+
+                // Show panel when fully hidden
+                if (_panelHeight < 0.1)
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22AAAE),
+                        borderRadius: BorderRadius.circular(50),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF22AAAE).withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          // Show panel by setting it to 40%
+                          setState(() {
+                            _panelHeight = 0.4;
+                          });
+                        },
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.keyboard_arrow_up, color: Colors.white, size: 24),
+                            SizedBox(width: 8),
+                            Text(
+                              'Choose Vehicle & Book',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
     );

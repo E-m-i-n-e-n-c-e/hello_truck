@@ -20,7 +20,6 @@ export class AddressService {
     const addressCount = await this.prisma.customerAddress.count({
       where: { customerId: userId },
     });
-
     const address = await this.prisma.customerAddress.create({
       data: {
         ...createAddressDto,
