@@ -161,7 +161,6 @@ class OnboardingTextField extends StatefulWidget {
   final bool obscureText;
   final TextInputType keyboardType;
   final Function(String)? onSubmitted;
-  final String? Function(String?)? validator;
   final int maxLines;
 
   const OnboardingTextField({
@@ -176,7 +175,6 @@ class OnboardingTextField extends StatefulWidget {
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.onSubmitted,
-    this.validator,
     this.maxLines = 1,
   });
 
@@ -253,7 +251,6 @@ class _OnboardingTextFieldState extends State<OnboardingTextField>
                 keyboardType: widget.keyboardType,
                 maxLines: widget.maxLines,
                 onFieldSubmitted: widget.onSubmitted,
-                validator: widget.validator,
                 decoration: InputDecoration(
                   labelText: widget.label,
                   hintText: widget.hint,
@@ -306,9 +303,6 @@ class _OnboardingTextFieldState extends State<OnboardingTextField>
                     ),
                   ),
                   filled: true,
-                  fillColor: _isFocused
-                      ? colorScheme.secondary.withValues(alpha: 0.05)
-                      : colorScheme.surface,
                 ),
               ),
             );

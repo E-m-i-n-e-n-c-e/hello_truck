@@ -53,12 +53,6 @@ class PersonalInfoStep extends StatelessWidget {
             hint: 'Enter your first name',
             icon: Icons.person_rounded,
             isRequired: true,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'First name is required';
-              }
-              return null;
-            },
             onSubmitted: (_) => controller.lastNameFocus.requestFocus(),
           ),
 

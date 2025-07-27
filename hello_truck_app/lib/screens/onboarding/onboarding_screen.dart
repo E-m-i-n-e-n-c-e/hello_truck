@@ -45,6 +45,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   Future<void> _nextStep() async {
     if (await _validateCurrentStep()) {
       if (_controller.currentStep < _controller.getTotalSteps() - 1) {
+        if (mounted) {
+          FocusScope.of(context).unfocus(); // Dismiss keyboard
+        }
         _controller.nextStep();
         _controller.pageController.nextPage(
           duration: const Duration(milliseconds: 500),
@@ -56,6 +59,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   void _previousStep() {
     if (_controller.currentStep > 0) {
+      if (mounted) {
+        FocusScope.of(context).unfocus(); // Dismiss keyboard
+      }
       _controller.previousStep();
       _controller.pageController.previousPage(
         duration: const Duration(milliseconds: 500),
@@ -81,8 +87,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         return true;
 
       case 2: // Business Details
-        if (!_controller.validateBusinessDetails()) {
-          _showError('Please complete all required business details');
+        final error = _controller.validateBusinessDetails();
+        if (error != null) {
+          _showError(error);
           return false;
         }
         return true;
@@ -170,46 +177,48 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_rounded,
-            color: colorScheme.onSurface,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            // Header with progress
-            OnboardingHeader(controller: _controller),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              // Header with progress
+              OnboardingHeader(controller: _controller),
 
-            // Content
-            Expanded(
-              child: PageView(
-                controller: _controller.pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: _getSteps().map((step) {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: step,
-                  );
-                }).toList(),
+              // Content
+              Expanded(
+                child: PageView(
+                  controller: _controller.pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: _getSteps().map((step) {
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Step content
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: MediaQuery.of(context).size.height -
+                                        MediaQuery.of(context).padding.top -
+                                        MediaQuery.of(context).padding.bottom -
+                                        180, // Adjust based on header and bottom section height
+                            ),
+                            child: step,
+                          ),
+                          // Bottom section with navigation
+                          OnboardingBottomSection(
+                            controller: _controller,
+                            onNext: _nextStep,
+                            onPrevious: _previousStep,
+                            onSubmit: _submitForm,
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
-
-            // Bottom section with navigation
-            OnboardingBottomSection(
-              controller: _controller,
-              onNext: _nextStep,
-              onPrevious: _previousStep,
-              onSubmit: _submitForm,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

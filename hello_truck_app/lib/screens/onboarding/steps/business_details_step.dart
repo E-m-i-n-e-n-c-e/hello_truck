@@ -105,15 +105,6 @@ class BusinessDetailsStep extends StatelessWidget {
               hint: 'Enter your GST number',
               icon: Icons.receipt_long_rounded,
               isRequired: true,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'GST number is required for business accounts';
-                }
-                if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(value)) {
-                  return 'Please enter a valid GST number';
-                }
-                return null;
-              },
               onSubmitted: (_) => controller.companyNameFocus.requestFocus(),
             ),
 
@@ -128,12 +119,6 @@ class BusinessDetailsStep extends StatelessWidget {
               hint: 'Enter your company name',
               icon: Icons.domain_rounded,
               isRequired: true,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Company name is required for business accounts';
-                }
-                return null;
-              },
               onSubmitted: (_) => controller.addressFocus.requestFocus(),
             ),
 
@@ -149,12 +134,6 @@ class BusinessDetailsStep extends StatelessWidget {
               icon: Icons.location_on_rounded,
               isRequired: true,
               maxLines: 3,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Business address is required for business accounts';
-                }
-                return null;
-              },
               onSubmitted: (_) => onNext(),
             ),
 

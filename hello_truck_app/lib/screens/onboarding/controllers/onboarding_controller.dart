@@ -143,20 +143,23 @@ class OnboardingController {
     return true;
   }
 
-  bool validateBusinessDetails() {
-    if (!_isBusiness) return true;
+  String? validateBusinessDetails() {
+    if (!_isBusiness) return null;
 
     final gstNumber = gstNumberController.text.trim();
     final companyName = companyNameController.text.trim();
     final address = addressController.text.trim();
 
     if (gstNumber.isEmpty || companyName.isEmpty || address.isEmpty) {
-      return false;
+      return 'Please fill all the required fields';
     }
 
     // Validate GST number format
-    return RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$')
-        .hasMatch(gstNumber);
+    if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(gstNumber)) {
+      return 'Please enter a valid GST number';
+    }
+
+    return null;
   }
 
   // Get GST details

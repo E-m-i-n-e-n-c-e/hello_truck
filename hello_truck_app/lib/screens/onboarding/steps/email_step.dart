@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hello_truck_app/screens/onboarding/controllers/onboarding_controller.dart';
 import 'package:hello_truck_app/screens/onboarding/widgets/onboarding_components.dart';
 
@@ -99,16 +100,18 @@ class EmailStep extends StatelessWidget {
                         children: [
                           Text(
                             'Email Verified Successfully',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: GoogleFonts.dmSans(
                               fontWeight: FontWeight.bold,
                               color: Colors.green.shade800,
+                              fontSize: Theme.of(context).textTheme.titleMedium?.fontSize,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             controller.userEmail!,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: GoogleFonts.dmSans(
                               color: Colors.green.shade700,
+                              fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -138,24 +141,22 @@ class EmailStep extends StatelessWidget {
                       boxShadow: [
                         BoxShadow(
                           color: colorScheme.shadow.withValues(alpha: 0.1),
-                          blurRadius: 4,
+                          blurRadius: 12,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset(
-                        'assets/images/google_logo.png',
-                        width: 24,
-                        height: 24,
-                      ),
+                    child: Image.asset(
+                      'assets/images/google_logo.png',
+                      width: 28,
+                      height: 28,
                     ),
                   ),
                   label: Text(
-                    'Continue with Google',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    'Connect with Google',
+                    style: GoogleFonts.dmSans(
                       color: colorScheme.onSurface.withValues(alpha: 0.8),
+                      fontSize: Theme.of(context).textTheme.titleMedium?.fontSize,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
