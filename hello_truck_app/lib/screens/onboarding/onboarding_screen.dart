@@ -53,6 +53,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOutCubic,
         );
+        _controller.resetAnimations();
       }
     }
   }
@@ -67,6 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOutCubic,
       );
+      _controller.resetAnimations();
     }
   }
 
@@ -75,6 +77,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       case 0: // Personal Info
         if (!_controller.validatePersonalInfo()) {
           _showError('Please enter your first name');
+          _controller.shake();
           return false;
         }
         return true;
@@ -82,6 +85,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       case 1: // Email
         if (!_controller.validateEmail()) {
           _showError('Please enter a valid email address');
+          _controller.shake();
           return false;
         }
         return true;
@@ -90,6 +94,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         final error = _controller.validateBusinessDetails();
         if (error != null) {
           _showError(error);
+          _controller.shake();
           return false;
         }
         return true;

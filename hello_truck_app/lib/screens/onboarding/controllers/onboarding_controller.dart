@@ -101,6 +101,18 @@ class OnboardingController {
     _scaleAnimationController.forward();
   }
 
+  void resetAnimations() {
+    _animationController.reset();
+    _slideAnimationController.reset();
+    _scaleAnimationController.reset();
+    startAnimations();
+  }
+
+  void shake() {
+    _scaleAnimationController.reset();
+    _scaleAnimationController.forward();
+  }
+
   // Navigation
   void nextStep() {
     if (_currentStep < totalSteps - 1) {
