@@ -50,8 +50,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         }
         _controller.nextStep();
         _controller.pageController.nextPage(
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOutCubic,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
         );
         _controller.resetAnimations();
       }
@@ -65,8 +65,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       }
       _controller.previousStep();
       _controller.pageController.previousPage(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
       );
       _controller.resetAnimations();
     }

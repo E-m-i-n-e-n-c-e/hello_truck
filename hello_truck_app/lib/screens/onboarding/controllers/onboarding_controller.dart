@@ -62,43 +62,60 @@ class OnboardingController {
 
   void _initializeAnimations(TickerProvider vsync) {
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600), // Reduced from 1000ms
       vsync: vsync,
     );
 
     _slideAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 400), // Reduced from 800ms
       vsync: vsync,
     );
 
     _scaleAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 300), // Reduced from 600ms
       vsync: vsync,
     );
 
     fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOutQuart),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut), // Simpler curve
     );
 
     slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.2), // Reduced from 0.3
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _slideAnimationController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeOut, // Simpler curve
     ));
 
-    scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _scaleAnimationController, curve: Curves.elasticOut),
+    scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate( // Reduced from 0.8
+      CurvedAnimation(parent: _scaleAnimationController, curve: Curves.easeOut), // Simpler curve
     );
 
     startAnimations();
   }
 
-  void startAnimations() {
+ void startAnimations() {
+    // Start animations sequentially with slight delays to reduce load
     _animationController.forward();
-    _slideAnimationController.forward();
-    _scaleAnimationController.forward();
+
+    // Start slide animation with a small delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      try {
+        _slideAnimationController.forward();
+      } catch (e) {
+        // Controller might be disposed, ignore
+      }
+    });
+
+    // Start scale animation with a larger delay
+    Future.delayed(const Duration(milliseconds: 200), () {
+      try {
+        _scaleAnimationController.forward();
+      } catch (e) {
+        // Controller might be disposed, ignore
+      }
+    });
   }
 
   void resetAnimations() {

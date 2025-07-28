@@ -237,7 +237,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Widget _buildSendOtpButton(TextTheme textTheme, ColorScheme colorScheme, API? api) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 80.0),
+      padding: const EdgeInsets.only(bottom: 40.0),
       child: ValueListenableBuilder<bool>(
         valueListenable: _loadingState,
         builder: (context, isLoading, child) {
