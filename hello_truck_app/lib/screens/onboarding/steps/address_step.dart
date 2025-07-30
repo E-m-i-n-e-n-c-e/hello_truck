@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -88,7 +90,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
     // Move camera to new location
     if (_mapController != null) {
       _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(location, 16.0),
+        CameraUpdate.newLatLng(location),
       );
     }
   }
@@ -176,6 +178,11 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       zoomControlsEnabled: false,
                       compassEnabled: false,
                       tiltGesturesEnabled: false,
+                      gestureRecognizers: {
+                        Factory<OneSequenceGestureRecognizer>(
+                          () => EagerGestureRecognizer(),
+                        ),
+                      },
                     ),
 
                     // Loading indicator
