@@ -123,7 +123,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
             child: OnboardingStepIcon(
               controller: widget.controller,
               icon: Icons.location_on_rounded,
-              color: colorScheme.primary,
+              color: colorScheme.secondary,
             ),
           ),
 
@@ -203,7 +203,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       child: FloatingActionButton.small(
                         onPressed: _initializeLocationAndMap,
                         backgroundColor: colorScheme.surface,
-                        foregroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.secondary.withValues(alpha: 0.8),
                         child: const Icon(Icons.my_location),
                       ),
                     ),
