@@ -77,11 +77,11 @@ class LocationService {
         final placemark = placemarks.first;
 
         return {
-          'addressLine1': placemark.name ?? placemark.street ?? 'Unknown Address',
-          'landmark': placemark.subLocality,
+          'addressLine1': '${placemark.name}, ${placemark.subLocality}, ${placemark.locality}, ${placemark.administrativeArea}',
+          'landmark': placemark.subLocality ?? '',
           'pincode': placemark.postalCode ?? '',
-          'city': placemark.locality ?? placemark.subAdministrativeArea ?? '',
-          'district': placemark.subAdministrativeArea ?? placemark.administrativeArea ?? '',
+          'city': placemark.locality ??  '',
+          'district': placemark.subAdministrativeArea ?? '',
           'state': placemark.administrativeArea ?? '',
           'latitude': latitude,
           'longitude': longitude,

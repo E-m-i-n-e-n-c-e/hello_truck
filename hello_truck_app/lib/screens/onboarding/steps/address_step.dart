@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hello_truck_app/screens/onboarding/controllers/onboarding_controller.dart';
@@ -173,10 +174,10 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       markers: _markers,
                       onTap: _onMapTap,
                       myLocationEnabled: true,
-                      myLocationButtonEnabled: false,
+                      myLocationButtonEnabled: true,
                       mapType: MapType.normal,
-                      zoomControlsEnabled: false,
-                      compassEnabled: false,
+                      zoomControlsEnabled: true,
+                      compassEnabled: true,
                       tiltGesturesEnabled: false,
                       gestureRecognizers: {
                         Factory<OneSequenceGestureRecognizer>(
@@ -195,18 +196,6 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                           ),
                         ),
                       ),
-
-                    // Current location button
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: FloatingActionButton.small(
-                        onPressed: _initializeLocationAndMap,
-                        backgroundColor: colorScheme.surface,
-                        foregroundColor: colorScheme.secondary.withValues(alpha: 0.8),
-                        child: const Icon(Icons.my_location),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -217,11 +206,6 @@ class _AddressStepState extends ConsumerState<AddressStep> {
 
           // Address Form Fields
           _buildAddressForm(context),
-
-          const SizedBox(height: 24),
-
-          // Default Address Toggle
-          _buildDefaultAddressToggle(context),
 
           const SizedBox(height: 40),
         ],
@@ -260,156 +244,88 @@ class _AddressStepState extends ConsumerState<AddressStep> {
         const SizedBox(height: 16),
 
         // Pincode and City Row
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: OnboardingTextField(
-                controller: widget.controller,
-                textController: widget.controller.pincodeController,
-                focusNode: widget.controller.pincodeFocus,
-                label: 'Pincode',
-                hint: '560001',
-                icon: Icons.pin_drop_rounded,
-                isRequired: true,
-                keyboardType: TextInputType.number,
-                onSubmitted: (_) => widget.controller.cityFocus.requestFocus(),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 3,
-              child: OnboardingTextField(
-                controller: widget.controller,
-                textController: widget.controller.cityController,
-                focusNode: widget.controller.cityFocus,
-                label: 'City',
-                hint: 'City name',
-                icon: Icons.location_city_rounded,
-                isRequired: true,
-                onSubmitted: (_) => widget.controller.districtFocus.requestFocus(),
-              ),
-            ),
-          ],
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.pincodeController,
+          focusNode: widget.controller.pincodeFocus,
+          label: 'Pincode',
+          hint: 'Enter Pincode',
+          icon: Icons.pin_drop_rounded,
+          isRequired: true,
+          keyboardType: TextInputType.number,
+          onSubmitted: (_) => widget.controller.cityFocus.requestFocus(),
+        ),
+
+        const SizedBox(height: 16),
+
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.cityController,
+          focusNode: widget.controller.cityFocus,
+          label: 'City',
+          hint: 'City name',
+          icon: Icons.location_city_rounded,
+          isRequired: true,
+          onSubmitted: (_) => widget.controller.districtFocus.requestFocus(),
         ),
 
         const SizedBox(height: 16),
 
         // District and State Row
-        Row(
-          children: [
-            Expanded(
-              child: OnboardingTextField(
-                controller: widget.controller,
-                textController: widget.controller.districtController,
-                focusNode: widget.controller.districtFocus,
-                label: 'District',
-                hint: 'District name',
-                icon: Icons.map_rounded,
-                isRequired: true,
-                onSubmitted: (_) => widget.controller.stateFocus.requestFocus(),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: OnboardingTextField(
-                controller: widget.controller,
-                textController: widget.controller.stateController,
-                focusNode: widget.controller.stateFocus,
-                label: 'State',
-                hint: 'State name',
-                icon: Icons.public_rounded,
-                isRequired: true,
-                onSubmitted: (_) => widget.controller.phoneNumberFocus.requestFocus(),
-              ),
-            ),
-          ],
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.districtController,
+          focusNode: widget.controller.districtFocus,
+          label: 'District',
+          hint: 'District name',
+          icon: Icons.map_rounded,
+          isRequired: true,
+          onSubmitted: (_) => widget.controller.stateFocus.requestFocus(),
         ),
 
         const SizedBox(height: 16),
 
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.stateController,
+          focusNode: widget.controller.stateFocus,
+          label: 'State',
+          hint: 'State name',
+          icon: Icons.public_rounded,
+          isRequired: true,
+          onSubmitted: (_) => widget.controller.phoneNumberFocus.requestFocus(),
+        ),
+
+        const SizedBox(height: 16),
+        Divider(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
+        const SizedBox(height: 16),
+
+
         // Phone Number and Label Row
-        Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: OnboardingTextField(
-                controller: widget.controller,
-                textController: widget.controller.phoneNumberController,
-                focusNode: widget.controller.phoneNumberFocus,
-                label: 'Phone (Optional)',
-                hint: '+91 98765 43210',
-                icon: Icons.phone_rounded,
-                keyboardType: TextInputType.phone,
-                onSubmitted: (_) => widget.controller.addressLabelFocus.requestFocus(),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 2,
-              child: OnboardingTextField(
-                controller: widget.controller,
-                textController: widget.controller.addressLabelController,
-                focusNode: widget.controller.addressLabelFocus,
-                label: 'Label (Optional)',
-                hint: 'Home, Office',
-                icon: Icons.label_rounded,
-                onSubmitted: (_) => widget.onNext(),
-              ),
-            ),
-          ],
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.phoneNumberController,
+          focusNode: widget.controller.phoneNumberFocus,
+          label: 'Phone (Optional)',
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+          hint: 'Enter Phone Number',
+          icon: Icons.phone_rounded,
+          keyboardType: TextInputType.phone,
+          onSubmitted: (_) => widget.controller.addressLabelFocus.requestFocus(),
+        ),
+
+        const SizedBox(height: 16),
+
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.addressLabelController,
+          focusNode: widget.controller.addressLabelFocus,
+          label: 'Label (Optional)',
+          hint: 'Home, Office, etc.',
+          icon: Icons.label_rounded,
+          onSubmitted: (_) => widget.onNext(),
         ),
       ],
-    );
-  }
-
-  Widget _buildDefaultAddressToggle(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.surfaceContainerLowest,
-            colorScheme.surfaceContainer.withValues(alpha: 0.5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.star_rounded,
-            color: colorScheme.primary,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Set as Default Address',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Use this address as your primary location',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
