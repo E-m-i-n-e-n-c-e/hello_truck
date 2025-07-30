@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:hello_truck_app/services/location_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'dart:convert';
+import 'package:hello_truck_app/providers/location_providers.dart';
 
 // Model for Google Places prediction
 class PlacePrediction {
@@ -28,16 +30,15 @@ class PlacePrediction {
   }
 }
 
-class MapScreen extends StatefulWidget {
+class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
+class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateMixin {
   GoogleMapController? _mapController;
-  Position? _currentPosition;
   LatLng? _deliveryLocation;
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
@@ -52,7 +53,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   // Panel animation
   late AnimationController _panelController;
-  late Animation<double> _panelAnimation;
   double _panelHeight = 0.3;
   final double _minPanelHeight = 0.3;
   final double _maxPanelHeight = 0.8;
@@ -104,13 +104,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _panelAnimation = Tween<double>(
-      begin: _minPanelHeight,
-      end: _maxPanelHeight,
-    ).animate(CurvedAnimation(
-      parent: _panelController,
-      curve: Curves.easeInOut,
-    ));
     _getCurrentLocation();
   }
 
@@ -170,30 +163,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return null;
   }
 
-  // Get address from coordinates using reverse geocoding
-  Future<String> _getAddressFromCoordinates(LatLng position) async {
-    try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      if (placemarks.isNotEmpty) {
-        final placemark = placemarks.first;
-        return '${placemark.name}, ${placemark.locality}, ${placemark.administrativeArea}';
-      }
-    } catch (e) {
-      debugPrint('Error getting address: $e');
-    }
-    return 'Unknown location';
-  }
-
   // Get route polyline between two points
   Future<void> _getRoutePolyline() async {
-    if (_currentPosition == null || _deliveryLocation == null) return;
+    final currentPosition = ref.read(currentPositionStreamProvider).value;
+    if (currentPosition == null || _deliveryLocation == null) return;
 
     try {
       final String url = 'https://maps.googleapis.com/maps/api/directions/json?'
-          'origin=${_currentPosition!.latitude},${_currentPosition!.longitude}&'
+          'origin=${currentPosition.latitude},${currentPosition.longitude}&'
           'destination=${_deliveryLocation!.latitude},${_deliveryLocation!.longitude}&'
           'key=$_googleApiKey';
 
@@ -233,23 +210,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   void _fitMarkersInView() {
-    if (_mapController == null || _currentPosition == null || _deliveryLocation == null) return;
+    final currentPosition = ref.read(currentPositionStreamProvider).value;
+    if (_mapController == null || currentPosition == null || _deliveryLocation == null) return;
 
     final LatLngBounds bounds = LatLngBounds(
       southwest: LatLng(
-        _currentPosition!.latitude < _deliveryLocation!.latitude
-            ? _currentPosition!.latitude
+        currentPosition.latitude < _deliveryLocation!.latitude
+            ? currentPosition.latitude
             : _deliveryLocation!.latitude,
-        _currentPosition!.longitude < _deliveryLocation!.longitude
-            ? _currentPosition!.longitude
+        currentPosition.longitude < _deliveryLocation!.longitude
+            ? currentPosition.longitude
             : _deliveryLocation!.longitude,
       ),
       northeast: LatLng(
-        _currentPosition!.latitude > _deliveryLocation!.latitude
-            ? _currentPosition!.latitude
+        currentPosition.latitude > _deliveryLocation!.latitude
+            ? currentPosition.latitude
             : _deliveryLocation!.latitude,
-        _currentPosition!.longitude > _deliveryLocation!.longitude
-            ? _currentPosition!.longitude
+        currentPosition.longitude > _deliveryLocation!.longitude
+            ? currentPosition.longitude
             : _deliveryLocation!.longitude,
       ),
     );
@@ -261,36 +239,30 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   Future<void> _getCurrentLocation() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _showLocationServiceDialog();
+      final permission = await ref.read(locationServiceProvider).checkAndRequestPermissions();
+      if (permission == LocationPermissionStatus.disabled) {
+        _showLocationServiceDisabledDialog();
         return;
       }
 
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _showPermissionDeniedDialog();
-          return;
-        }
+      if (permission == LocationPermissionStatus.denied) {
+        _showPermissionDeniedDialog();
+        return;
       }
 
-      if (permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermissionStatus.deniedForever) {
         _showPermissionDeniedForeverDialog();
         return;
       }
 
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      Position position = await ref.read(currentPositionStreamProvider.future);
 
-      String pickupAddr = await _getAddressFromCoordinates(
-        LatLng(position.latitude, position.longitude),
+      String pickupAddr = await ref.read(locationServiceProvider).getAddressFromLatLng(
+        position.latitude,
+        position.longitude,
       );
 
       setState(() {
-        _currentPosition = position;
         _pickupAddress = pickupAddr;
         _isLoading = false;
         _markers.add(
@@ -316,18 +288,21 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   void _adjustMapZoom() {
-    if (_mapController == null || _currentPosition == null) return;
+    final currentPosition = ref.read(currentPositionStreamProvider).value;
+    if (_mapController == null || currentPosition == null) return;
 
     _mapController!.animateCamera(
       CameraUpdate.newLatLngZoom(
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        LatLng(currentPosition.latitude, currentPosition.longitude),
         15.0,
       ),
     );
   }
 
   void _onMapTapped(LatLng location) async {
-    String address = await _getAddressFromCoordinates(location);
+    final locationService = ref.read(locationServiceProvider);
+    String address = await locationService.getAddressFromLatLng(location.latitude, location.longitude);
+
     setState(() {
       _deliveryLocation = location;
       _deliveryAddress = address;
@@ -376,18 +351,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   Future<void> _updatePickupLocation(LatLng location, String address) async {
     setState(() {
-      _currentPosition = Position(
-        latitude: location.latitude,
-        longitude: location.longitude,
-        timestamp: DateTime.now(),
-        accuracy: 0,
-        altitude: 0,
-        altitudeAccuracy: 0,
-        heading: 0,
-        headingAccuracy: 0,
-        speed: 0,
-        speedAccuracy: 0,
-      );
       _pickupAddress = address;
 
       _markers.removeWhere((marker) => marker.markerId.value == 'pickup_location');
@@ -787,7 +750,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   // Error dialogs
-  void _showLocationServiceDialog() {
+  void _showLocationServiceDisabledDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -869,9 +832,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final currentPositionAsync = ref.watch(currentPositionStreamProvider);
+    final isLoading = currentPositionAsync.isLoading;
+    final currentPosition = currentPositionAsync.value;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: _isLoading
+      body: isLoading || _isLoading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -898,8 +864,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     _mapController = controller;
                   },
                   initialCameraPosition: CameraPosition(
-                    target: _currentPosition != null
-                        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                    target: currentPosition != null
+                        ? LatLng(currentPosition.latitude, currentPosition.longitude)
                         : const LatLng(28.6139, 77.2090),
                     zoom: 14.0,
                   ),
