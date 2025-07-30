@@ -37,7 +37,7 @@ Future<void> updateCustomerProfile(
 }) async {
   await api.put('/customer/profile', data: {
     if (firstName?.isNotEmpty ?? false) 'firstName': firstName,
-    if (lastName?.isNotEmpty ?? false) 'lastName': lastName,
+    if (lastName != null) 'lastName': lastName,
     if (googleIdToken?.isNotEmpty ?? false) 'googleIdToken': googleIdToken,
   });
 }

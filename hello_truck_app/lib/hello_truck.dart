@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/screens/home_screen.dart';
-import 'package:hello_truck_app/screens/profile_screen.dart';
+import 'package:hello_truck_app/screens/profile/profile_screen.dart';
 import 'package:hello_truck_app/screens/map_screen.dart';
 import 'package:hello_truck_app/screens/onboarding/onboarding_screen.dart';
 import 'package:hello_truck_app/widgets/bottom_navbar.dart';
