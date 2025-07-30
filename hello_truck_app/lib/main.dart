@@ -4,6 +4,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/hello_truck.dart';
 import 'package:hello_truck_app/login_page.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/splash_screen.dart';
 
 void main() {
@@ -39,6 +40,9 @@ class MyApp extends ConsumerWidget {
     final api = ref.watch(apiProvider);
     final isLoading = authState.isLoading || api.isLoading;
     final isAnimationComplete = ref.watch(AnimatedSplashScreenState.isAnimationComplete);
+
+    // Background initialization
+    ref.read(currentPositionStreamProvider);
 
     if (isLoading || !isAnimationComplete) {
       return AnimatedSplashScreen(

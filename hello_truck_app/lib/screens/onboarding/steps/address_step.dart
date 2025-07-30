@@ -9,6 +9,7 @@ import 'package:hello_truck_app/screens/onboarding/widgets/onboarding_components
 import 'package:hello_truck_app/screens/onboarding/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/services/location_service.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
+import 'package:hello_truck_app/widgets/address_search_widget.dart';
 
 class AddressStep extends ConsumerStatefulWidget {
   final OnboardingController controller;
@@ -27,7 +28,6 @@ class AddressStep extends ConsumerStatefulWidget {
 class _AddressStepState extends ConsumerState<AddressStep> {
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
-  bool _isLoadingAddress = false;
 
   @override
   void initState() {
@@ -41,19 +41,16 @@ class _AddressStepState extends ConsumerState<AddressStep> {
 
     if (permission == LocationPermissionStatus.granted) {
       try {
-        final position = await locationService.getCurrentPosition();
-        await _updateLocationAndAddress(LatLng(position.latitude, position.longitude));
-      } catch (e) {
+        final position = await ref.read(currentPositionStreamProvider.future);
+          await Future.delayed(const Duration(milliseconds: 200));
+          await _updateLocationAndAddress(LatLng(position.latitude, position.longitude),zoom: 16);
+        } catch (e) {
         debugPrint('Error getting current position: $e');
       }
     }
   }
 
-  Future<void> _updateLocationAndAddress(LatLng location) async {
-    setState(() {
-      _isLoadingAddress = true;
-    });
-
+  Future<void> _updateLocationAndAddress(LatLng location,{double? zoom}) async {
     // Update marker
     _markers.clear();
     _markers.add(
@@ -84,20 +81,16 @@ class _AddressStepState extends ConsumerState<AddressStep> {
     widget.controller.districtController.text = addressData['district'] ?? '';
     widget.controller.stateController.text = addressData['state'] ?? '';
 
-    setState(() {
-      _isLoadingAddress = false;
-    });
-
-    // Move camera to new location
+    // Move camera to location
     if (_mapController != null) {
       _mapController!.animateCamera(
-        CameraUpdate.newLatLng(location),
+        zoom != null ? CameraUpdate.newLatLngZoom(location, zoom) : CameraUpdate.newLatLng(location),
       );
     }
   }
 
   Future<BitmapDescriptor> _createCustomMarkerIcon() async {
-    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
   }
 
   void _onMapTap(LatLng location) {
@@ -106,6 +99,22 @@ class _AddressStepState extends ConsumerState<AddressStep> {
 
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
+  }
+
+  // Show address search modal
+  void _showAddressSearchModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddressSearchWidget(
+        currentAddress: widget.controller.addressLine1Controller.text,
+        onLocationSelected: (LatLng location, String address) {
+          _updateLocationAndAddress(location);
+        },
+        title: 'Search for Address',
+      ),
+    );
   }
 
   @override
@@ -140,7 +149,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
 
           OnboardingStepDescription(
             controller: widget.controller,
-            description: 'Tap on the map or drag the marker to select your precise location. The address fields will be automatically filled.',
+            description: 'Tap the search icon to search for your address and tap on the map or drag the marker to select your precise location.',
           ),
 
           const SizedBox(height: 32),
@@ -174,9 +183,9 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       markers: _markers,
                       onTap: _onMapTap,
                       myLocationEnabled: true,
-                      myLocationButtonEnabled: true,
+                      myLocationButtonEnabled: false, // Disable default button
                       mapType: MapType.normal,
-                      zoomControlsEnabled: true,
+                      zoomControlsEnabled: false, //Disable default zoom controls
                       compassEnabled: true,
                       tiltGesturesEnabled: false,
                       gestureRecognizers: {
@@ -186,16 +195,96 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       },
                     ),
 
-                    // Loading indicator
-                    if (_isLoadingAddress)
-                      Container(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    // Floating search icon
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                        child: InkWell(
+                          onTap: _showAddressSearchModal,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 40,
+                            height: 36,
+                            alignment: Alignment.center,
+                            child: Icon(Icons.search_rounded, size: 20, color: Theme.of(context).colorScheme.primary),
                           ),
                         ),
                       ),
+                    ),
+
+                    // Custom My Location button (bottom left)
+                    Positioned(
+                      bottom: 12,
+                      left: 12,
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () async {
+                            final position = await ref.read(currentPositionStreamProvider.future);
+                            await _updateLocationAndAddress(LatLng(position.latitude, position.longitude));
+                          },
+                          child: Container(
+                            width: 40,
+                            height: 36,
+                            alignment: Alignment.center,
+                            child:  Icon(Icons.my_location_rounded, size: 20, color: Theme.of(context).colorScheme.primary),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    Positioned(
+                      right: 12,
+                      bottom: 12,
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                _mapController?.moveCamera(CameraUpdate.zoomIn());
+                              },
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                              child: Container(
+                                width: 40,
+                                height: 36,
+                                alignment: Alignment.center,
+                                child: Icon(Icons.add, size: 20, color: Theme.of(context).colorScheme.primary),
+                              ),
+                            ),
+                            const Divider(height: 1, thickness: 1, color: Color(0xFFDDDDDD)),
+                            InkWell(
+                              onTap: () {
+                                _mapController?.moveCamera(CameraUpdate.zoomOut());
+                              },
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(12),
+                                bottomRight: Radius.circular(12),
+                              ),
+                              child: Container(
+                                width: 40,
+                                height: 36,
+                                alignment: Alignment.center,
+                                child: Icon(Icons.remove, size: 20, color: Theme.of(context).colorScheme.primary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

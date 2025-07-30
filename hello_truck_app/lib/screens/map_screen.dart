@@ -2,33 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:hello_truck_app/services/location_service.dart';
-import 'package:http/http.dart' as http;
-import 'package:uuid/uuid.dart';
-import 'dart:convert';
 import 'package:hello_truck_app/providers/location_providers.dart';
-
-// Model for Google Places prediction
-class PlacePrediction {
-  final String description;
-  final String placeId;
-  final String? structuredFormat;
-
-  PlacePrediction({
-    required this.description,
-    required this.placeId,
-    this.structuredFormat,
-  });
-
-  factory PlacePrediction.fromJson(Map<String, dynamic> json) {
-    return PlacePrediction(
-      description: json['description'] ?? '',
-      placeId: json['place_id'] ?? '',
-      structuredFormat: json['structured_formatting']?['main_text'],
-    );
-  }
-}
+import 'package:hello_truck_app/widgets/address_search_widget.dart';
+import 'package:hello_truck_app/services/google_places_service.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -47,9 +24,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   String? _deliveryAddress;
   int _selectedVehicleIndex = 1;
   bool _showVehiclePanel = false;
-
-  // Google API key
-  final String _googleApiKey = 'AIzaSyBqTOs9JWbrHqOIO10oGKpLhuvou37S6Aw';
 
   // Panel animation
   late AnimationController _panelController;
@@ -113,97 +87,33 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     super.dispose();
   }
 
-  // Google Places API search
-  Future<List<PlacePrediction>> _searchPlaces(String query) async {
-    if (query.isEmpty) return [];
-
-    final String sessionToken = const Uuid().v4();
-    final String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?'
-        'input=${Uri.encodeComponent(query)}&'
-        'key=$_googleApiKey&'
-        'sessiontoken=$sessionToken&'
-        'components=country:in'; // Restrict to India
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if (data['status'] == 'OK') {
-          final List<dynamic> predictions = data['predictions'];
-          return predictions
-              .map((prediction) => PlacePrediction.fromJson(prediction))
-              .toList();
-        }
-      }
-    } catch (e) {
-      debugPrint('Error searching places: $e');
-    }
-    return [];
-  }
-
-  // Get place details from place ID
-  Future<LatLng?> _getPlaceDetails(String placeId) async {
-    final String url = 'https://maps.googleapis.com/maps/api/place/details/json?'
-        'place_id=$placeId&'
-        'fields=geometry&'
-        'key=$_googleApiKey';
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if (data['status'] == 'OK') {
-          final location = data['result']['geometry']['location'];
-          return LatLng(location['lat'], location['lng']);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error getting place details: $e');
-    }
-    return null;
-  }
-
   // Get route polyline between two points
   Future<void> _getRoutePolyline() async {
     final currentPosition = ref.read(currentPositionStreamProvider).value;
     if (currentPosition == null || _deliveryLocation == null) return;
 
     try {
-      final String url = 'https://maps.googleapis.com/maps/api/directions/json?'
-          'origin=${currentPosition.latitude},${currentPosition.longitude}&'
-          'destination=${_deliveryLocation!.latitude},${_deliveryLocation!.longitude}&'
-          'key=$_googleApiKey';
+      final polylineCoordinates = await GooglePlacesService.getRoutePolyline(
+        LatLng(currentPosition.latitude, currentPosition.longitude),
+        _deliveryLocation!,
+      );
 
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-
-        if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
-          final String encodedPolyline = data['routes'][0]['overview_polyline']['points'];
-          final PolylinePoints polylinePoints = PolylinePoints();
-          final List<PointLatLng> result = polylinePoints.decodePolyline(encodedPolyline);
-
-          final List<LatLng> polylineCoordinates = result
-              .map((point) => LatLng(point.latitude, point.longitude))
-              .toList();
-
-          setState(() {
-            _polylines.clear();
-            _polylines.add(
-              Polyline(
-                polylineId: const PolylineId('route'),
-                points: polylineCoordinates,
-                color: const Color(0xFF22AAAE),
-                width: 5,
-                patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-              ),
-            );
-          });
+      if (polylineCoordinates != null) {
+        setState(() {
+          _polylines.clear();
+          _polylines.add(
+            Polyline(
+              polylineId: const PolylineId('route'),
+              points: polylineCoordinates,
+              color: const Color(0xFF22AAAE),
+              width: 5,
+              patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+            ),
+          );
+        });
 
           _fitMarkersInView();
         }
-      }
     } catch (e) {
       debugPrint('Error getting route: $e');
     }
@@ -333,8 +243,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddressSearchWidget(
-        isPickup: isPickup,
-        googleApiKey: _googleApiKey,
         currentAddress: isPickup ? _pickupAddress : (_deliveryAddress ?? ''),
         onLocationSelected: (LatLng location, String address) {
           if (isPickup) {
@@ -343,8 +251,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             _updateDeliveryLocation(location, address);
           }
         },
-        searchPlaces: _searchPlaces,
-        getPlaceDetails: _getPlaceDetails,
+        title: isPickup ? 'Set Pickup Location' : 'Set Drop Location',
       ),
     );
   }
@@ -1003,271 +910,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 ),
               ],
             ),
-    );
-  }
-}
-
-// Separate widget for address search with working Google Places
-class AddressSearchWidget extends StatefulWidget {
-  final bool isPickup;
-  final String googleApiKey;
-  final String currentAddress;
-  final Function(LatLng, String) onLocationSelected;
-  final Future<List<PlacePrediction>> Function(String) searchPlaces;
-  final Future<LatLng?> Function(String) getPlaceDetails;
-
-  const AddressSearchWidget({
-    super.key,
-    required this.isPickup,
-    required this.googleApiKey,
-    required this.currentAddress,
-    required this.onLocationSelected,
-    required this.searchPlaces,
-    required this.getPlaceDetails,
-  });
-
-  @override
-  State<AddressSearchWidget> createState() => _AddressSearchWidgetState();
-}
-
-class _AddressSearchWidgetState extends State<AddressSearchWidget> {
-  final TextEditingController _controller = TextEditingController();
-  List<PlacePrediction> _predictions = [];
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.text = widget.currentAddress;
-    _controller.addListener(_onSearchChanged);
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_onSearchChanged);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onSearchChanged() {
-    if (_controller.text.isNotEmpty) {
-      _searchPlaces(_controller.text);
-    } else {
-      setState(() {
-        _predictions.clear();
-      });
-    }
-  }
-
-  Future<void> _searchPlaces(String query) async {
-    if (query.length < 3) {
-      setState(() {
-        _predictions.clear();
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final predictions = await widget.searchPlaces(query);
-      setState(() {
-        _predictions = predictions;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _predictions.clear();
-      });
-    }
-  }
-
-  Future<void> _onPredictionTapped(PlacePrediction prediction) async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    final LatLng? location = await widget.getPlaceDetails(prediction.placeId);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (location != null) {
-      widget.onLocationSelected(location, prediction.description);
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            width: 50,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back),
-                ),
-                Text(
-                  widget.isPickup ? 'Set Pickup Location' : 'Set Drop Location',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Search field
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: 'Search for location...',
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF22AAAE)),
-                suffixIcon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFF22AAAE),
-                          ),
-                        ),
-                      )
-                    : _controller.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _controller.clear();
-                              setState(() {
-                                _predictions.clear();
-                              });
-                            },
-                          )
-                        : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF22AAAE), width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              onSubmitted: (value) {
-                if (value.isNotEmpty) {
-                  _searchPlaces(value);
-                }
-              },
-            ),
-          ),
-
-          // Results
-          Expanded(
-            child: _predictions.isEmpty && !_isLoading
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Start typing to search for locations',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _predictions.length,
-                    itemBuilder: (context, index) {
-                      final prediction = _predictions[index];
-                      return InkWell(
-                        onTap: () => _onPredictionTapped(prediction),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.location_on, color: Colors.grey),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      prediction.structuredFormat ?? prediction.description.split(',').first,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    if (prediction.structuredFormat != null)
-                                      const SizedBox(height: 2),
-                                    Text(
-                                      prediction.description,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 14,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.north_west, color: Colors.grey, size: 16),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
     );
   }
 }
