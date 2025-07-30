@@ -140,7 +140,7 @@ class _EmailLinkDialogState extends ConsumerState<EmailLinkDialog> {
                         boxShadow: [
                           BoxShadow(
                             color: Colors.green.withValues(alpha: 0.3),
-                            blurRadius: 8,
+                            blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -211,7 +211,7 @@ class _EmailLinkDialogState extends ConsumerState<EmailLinkDialog> {
                     boxShadow: [
                       BoxShadow(
                         color: colorScheme.shadow.withValues(alpha: 0.1),
-                        blurRadius: 8,
+                        blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -220,8 +220,8 @@ class _EmailLinkDialogState extends ConsumerState<EmailLinkDialog> {
                     borderRadius: BorderRadius.circular(4),
                     child: Image.asset(
                       'assets/images/google_logo.png',
-                      width: 20,
-                      height: 20,
+                      width: 24,
+                      height: 24,
                     ),
                   ),
                 ),
