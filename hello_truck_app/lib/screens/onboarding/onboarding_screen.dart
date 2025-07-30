@@ -9,6 +9,7 @@ import 'package:hello_truck_app/screens/onboarding/widgets/onboarding_bottom_sec
 import 'package:hello_truck_app/screens/onboarding/steps/personal_info_step.dart';
 import 'package:hello_truck_app/screens/onboarding/steps/email_step.dart';
 import 'package:hello_truck_app/screens/onboarding/steps/business_details_step.dart';
+import 'package:hello_truck_app/screens/onboarding/steps/address_step.dart';
 import 'package:hello_truck_app/screens/onboarding/steps/review_step.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -99,6 +100,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         }
         return true;
 
+      case 3: // Address
+        if (!_controller.validateAddressStep()) {
+          _showError('Please complete all required address fields and select a location');
+          _controller.shake();
+          return false;
+        }
+        return true;
+
       default:
         return true;
     }
@@ -111,6 +120,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     try {
       final api = await ref.read(apiProvider.future);
 
+      // Create customer profile with address
       await customer_api.createCustomerProfile(
         api,
         firstName: _controller.firstNameController.text.trim(),
@@ -122,6 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             ? null
             : _controller.referralController.text.trim(),
         gstDetails: _controller.getGstDetails(),
+        address: _controller.getAddressForProfile(),
       );
 
       if (mounted) {
@@ -166,7 +177,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         onNext: _nextStep,
       ),
 
-      // Step 3: Review
+      // Step 3: Address
+      AddressStep(
+        controller: _controller,
+        onNext: _nextStep,
+      ),
+
+      // Step 4: Review
       ReviewStep(
         controller: _controller,
         onSubmit: _submitForm,

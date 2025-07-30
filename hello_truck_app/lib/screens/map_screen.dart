@@ -257,13 +257,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
       Position position = await ref.read(currentPositionStreamProvider.future);
 
-      String pickupAddr = await ref.read(locationServiceProvider).getAddressFromLatLng(
+      Map<String, dynamic> pickupAddr = await ref.read(locationServiceProvider).getAddressFromLatLng(
         position.latitude,
         position.longitude,
       );
 
       setState(() {
-        _pickupAddress = pickupAddr;
+        _pickupAddress = pickupAddr['fullAddress'];
         _isLoading = false;
         _markers.add(
           Marker(
@@ -301,11 +301,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
   void _onMapTapped(LatLng location) async {
     final locationService = ref.read(locationServiceProvider);
-    String address = await locationService.getAddressFromLatLng(location.latitude, location.longitude);
+    Map<String, dynamic> address = await locationService.getAddressFromLatLng(location.latitude, location.longitude);
 
     setState(() {
       _deliveryLocation = location;
-      _deliveryAddress = address;
+      _deliveryAddress = address['fullAddress'];
 
       _markers.removeWhere((marker) => marker.markerId.value == 'delivery_location');
       _markers.add(

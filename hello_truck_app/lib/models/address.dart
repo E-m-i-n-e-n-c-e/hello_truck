@@ -49,4 +49,20 @@ class Address {
       updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'addressLine1': addressLine1,
+      'landmark': landmark,
+      'pincode': pincode,
+      'city': city,
+      'district': district,
+      'state': state,
+      'latitude': latitude,
+      'longitude': longitude,
+      'phoneNumber': phoneNumber,
+      'label': label,
+      'isDefault': isDefault,
+    };
+  }
 }

@@ -86,6 +86,45 @@ class ReviewStep extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
+          // Address Information
+          if (controller.validateAddressStep()) ...[
+            _buildReviewCard(
+              context,
+              title: 'Address Information',
+              icon: Icons.location_on_rounded,
+              children: [
+                _buildReviewItem(
+                  'Address',
+                  controller.addressLine1Controller.text.trim(),
+                ),
+                if (controller.landmarkController.text.trim().isNotEmpty)
+                  _buildReviewItem(
+                    'Landmark',
+                    controller.landmarkController.text.trim(),
+                  ),
+                _buildReviewItem(
+                  'City',
+                  '${controller.cityController.text.trim()}, ${controller.stateController.text.trim()}',
+                ),
+                _buildReviewItem(
+                  'Pincode',
+                  controller.pincodeController.text.trim(),
+                ),
+                if (controller.phoneNumberController.text.trim().isNotEmpty)
+                  _buildReviewItem(
+                    'Phone',
+                    controller.phoneNumberController.text.trim(),
+                  ),
+                if (controller.addressLabelController.text.trim().isNotEmpty)
+                  _buildReviewItem(
+                    'Label',
+                    controller.addressLabelController.text.trim(),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+
           if (controller.referralController.text.trim().isNotEmpty) ...[
             _buildReviewCard(
               context,

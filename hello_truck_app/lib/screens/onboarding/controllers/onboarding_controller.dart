@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hello_truck_app/models/gst_details.dart';
+import 'package:hello_truck_app/models/address.dart';
 
 class OnboardingController {
   // Page and Animation Controllers
@@ -21,6 +22,16 @@ class OnboardingController {
   final companyNameController = TextEditingController();
   final addressController = TextEditingController();
 
+  // Address Controllers for map step
+  final addressLine1Controller = TextEditingController();
+  final landmarkController = TextEditingController();
+  final pincodeController = TextEditingController();
+  final cityController = TextEditingController();
+  final districtController = TextEditingController();
+  final stateController = TextEditingController();
+  final phoneNumberController = TextEditingController();
+  final addressLabelController = TextEditingController();
+
   // Focus Nodes
   final firstNameFocus = FocusNode();
   final lastNameFocus = FocusNode();
@@ -30,13 +41,27 @@ class OnboardingController {
   final companyNameFocus = FocusNode();
   final addressFocus = FocusNode();
 
+  // Address Focus Nodes for map step
+  final addressLine1Focus = FocusNode();
+  final landmarkFocus = FocusNode();
+  final pincodeFocus = FocusNode();
+  final cityFocus = FocusNode();
+  final districtFocus = FocusNode();
+  final stateFocus = FocusNode();
+  final phoneNumberFocus = FocusNode();
+  final addressLabelFocus = FocusNode();
+
   // State Variables
   int _currentStep = 0;
-  final int totalSteps = 4; // Personal Info, Email, Business Details (optional), Review
+  final int totalSteps = 5; // Personal Info, Email, Business Details (optional), Address, Review
   bool _isLoading = false;
   bool _isBusiness = false;
   String? _googleIdToken;
   String? _userEmail;
+
+  // Address Map Step State
+  double? _selectedLatitude;
+  double? _selectedLongitude;
 
   // State change notifiers
   VoidCallback? _onStateChanged;
@@ -47,6 +72,8 @@ class OnboardingController {
   bool get isBusiness => _isBusiness;
   String? get googleIdToken => _googleIdToken;
   String? get userEmail => _userEmail;
+  double? get selectedLatitude => _selectedLatitude;
+  double? get selectedLongitude => _selectedLongitude;
 
   OnboardingController({required TickerProvider vsync}) {
     _initializeAnimations(vsync);
@@ -202,9 +229,48 @@ class OnboardingController {
     );
   }
 
-  // Get total steps - always 4 steps: Personal, Email, Business, Review
+  // Address step methods
+  void updateSelectedLocation(double latitude, double longitude) {
+    _selectedLatitude = latitude;
+    _selectedLongitude = longitude;
+    _notifyStateChange();
+  }
+
+  bool validateAddressStep() {
+    return addressLine1Controller.text.trim().isNotEmpty &&
+           pincodeController.text.trim().isNotEmpty &&
+           cityController.text.trim().isNotEmpty &&
+           districtController.text.trim().isNotEmpty &&
+           stateController.text.trim().isNotEmpty &&
+           _selectedLatitude != null &&
+           _selectedLongitude != null;
+  }
+
+  // Get address object for profile creation
+  Address? getAddressForProfile() {
+    if (!validateAddressStep()) return null;
+
+    return Address(
+      id: '', // Will be set by backend
+      addressLine1: addressLine1Controller.text.trim(),
+      landmark: landmarkController.text.trim().isNotEmpty ? landmarkController.text.trim() : null,
+      pincode: pincodeController.text.trim(),
+      city: cityController.text.trim(),
+      district: districtController.text.trim(),
+      state: stateController.text.trim(),
+      latitude: _selectedLatitude!,
+      longitude: _selectedLongitude!,
+      phoneNumber: phoneNumberController.text.trim().isNotEmpty ? phoneNumberController.text.trim() : null,
+      label: addressLabelController.text.trim().isNotEmpty ? addressLabelController.text.trim() : null,
+      isDefault: true,
+      createdAt: DateTime.now(), // Placeholder, will be set by backend
+      updatedAt: DateTime.now(), // Placeholder, will be set by backend
+    );
+  }
+
+  // Get total steps - always 5 steps: Personal, Email, Business, Address, Review
   int getTotalSteps() {
-    return 4; // Personal, Email, Business, Review
+    return 5; // Personal, Email, Business, Address, Review
   }
 
   // Google OAuth
@@ -251,6 +317,16 @@ class OnboardingController {
     companyNameController.dispose();
     addressController.dispose();
 
+    // Address controllers
+    addressLine1Controller.dispose();
+    landmarkController.dispose();
+    pincodeController.dispose();
+    cityController.dispose();
+    districtController.dispose();
+    stateController.dispose();
+    phoneNumberController.dispose();
+    addressLabelController.dispose();
+
     firstNameFocus.dispose();
     lastNameFocus.dispose();
     emailFocus.dispose();
@@ -258,5 +334,15 @@ class OnboardingController {
     gstNumberFocus.dispose();
     companyNameFocus.dispose();
     addressFocus.dispose();
+
+    // Address focus nodes
+    addressLine1Focus.dispose();
+    landmarkFocus.dispose();
+    pincodeFocus.dispose();
+    cityFocus.dispose();
+    districtFocus.dispose();
+    stateFocus.dispose();
+    phoneNumberFocus.dispose();
+    addressLabelFocus.dispose();
   }
 }

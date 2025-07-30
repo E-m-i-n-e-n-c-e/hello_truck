@@ -66,19 +66,43 @@ class LocationService {
   }
 
   // Get address from LatLng
-  Future<String> getAddressFromLatLng(double latitude, double longitude) async {
+  Future<Map<String, dynamic>> getAddressFromLatLng(double latitude, double longitude) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         latitude,
         longitude,
       );
+
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
-        return '${placemark.name}, ${placemark.locality}, ${placemark.administrativeArea}';
+
+        return {
+          'addressLine1': placemark.name ?? placemark.street ?? 'Unknown Address',
+          'landmark': placemark.subLocality,
+          'pincode': placemark.postalCode ?? '',
+          'city': placemark.locality ?? placemark.subAdministrativeArea ?? '',
+          'district': placemark.subAdministrativeArea ?? placemark.administrativeArea ?? '',
+          'state': placemark.administrativeArea ?? '',
+          'latitude': latitude,
+          'longitude': longitude,
+          'fullAddress': '${placemark.name}, ${placemark.locality}, ${placemark.administrativeArea}',
+        };
       }
     } catch (e) {
       // Handle error silently
     }
-    return 'Unknown location';
+
+    // Return default values if geocoding fails
+    return {
+      'addressLine1': 'Unknown Address',
+      'landmark': null,
+      'pincode': '',
+      'city': '',
+      'district': '',
+      'state': '',
+      'latitude': latitude,
+      'longitude': longitude,
+      'fullAddress': 'Unknown location',
+    };
   }
 }
