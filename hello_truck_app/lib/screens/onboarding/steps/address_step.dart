@@ -115,7 +115,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
     return OnboardingStepContainer(
       controller: widget.controller,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 16),
 

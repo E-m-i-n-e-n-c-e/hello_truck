@@ -318,7 +318,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _showGstDetailsDialog({GstDetails? existingDetails}) {
     showDialog(
       context: context,
-      builder: (context) => GstDetailsDialog(
+      builder: (ctx) => GstDetailsDialog(
         existingDetails: existingDetails,
         onSuccess: () {
           ref.invalidate(gstDetailsProvider);
