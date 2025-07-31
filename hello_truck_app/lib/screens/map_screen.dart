@@ -89,12 +89,25 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
   // Get route polyline between two points
   Future<void> _getRoutePolyline() async {
-    final currentPosition = ref.read(currentPositionStreamProvider).value;
-    if (currentPosition == null || _deliveryLocation == null) return;
+    // Use manually updated pickup location if available, otherwise use GPS position
+    LatLng? pickupLocation;
+
+    if (_pickupAddress.isNotEmpty && _markers.any((marker) => marker.markerId.value == 'pickup_location')) {
+      // Use the manually set pickup location
+      final pickupMarker = _markers.firstWhere((marker) => marker.markerId.value == 'pickup_location');
+      pickupLocation = pickupMarker.position;
+    } else {
+      // Use GPS position
+      final currentPosition = ref.read(currentPositionStreamProvider).value;
+      if (currentPosition == null || _deliveryLocation == null) return;
+      pickupLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
+    }
+
+    if (_deliveryLocation == null) return;
 
     try {
       final polylineCoordinates = await GooglePlacesService.getRoutePolyline(
-        LatLng(currentPosition.latitude, currentPosition.longitude),
+        pickupLocation,
         _deliveryLocation!,
       );
 
@@ -120,30 +133,55 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   }
 
   void _fitMarkersInView() {
-    final currentPosition = ref.read(currentPositionStreamProvider).value;
-    if (_mapController == null || currentPosition == null || _deliveryLocation == null) return;
+    // Use manually updated pickup location if available, otherwise use GPS position
+    LatLng? pickupLocation;
+
+    if (_pickupAddress.isNotEmpty && _markers.any((marker) => marker.markerId.value == 'pickup_location')) {
+      // Use the manually set pickup location
+      final pickupMarker = _markers.firstWhere((marker) => marker.markerId.value == 'pickup_location');
+      pickupLocation = pickupMarker.position;
+    } else {
+      // Use GPS position
+      final currentPosition = ref.read(currentPositionStreamProvider).value;
+      if (_mapController == null || currentPosition == null || _deliveryLocation == null) return;
+      pickupLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
+    }
+
+    if (_mapController == null || _deliveryLocation == null) return;
 
     final LatLngBounds bounds = LatLngBounds(
       southwest: LatLng(
-        currentPosition.latitude < _deliveryLocation!.latitude
-            ? currentPosition.latitude
+        pickupLocation.latitude < _deliveryLocation!.latitude
+            ? pickupLocation.latitude
             : _deliveryLocation!.latitude,
-        currentPosition.longitude < _deliveryLocation!.longitude
-            ? currentPosition.longitude
+        pickupLocation.longitude < _deliveryLocation!.longitude
+            ? pickupLocation.longitude
             : _deliveryLocation!.longitude,
       ),
       northeast: LatLng(
-        currentPosition.latitude > _deliveryLocation!.latitude
-            ? currentPosition.latitude
+        pickupLocation.latitude > _deliveryLocation!.latitude
+            ? pickupLocation.latitude
             : _deliveryLocation!.latitude,
-        currentPosition.longitude > _deliveryLocation!.longitude
-            ? currentPosition.longitude
+        pickupLocation.longitude > _deliveryLocation!.longitude
+            ? pickupLocation.longitude
             : _deliveryLocation!.longitude,
       ),
     );
 
     _mapController!.animateCamera(
       CameraUpdate.newLatLngBounds(bounds, 100.0),
+    );
+  }
+
+  void _recenterMap() {
+    final currentPosition = ref.read(currentPositionStreamProvider).value;
+    if (_mapController == null || currentPosition == null) return;
+
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(currentPosition.latitude, currentPosition.longitude),
+        15.0,
+      ),
     );
   }
 
@@ -198,14 +236,24 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   }
 
   void _adjustMapZoom() {
-    final currentPosition = ref.read(currentPositionStreamProvider).value;
-    if (_mapController == null || currentPosition == null) return;
+    // Use manually updated pickup location if available, otherwise use GPS position
+    LatLng? zoomLocation;
+
+    if (_pickupAddress.isNotEmpty && _markers.any((marker) => marker.markerId.value == 'pickup_location')) {
+      // Use the manually set pickup location
+      final pickupMarker = _markers.firstWhere((marker) => marker.markerId.value == 'pickup_location');
+      zoomLocation = pickupMarker.position;
+    } else {
+      // Use GPS position
+      final currentPosition = ref.read(currentPositionStreamProvider).value;
+      if (_mapController == null || currentPosition == null) return;
+      zoomLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
+    }
+
+    if (_mapController == null) return;
 
     _mapController!.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(currentPosition.latitude, currentPosition.longitude),
-        15.0,
-      ),
+      CameraUpdate.newLatLngZoom(zoomLocation, 15.0),
     );
   }
 
@@ -901,7 +949,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                   right: 20,
                   child: FloatingActionButton(
                     mini: true,
-                    onPressed: _getCurrentLocation,
+                    onPressed: _recenterMap,
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF22AAAE),
                     elevation: 8,

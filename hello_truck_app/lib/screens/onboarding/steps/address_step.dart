@@ -82,11 +82,13 @@ class _AddressStepState extends ConsumerState<AddressStep> {
     widget.controller.stateController.text = addressData['state'] ?? '';
 
     // Move camera to location
-    if (_mapController != null) {
-      _mapController!.animateCamera(
-        zoom != null ? CameraUpdate.newLatLngZoom(location, zoom) : CameraUpdate.newLatLng(location),
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          zoom != null ? CameraUpdate.newLatLngZoom(location, zoom) : CameraUpdate.newLatLng(location),
+        );
+      }
+    });
   }
 
   Future<BitmapDescriptor> _createCustomMarkerIcon() async {
@@ -195,6 +197,25 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       },
                     ),
 
+                  // Loading indicator
+                  if (ref.read(currentPositionStreamProvider).isLoading)
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Getting your location...',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     // Floating search icon
                     Positioned(
                       top: 12,

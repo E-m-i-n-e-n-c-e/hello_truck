@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/screens/home_screen.dart';
 import 'package:hello_truck_app/screens/profile/profile_screen.dart';
 import 'package:hello_truck_app/screens/map_screen.dart';
@@ -48,6 +49,8 @@ class HelloTruck extends ConsumerWidget {
       return const OnboardingScreen();
     }
 
+    // This is to ensure that the location service is initialized for later use
+    ref.read(currentPositionStreamProvider);
     return Scaffold(
       body: screens[selectedIndex],
       bottomNavigationBar: CustomBottomNavigationBar(
