@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -172,14 +174,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  void _recenterMap() {
+  void _recenterMap() async{
     final currentPosition = ref.read(currentPositionStreamProvider).value;
     if (_mapController == null || currentPosition == null) return;
+
+    final currentZoom = await _mapController!.getZoomLevel();
 
     _mapController!.animateCamera(
       CameraUpdate.newLatLngZoom(
         LatLng(currentPosition.latitude, currentPosition.longitude),
-        15.0,
+        max(16.0, currentZoom),
       ),
     );
   }
@@ -236,7 +240,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     if (_mapController == null) return;
 
     _mapController!.animateCamera(
-      CameraUpdate.newLatLngZoom(zoomLocation, 15.0),
+      CameraUpdate.newLatLngZoom(zoomLocation, 16.0),
     );
   }
 
@@ -306,7 +310,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     });
 
     _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(location, 15.0),
+      CameraUpdate.newLatLngZoom(location, 16.0),
     );
 
     if (_deliveryLocation != null) {
@@ -743,7 +747,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       target: currentPosition != null
                           ? LatLng(currentPosition.latitude, currentPosition.longitude)
                           : const LatLng(28.6139, 77.2090),
-                      zoom: 14.0,
+                      zoom: 16.0,
                     ),
                     markers: _markers,
                     polylines: _polylines,
