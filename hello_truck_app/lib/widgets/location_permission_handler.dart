@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hello_truck_app/services/location_service.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
 
@@ -178,9 +179,7 @@ class _LocationPermissionHandlerState extends ConsumerState<LocationPermissionHa
     }
   }
 
-  void _openAppSettings() {
-    // This would typically open app settings
-    // For now, just request permission again
-    _requestPermission();
+  void _openAppSettings() async {
+    await Geolocator.openAppSettings();
   }
 }

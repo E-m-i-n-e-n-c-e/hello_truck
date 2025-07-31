@@ -10,25 +10,17 @@ final locationServiceProvider = Provider<LocationService>((ref) {
 // Real-time position stream provider
 final currentPositionStreamProvider = StreamProvider<Position>((ref) async* {
   final locationService = ref.watch(locationServiceProvider);
-    try {
-      // Get initial position
-      final initialPosition = await locationService.getCurrentPosition();
-      yield initialPosition;
 
-      // Stream of current position
-      yield* locationService.positionStream;
-    } catch (e) {
-      while (true) {
-        await Future.delayed(const Duration(seconds: 1));
-        try {
-          final retryPosition = await locationService.getCurrentPosition();
-          yield retryPosition;
-          yield* locationService.positionStream;
-          break; // Break loop if successful
-        } catch (e) {
-          // Continue loop if error occurs
-          continue;
-        }
-      }
+  Position? initialPosition;
+
+  while (initialPosition == null) {
+    try {
+      initialPosition = await locationService.getCurrentPosition();
+    } catch (_) {
+      await Future.delayed(const Duration(seconds: 1));
     }
+  }
+
+  yield initialPosition;
+  yield* locationService.positionStream;
 });

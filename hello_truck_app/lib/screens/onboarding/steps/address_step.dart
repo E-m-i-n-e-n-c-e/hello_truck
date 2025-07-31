@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hello_truck_app/screens/onboarding/controllers/onboarding_controller.dart';
 import 'package:hello_truck_app/screens/onboarding/widgets/onboarding_components.dart';
-import 'package:hello_truck_app/screens/onboarding/widgets/location_permission_handler.dart';
+import 'package:hello_truck_app/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/services/location_service.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/widgets/address_search_widget.dart';

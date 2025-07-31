@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:hello_truck_app/services/location_service.dart';
+import 'package:hello_truck_app/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/widgets/address_search_widget.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
@@ -78,7 +78,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _getCurrentLocation();
   }
 
   @override
@@ -187,22 +186,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
   Future<void> _getCurrentLocation() async {
     try {
-      final permission = await ref.read(locationServiceProvider).checkAndRequestPermissions();
-      if (permission == LocationPermissionStatus.disabled) {
-        _showLocationServiceDisabledDialog();
-        return;
-      }
-
-      if (permission == LocationPermissionStatus.denied) {
-        _showPermissionDeniedDialog();
-        return;
-      }
-
-      if (permission == LocationPermissionStatus.deniedForever) {
-        _showPermissionDeniedForeverDialog();
-        return;
-      }
-
       Position position = await ref.read(currentPositionStreamProvider.future);
 
       Map<String, dynamic> pickupAddr = await ref.read(locationServiceProvider).getAddressFromLatLng(
@@ -704,70 +687,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  // Error dialogs
-  void _showLocationServiceDisabledDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Location Services Disabled'),
-        content: const Text('Please enable location services to continue.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPermissionDeniedDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Location Permission Denied'),
-        content: const Text('Location permission is required to show your current location.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPermissionDeniedForeverDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Location Permission Required'),
-        content: const Text('Location permission is permanently denied. Please enable it in app settings.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Geolocator.openAppSettings();
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF22AAAE),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -792,172 +711,175 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final currentPosition = currentPositionAsync.value;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: isLoading || _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: LocationPermissionHandler(
+        onPermissionGranted: _getCurrentLocation,
+        child: isLoading || _isLoading
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Color(0xFF22AAAE),
+                      strokeWidth: 3,
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Getting your location...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Stack(
                 children: [
-                  CircularProgressIndicator(
-                    color: Color(0xFF22AAAE),
-                    strokeWidth: 3,
+                  GoogleMap(
+                    onMapCreated: (GoogleMapController controller) {
+                      _mapController = controller;
+                    },
+                    initialCameraPosition: CameraPosition(
+                      target: currentPosition != null
+                          ? LatLng(currentPosition.latitude, currentPosition.longitude)
+                          : const LatLng(28.6139, 77.2090),
+                      zoom: 14.0,
+                    ),
+                    markers: _markers,
+                    polylines: _polylines,
+                    onTap: _onMapTapped,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: false,
+                    mapType: MapType.normal,
+                    zoomControlsEnabled: false,
+                    padding: EdgeInsets.only(
+                      bottom: _showVehiclePanel
+                          ? MediaQuery.of(context).size.height * _panelHeight
+                          : 0,
+                      top: 140,
+                    ),
                   ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Getting your location...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF6B7280),
+
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 0,
+                    right: 0,
+                    child: _buildLocationCard(),
+                  ),
+
+                  if (_showVehiclePanel && _deliveryAddress != null)
+                    DraggableScrollableSheet(
+                      initialChildSize: _panelHeight,
+                      minChildSize: _minPanelHeight,
+                      maxChildSize: _maxPanelHeight,
+                      builder: (context, scrollController) {
+                        return NotificationListener<DraggableScrollableNotification>(
+                          onNotification: (notification) {
+                            setState(() {
+                              _panelHeight = notification.extent;
+                            });
+                            return true;
+                          },
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF8F9FA),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(24),
+                                topRight: Radius.circular(24),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 12),
+                                  width: 50,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade400,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.local_shipping,
+                                        color: Color(0xFF22AAAE),
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        'Choose Vehicle',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF2C2C2C),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF22AAAE).withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: const Row(
+                                          children: [
+                                            Icon(Icons.access_time, size: 16, color: Color(0xFF22AAAE)),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'NOW',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF22AAAE),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Expanded(
+                                  child: ListView(
+                                    controller: scrollController,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    children: [
+                                      ..._vehicles.asMap().entries.map((entry) {
+                                        return _buildVehicleCard(entry.value, entry.key);
+                                      }),
+                                      _buildBookButton(),
+                                      SizedBox(height: MediaQuery.of(context).padding.bottom),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                  Positioned(
+                    bottom: _showVehiclePanel
+                        ? MediaQuery.of(context).size.height * _panelHeight + 20
+                        : 20,
+                    right: 20,
+                    child: FloatingActionButton(
+                      mini: true,
+                      onPressed: _recenterMap,
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF22AAAE),
+                      elevation: 8,
+                      child: const Icon(Icons.my_location),
                     ),
                   ),
                 ],
               ),
-            )
-          : Stack(
-              children: [
-                GoogleMap(
-                  onMapCreated: (GoogleMapController controller) {
-                    _mapController = controller;
-                  },
-                  initialCameraPosition: CameraPosition(
-                    target: currentPosition != null
-                        ? LatLng(currentPosition.latitude, currentPosition.longitude)
-                        : const LatLng(28.6139, 77.2090),
-                    zoom: 14.0,
-                  ),
-                  markers: _markers,
-                  polylines: _polylines,
-                  onTap: _onMapTapped,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: false,
-                  mapType: MapType.normal,
-                  zoomControlsEnabled: false,
-                  padding: EdgeInsets.only(
-                    bottom: _showVehiclePanel
-                        ? MediaQuery.of(context).size.height * _panelHeight
-                        : 0,
-                    top: 140,
-                  ),
-                ),
-
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 16,
-                  left: 0,
-                  right: 0,
-                  child: _buildLocationCard(),
-                ),
-
-                if (_showVehiclePanel && _deliveryAddress != null)
-                  DraggableScrollableSheet(
-                    initialChildSize: _panelHeight,
-                    minChildSize: _minPanelHeight,
-                    maxChildSize: _maxPanelHeight,
-                    builder: (context, scrollController) {
-                      return NotificationListener<DraggableScrollableNotification>(
-                        onNotification: (notification) {
-                          setState(() {
-                            _panelHeight = notification.extent;
-                          });
-                          return true;
-                        },
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF8F9FA),
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.symmetric(vertical: 12),
-                                width: 50,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade400,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.local_shipping,
-                                      color: Color(0xFF22AAAE),
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      'Choose Vehicle',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF2C2C2C),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF22AAAE).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: const Row(
-                                        children: [
-                                          Icon(Icons.access_time, size: 16, color: Color(0xFF22AAAE)),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'NOW',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF22AAAE),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Expanded(
-                                child: ListView(
-                                  controller: scrollController,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                                  children: [
-                                    ..._vehicles.asMap().entries.map((entry) {
-                                      return _buildVehicleCard(entry.value, entry.key);
-                                    }),
-                                    _buildBookButton(),
-                                    SizedBox(height: MediaQuery.of(context).padding.bottom),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                Positioned(
-                  bottom: _showVehiclePanel
-                      ? MediaQuery.of(context).size.height * _panelHeight + 20
-                      : 20,
-                  right: 20,
-                  child: FloatingActionButton(
-                    mini: true,
-                    onPressed: _recenterMap,
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF22AAAE),
-                    elevation: 8,
-                    child: const Icon(Icons.my_location),
-                  ),
-                ),
-              ],
-            ),
+      ),
     );
   }
 }
