@@ -10,8 +10,6 @@ import 'package:hello_truck_app/screens/onboarding/onboarding_screen.dart';
 import 'package:hello_truck_app/widgets/bottom_navbar.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
-
-
 class HelloTruck extends ConsumerStatefulWidget {
   const HelloTruck({super.key});
 
@@ -24,13 +22,6 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
   final List<Widget> _screens = List.filled(3, const SizedBox.shrink());
   final List<bool> _screenLoaded = List.filled(3, false); // Track loaded state
   bool _hasSetupListener = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _screens[0] = const HomeScreen();
-    _screenLoaded[0] = true;
-  }
 
   void _loadScreen(int index) {
     if (!_screenLoaded[index]) {
