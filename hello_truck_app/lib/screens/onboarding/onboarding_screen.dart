@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
-import 'package:hello_truck_app/utils/api/customer_api.dart' as customer_api;
+import 'package:hello_truck_app/api/customer_api.dart' as customer_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:hello_truck_app/screens/onboarding/controllers/onboarding_controller.dart';
 import 'package:hello_truck_app/screens/onboarding/widgets/onboarding_header.dart';

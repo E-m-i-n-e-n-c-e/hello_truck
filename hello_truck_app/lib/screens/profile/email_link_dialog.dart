@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
-import 'package:hello_truck_app/utils/api/customer_api.dart' as customer_api;
+import 'package:hello_truck_app/api/customer_api.dart' as customer_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 

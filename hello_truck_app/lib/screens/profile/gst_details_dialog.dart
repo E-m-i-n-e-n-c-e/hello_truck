@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/gst_details.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
-import 'package:hello_truck_app/utils/api/gst_details_api.dart' as gst_api;
+import 'package:hello_truck_app/api/gst_details_api.dart' as gst_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class GstDetailsDialog extends ConsumerStatefulWidget {

@@ -45,6 +45,5 @@ app.*.map.json
 /android/app/release
 
 # API Keys and Environment files - Keep these secure!
-android/app/src/main/res/values/strings.xml
 .env
 *.env
