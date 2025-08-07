@@ -29,12 +29,6 @@ class _AddressStepState extends ConsumerState<AddressStep> {
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeLocationAndMap();
-  }
-
   Future<void> _initializeLocationAndMap() async {
     final locationService = ref.read(locationServiceProvider);
     final permission = await locationService.checkAndRequestPermissions();
