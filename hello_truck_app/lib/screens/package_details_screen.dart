@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hello_truck_app/screens/map_screen.dart';
+import 'package:hello_truck_app/models/package.dart';
 
 class PackageDetailsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onProceedToMap;
@@ -85,7 +87,31 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
 
   void _proceedToMap() {
     if (_isFormValid()) {
-      // Use the callback if provided, otherwise navigate directly
+      // Create Package model from form data
+      final package = _createPackageFromFormData();
+
+      // Print package details for backend team
+      print('🚀 PACKAGE CREATED FOR BACKEND TEAM 🚀');
+      print('=' * 50);
+      print(package.toString());
+      print('=' * 50);
+      print('📄 JSON FORMAT FOR API:');
+      print(package.toFormattedJson());
+      print('=' * 50);
+      print('📋 COMPACT JSON:');
+      print(jsonEncode(package.toJson()));
+      print('=' * 50);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Package created successfully! ID: ${package.id}'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Navigate to map screen
       if (widget.onProceedToMap != null) {
         widget.onProceedToMap!();
       } else {
@@ -103,6 +129,56 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
         ),
       );
     }
+  }
+
+  Package _createPackageFromFormData() {
+    // Determine product type
+    ProductType productType;
+    if (_isAgriculturalSelected && _isNonAgriculturalSelected) {
+      // If both are selected, prioritize non-agricultural for GST requirements
+      productType = ProductType.nonAgricultural;
+    } else if (_isAgriculturalSelected) {
+      productType = ProductType.agricultural;
+    } else {
+      productType = ProductType.nonAgricultural;
+    }
+
+    // Parse weight
+    double? weight;
+    if (_weightController.text.trim().isNotEmpty) {
+      weight = double.tryParse(_weightController.text.trim());
+    }
+
+    // Parse dimensions
+    PackageDimensions? dimensions;
+    if (_lengthController.text.trim().isNotEmpty ||
+        _widthController.text.trim().isNotEmpty ||
+        _heightController.text.trim().isNotEmpty) {
+      dimensions = PackageDimensions(
+        length: double.tryParse(_lengthController.text.trim()),
+        width: double.tryParse(_widthController.text.trim()),
+        height: double.tryParse(_heightController.text.trim()),
+      );
+    }
+
+    // Get description
+    String? description;
+    if (_descriptionController.text.trim().isNotEmpty) {
+      description = _descriptionController.text.trim();
+    }
+
+    // Parse loading preference
+    LoadingPreference loadingPreference = LoadingPreferenceExtension.fromString(_loadingPreference);
+
+    return Package.fromFormData(
+      productType: productType,
+      weight: weight,
+      dimensions: dimensions,
+      description: description,
+      loadingPreference: loadingPreference,
+      packageImage: _packageImage,
+      gstBillImage: _gstBillImage,
+    );
   }
 
   @override

@@ -6,11 +6,18 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hello_truck_app/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/widgets/address_search_widget.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
+import 'package:hello_truck_app/services/pricing_service.dart';
+import 'package:hello_truck_app/models/package.dart';
+import 'package:hello_truck_app/models/address.dart';
+import 'package:hello_truck_app/api/orders_api.dart' as orders_api;
 
 class MapScreen extends ConsumerStatefulWidget {
-  const MapScreen({super.key});
+  final Package? package;
+
+  const MapScreen({super.key, this.package});
 
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
@@ -26,52 +33,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   String? _deliveryAddress;
   int _selectedVehicleIndex = 1;
   bool _showVehiclePanel = false;
+  List<PricingResult> _pricingResults = [];
+  double _distanceKm = 0.0;
 
   // Panel animation
   late AnimationController _panelController;
   double _panelHeight = 0.3;
   final double _minPanelHeight = 0.3;
   final double _maxPanelHeight = 0.8;
-
-  // Vehicle options
-  final List<Map<String, dynamic>> _vehicles = [
-    {
-      'name': 'Bike',
-      'description': 'Quick delivery for small items',
-      'price': '₹45',
-      'time': '2-5 min',
-      'capacity': 'Up to 5kg',
-      'icon': Icons.motorcycle,
-      'gradient': [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-    },
-    {
-      'name': 'Small Van',
-      'description': 'Perfect for medium packages',
-      'price': '₹120',
-      'time': '5-10 min',
-      'capacity': 'Up to 50kg',
-      'icon': Icons.airport_shuttle,
-      'gradient': [Color(0xFF22AAAE), Color(0xFF26C6DA)],
-    },
-    {
-      'name': 'Pickup Truck',
-      'description': 'Large items & furniture',
-      'price': '₹250',
-      'time': '10-15 min',
-      'capacity': 'Up to 500kg',
-      'icon': Icons.local_shipping,
-      'gradient': [Color(0xFFFF9800), Color(0xFFFFB74D)],
-    },
-    {
-      'name': 'Large Truck',
-      'description': 'Heavy goods & bulk items',
-      'price': '₹450',
-      'time': '15-25 min',
-      'capacity': 'Up to 2000kg',
-      'icon': Icons.fire_truck,
-      'gradient': [Color(0xFFE91E63), Color(0xFFF48FB1)],
-    },
-  ];
 
   @override
   void initState() {
@@ -80,12 +49,85 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+
+    // Initialize with default pricing when no route is available
+    _initializeDefaultPricing();
+  }
+
+  void _initializeDefaultPricing() {
+    // Show default pricing with 5km distance
+    final defaultPackage = _createDefaultPackage();
+    final defaultDistance = 5.0; // 5km default distance
+
+    final results = PricingService.calculatePricing(
+      package: defaultPackage,
+      distanceKm: defaultDistance,
+      selfLoading: defaultPackage.loadingPreference == LoadingPreference.selfLoading,
+    );
+
+    setState(() {
+      _pricingResults = results;
+      _distanceKm = defaultDistance;
+      _selectedVehicleIndex = 1; // Default to van
+    });
   }
 
   @override
   void dispose() {
     _panelController.dispose();
     super.dispose();
+  }
+
+    // Calculate pricing based on current package and distance
+  void _calculatePricing() {
+    if (_distanceKm <= 0) {
+      setState(() {
+        _pricingResults = [];
+      });
+      return;
+    }
+
+    // Create a default package if none is provided
+    Package packageToUse = widget.package ?? _createDefaultPackage();
+
+    final selfLoading = packageToUse.loadingPreference == LoadingPreference.selfLoading;
+
+    final results = PricingService.calculatePricing(
+      package: packageToUse,
+      distanceKm: _distanceKm,
+      selfLoading: selfLoading,
+    );
+
+    setState(() {
+      _pricingResults = results;
+
+      // Auto-select recommended vehicle
+      final recommended = PricingService.getRecommendedVehicle(results);
+      if (recommended != null) {
+        _selectedVehicleIndex = results.indexOf(recommended);
+      }
+    });
+
+    // Print pricing details for debugging
+    print('📊 DYNAMIC PRICING UPDATE 📊');
+    print('Distance: ${_distanceKm.toStringAsFixed(1)}km');
+    if (widget.package == null) {
+      print('⚠️  Using default package (no package data provided)');
+    }
+    for (final result in results) {
+      print(PricingService.formatPricingBreakdown(result));
+      print('─' * 50);
+    }
+  }
+
+  // Create a default package when none is provided
+  Package _createDefaultPackage() {
+    return Package.fromFormData(
+      productType: ProductType.nonAgricultural,
+      weight: 10.0, // Default 10kg
+      dimensions: PackageDimensions(length: 30, width: 20, height: 15), // Default box
+      loadingPreference: LoadingPreference.selfLoading,
+    );
   }
 
   // Get route polyline between two points
@@ -112,7 +154,18 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         _deliveryLocation!,
       );
 
-      if (polylineCoordinates != null) {
+        if (polylineCoordinates != null) {
+        // Calculate distance from polyline coordinates
+        double totalDistance = 0.0;
+        for (int i = 0; i < polylineCoordinates.length - 1; i++) {
+          totalDistance += Geolocator.distanceBetween(
+            polylineCoordinates[i].latitude,
+            polylineCoordinates[i].longitude,
+            polylineCoordinates[i + 1].latitude,
+            polylineCoordinates[i + 1].longitude,
+          );
+        }
+
         setState(() {
           _polylines.clear();
           _polylines.add(
@@ -124,10 +177,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               patterns: [PatternItem.dash(20), PatternItem.gap(10)],
             ),
           );
+          _distanceKm = totalDistance / 1000.0; // Convert to kilometers
         });
 
-          _fitMarkersInView();
-        }
+        // Calculate pricing with the new distance
+        _calculatePricing();
+        _fitMarkersInView();
+      }
     } catch (e) {
       debugPrint('Error getting route: $e');
     }
@@ -342,7 +398,22 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   }
 
   void _proceedWithBooking() async {
-    final selectedVehicle = _vehicles[_selectedVehicleIndex];
+    if (_pricingResults.isEmpty || _selectedVehicleIndex >= _pricingResults.length) {
+      return;
+    }
+
+    final selectedResult = _pricingResults[_selectedVehicleIndex];
+    if (!selectedResult.isAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selected vehicle is not available for this package'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final selectedVehicle = selectedResult.vehicle;
 
     showDialog(
       context: context,
@@ -353,9 +424,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vehicle: ${selectedVehicle['name']}', style: const TextStyle(fontSize: 16)),
-            Text('Price: ${selectedVehicle['price']}', style: const TextStyle(fontSize: 16)),
-            Text('Capacity: ${selectedVehicle['capacity']}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            Text('Vehicle: ${selectedVehicle.name}', style: const TextStyle(fontSize: 16)),
+            Text('Price: ${selectedResult.formattedPrice}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF22AAAE))),
+            Text('Capacity: ${selectedVehicle.weightCapacity.toStringAsFixed(0)}kg', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            Text('Distance: ${_distanceKm.toStringAsFixed(1)}km', style: const TextStyle(fontSize: 14, color: Colors.grey)),
             const SizedBox(height: 8),
             Text('Pickup: $_pickupAddress', style: const TextStyle(fontSize: 14)),
             Text('Delivery: ${_deliveryAddress ?? 'Not set'}', style: const TextStyle(fontSize: 14)),
@@ -367,17 +439,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Booking confirmed! Driver will arrive soon.'),
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+            onPressed: () => _confirmBooking(selectedResult),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF22AAAE),
               foregroundColor: Colors.white,
@@ -388,6 +450,129 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         ],
       ),
     );
+  }
+
+  /// Create and submit order to API
+  Future<void> _confirmBooking(PricingResult selectedResult) async {
+    Navigator.pop(context); // Close dialog
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Creating your order...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Get API instance
+      final api = await ref.read(apiProvider.future);
+
+      // Get package data (use default if none provided)
+      final packageData = widget.package ?? _createDefaultPackage();
+
+      // Create pickup address from current location/address
+      final pickupLocation = _markers
+          .firstWhere((marker) => marker.markerId.value == 'pickup_location')
+          .position;
+
+      final now = DateTime.now();
+      final pickupAddress = Address(
+        id: 'pickup_temp',
+        addressLine1: _pickupAddress,
+        latitude: pickupLocation.latitude,
+        longitude: pickupLocation.longitude,
+        city: 'Current City', // Would be extracted from geocoding
+        district: 'Current District',
+        state: 'Current State',
+        pincode: '000000',
+        isDefault: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      // Create delivery address
+      final deliveryAddress = Address(
+        id: 'delivery_temp',
+        addressLine1: _deliveryAddress ?? '',
+        latitude: _deliveryLocation!.latitude,
+        longitude: _deliveryLocation!.longitude,
+        city: 'Delivery City', // Would be extracted from geocoding
+        district: 'Delivery District',
+        state: 'Delivery State',
+        pincode: '000000',
+        isDefault: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      // Create order request
+      final orderRequest = orders_api.CreateOrderRequest(
+        package: packageData,
+        pickupAddress: pickupAddress,
+        deliveryAddress: deliveryAddress,
+        vehicleType: selectedResult.vehicle.type,
+        distanceKm: _distanceKm,
+        metadata: {
+          'appVersion': '1.0.0',
+          'platform': 'mobile',
+          'bookingSource': 'map_screen',
+        },
+      );
+
+      // Submit order to API
+      final order = await orders_api.createOrder(api, orderRequest);
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order created successfully! Order ID: ${order.id}'),
+            backgroundColor: Colors.green,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Print order details for debugging
+        print('🎉 ORDER CREATED SUCCESSFULLY 🎉');
+        print('Order ID: ${order.id}');
+        print('Status: ${order.status.name}');
+        print('Vehicle: ${order.vehicleType.name}');
+        print('Total Cost: ₹${order.totalCost.toStringAsFixed(2)}');
+        print('=' * 50);
+      }
+
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create order: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+
+      print('❌ ORDER CREATION FAILED: $e');
+    }
   }
 
   Widget _buildLocationCard() {
@@ -516,29 +701,54 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildVehicleCard(Map<String, dynamic> vehicle, int index) {
+  Widget _buildVehicleCard(PricingResult result, int index) {
     final bool isSelected = _selectedVehicleIndex == index;
+    final vehicle = result.vehicle;
+    final isAvailable = result.isAvailable;
+
+    // Map vehicle type to icon
+    IconData getVehicleIcon(VehicleType type) {
+      switch (type) {
+        case VehicleType.bike:
+          return Icons.motorcycle;
+        case VehicleType.van:
+          return Icons.airport_shuttle;
+        case VehicleType.pickup:
+          return Icons.local_shipping;
+        case VehicleType.truck:
+          return Icons.fire_truck;
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
+          onTap: isAvailable ? () {
             setState(() {
               _selectedVehicleIndex = index;
             });
-          },
+          } : null,
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isSelected ? const Color(0xFF22AAAE) : Colors.grey.shade200,
+                color: !isAvailable
+                    ? Colors.grey.shade300
+                    : isSelected
+                        ? const Color(0xFF22AAAE)
+                        : Colors.grey.shade200,
                 width: isSelected ? 2 : 1,
               ),
-              color: isSelected ? const Color(0xFF22AAAE).withValues(alpha: 0.05) : Colors.white,
-              boxShadow: isSelected
+              color: !isAvailable
+                  ? Colors.grey.shade50
+                  : isSelected
+                      ? const Color(0xFF22AAAE).withValues(alpha: 0.05)
+                      : Colors.white,
+              boxShadow: isSelected && isAvailable
                   ? [
                       BoxShadow(
                         color: const Color(0xFF22AAAE).withValues(alpha: 0.2),
@@ -561,14 +771,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                   height: 60,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: vehicle['gradient'],
+                      colors: isAvailable
+                          ? vehicle.gradientColors.map((c) => Color(c)).toList()
+                          : [Colors.grey.shade400, Colors.grey.shade500],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    vehicle['icon'],
+                    getVehicleIcon(vehicle.type),
                     color: Colors.white,
                     size: 28,
                   ),
@@ -581,30 +793,41 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       Row(
                         children: [
                           Text(
-                            vehicle['name'],
-                            style: const TextStyle(
+                            vehicle.name,
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF2C2C2C),
+                              color: isAvailable ? const Color(0xFF2C2C2C) : Colors.grey.shade500,
                             ),
                           ),
                           const Spacer(),
-                          Text(
-                            vehicle['price'],
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF22AAAE),
+                          if (isAvailable) ...[
+                            Text(
+                              result.formattedPrice,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF22AAAE),
+                              ),
                             ),
-                          ),
+                          ] else ...[
+                            Text(
+                              'N/A',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        vehicle['description'],
+                        isAvailable ? vehicle.description : result.unavailableReason,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: isAvailable ? Colors.grey.shade600 : Colors.red.shade400,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -617,7 +840,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            vehicle['time'],
+                            PricingService.getEstimatedTime(vehicle.type, _distanceKm),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade500,
@@ -631,7 +854,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            vehicle['capacity'],
+                            '${vehicle.weightCapacity.toStringAsFixed(0)}kg',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade500,
@@ -642,7 +865,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     ],
                   ),
                 ),
-                if (isSelected)
+                if (isSelected && isAvailable)
                   Container(
                     margin: const EdgeInsets.only(left: 8),
                     padding: const EdgeInsets.all(8),
@@ -653,6 +876,20 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     child: const Icon(
                       Icons.check,
                       color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                if (!isAvailable)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.grey.shade600,
                       size: 16,
                     ),
                   ),
@@ -669,19 +906,23 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       width: double.infinity,
       margin: const EdgeInsets.all(16),
       child: ElevatedButton(
-        onPressed: _deliveryAddress != null ? _proceedWithBooking : null,
+        onPressed: _deliveryAddress != null && _pricingResults.isNotEmpty ? _proceedWithBooking : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF22AAAE),
+          backgroundColor: _deliveryAddress != null && _pricingResults.isNotEmpty
+              ? const Color(0xFF22AAAE)
+              : Colors.grey.shade400,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          elevation: 8,
+          elevation: _deliveryAddress != null && _pricingResults.isNotEmpty ? 8 : 2,
           shadowColor: const Color(0xFF22AAAE).withValues(alpha: 0.3),
         ),
         child: Text(
-          _deliveryAddress != null ? 'Book Transportation' : 'Select Drop Location',
+          _deliveryAddress != null
+              ? 'Book Transportation'
+              : 'Select Drop Location First',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -764,14 +1005,39 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     ),
                   ),
 
+                  // Back button
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 16,
-                    left: 0,
-                    right: 0,
+                    left: 16,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Color(0xFF22AAAE)),
+                        onPressed: () => Navigator.of(context).pop(),
+                        iconSize: 24,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                  ),
+
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 70, // Adjusted to make room for back button
+                    right: 16,
                     child: _buildLocationCard(),
                   ),
 
-                  if (_showVehiclePanel && _deliveryAddress != null)
+                  if ((_showVehiclePanel && _deliveryAddress != null) || _pricingResults.isNotEmpty)
                     DraggableScrollableSheet(
                       initialChildSize: _panelHeight,
                       minChildSize: _minPanelHeight,
@@ -852,7 +1118,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                                     controller: scrollController,
                                     padding: const EdgeInsets.symmetric(horizontal: 20),
                                     children: [
-                                      ..._vehicles.asMap().entries.map((entry) {
+                                      ..._pricingResults.asMap().entries.map((entry) {
                                         return _buildVehicleCard(entry.value, entry.key);
                                       }),
                                       _buildBookButton(),

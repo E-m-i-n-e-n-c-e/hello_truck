@@ -17,17 +17,17 @@ class HomeScreen extends ConsumerWidget {
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
         child: Column(
-          children: [
+                children: [
             // Enhanced Header Section with better status bar handling
-            Container(
+                  Container(
               width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
                     colorScheme.primary.withValues(alpha: 0.95),
-                    colorScheme.primary,
+                          colorScheme.primary,
                     colorScheme.primary.withValues(alpha: 0.9),
                   ],
                   stops: const [0.0, 0.7, 1.0],
@@ -427,46 +427,46 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Future<void> _showLogoutDialog(BuildContext context, ColorScheme colorScheme, AsyncValue api) async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Logout',
-          style: TextStyle(
-            color: colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: const Text('Are you sure you want to logout?'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'CANCEL',
-              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('LOGOUT'),
-          ),
-        ],
-      ),
-    );
+                  final shouldLogout = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(
+                        'Logout',
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      content: const Text('Are you sure you want to logout?'),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(
+                            'CANCEL',
+                            style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('LOGOUT'),
+                        ),
+                      ],
+                    ),
+                  );
 
-    if (shouldLogout == true) {
-      await api.value!.signOut();
-    }
+                  if (shouldLogout == true) {
+                    await api.value!.signOut();
+                  }
   }
 
   Widget _buildModernFeatureCard(
@@ -495,11 +495,11 @@ class HomeScreen extends ConsumerWidget {
           width: 1,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -507,30 +507,30 @@ class HomeScreen extends ConsumerWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                icon,
+                  icon,
                 size: 32,
                 color: color,
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
-              ),
+                  ),
               textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }
