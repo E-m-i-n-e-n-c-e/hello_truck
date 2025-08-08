@@ -6,6 +6,7 @@ import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/screens/home_screen.dart';
 import 'package:hello_truck_app/screens/profile/profile_screen.dart';
 import 'package:hello_truck_app/screens/map_screen.dart';
+import 'package:hello_truck_app/screens/package_details_screen.dart';
 import 'package:hello_truck_app/screens/onboarding/onboarding_screen.dart';
 import 'package:hello_truck_app/widgets/bottom_navbar.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
@@ -27,7 +28,16 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
     if (!_screenLoaded[index]) {
       _screens[index] = switch (index) {
         0 => const HomeScreen(),
-        1 => const MapScreen(),
+        1 => PackageDetailsScreen(
+          onProceedToMap: () {
+            // Navigate to maps screen by pushing it directly
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const MapScreen(),
+              ),
+            );
+          },
+        ),
         2 => const ProfileScreen(),
         _ => const SizedBox.shrink(),
       };
