@@ -1,5 +1,5 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:hello_truck_app/services/google_places_service.dart';
 
 enum LocationPermissionStatus {
   denied,
@@ -48,44 +48,27 @@ class LocationService {
     return LocationPermissionStatus.granted;
   }
 
-  // Get address from coordinates
-  Future<String> getAddressFromCoordinates(Position position) async {
-    try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      if (placemarks.isNotEmpty) {
-        final placemark = placemarks.first;
-        return '${placemark.name}, ${placemark.locality}, ${placemark.administrativeArea}';
-      }
-    } catch (e) {
-      // Handle error silently
-    }
-    return 'Unknown location';
-  }
-
   // Get address from LatLng
   Future<Map<String, dynamic>> getAddressFromLatLng(double latitude, double longitude) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        latitude,
-        longitude,
-      );
+      final address = await GooglePlacesService.getAddressFromLatLng(latitude, longitude);
 
-      if (placemarks.isNotEmpty) {
-        final placemark = placemarks.first;
-
+      if (address.isNotEmpty) {
+        final addressParts = (address['formattedAddress'] ?? '').split(',');
+        final addressLine1 = addressParts.length > 3
+            ? addressParts.take(addressParts.length - 3).join(',').trim()
+            : (address['formattedAddress'] ?? '').trim();
         return {
-          'addressLine1': '${placemark.name}, ${placemark.subLocality}, ${placemark.locality}, ${placemark.administrativeArea}',
-          'landmark': placemark.subLocality ?? '',
-          'pincode': placemark.postalCode ?? '',
-          'city': placemark.locality ??  '',
-          'district': placemark.subAdministrativeArea ?? '',
-          'state': placemark.administrativeArea ?? '',
+          'addressLine1': addressLine1,
+          'landmark': address['sublocality'] ?? address['sublocalityLevel1'] ?? address['sublocalityLevel2'] ?? address['sublocalityLevel3'] ?? '',
+          'pincode': address['postalCode'] ?? '',
+          'city': address['locality'] ?? '',
+          'district': address['administrativeAreaLevel2'] ?? address['administrativeAreaLevel3'] ?? '',
+          'state': address['administrativeAreaLevel1'] ?? '',
+          'country': address['country'] ?? '',
           'latitude': latitude,
           'longitude': longitude,
-          'fullAddress': '${placemark.name}, ${placemark.locality}, ${placemark.administrativeArea}',
+          'formattedAddress': address['formattedAddress'] ?? '',
         };
       }
     } catch (e) {
@@ -102,7 +85,7 @@ class LocationService {
       'state': '',
       'latitude': latitude,
       'longitude': longitude,
-      'fullAddress': 'Unknown location',
+      'formattedAddress': 'Unknown Address',
     };
   }
 }

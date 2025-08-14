@@ -178,7 +178,7 @@ Future<List<Order>> getOrders(API api, {
   if (offset != null) queryParams['offset'] = offset;
 
   final query = queryParams.isNotEmpty
-      ? '?' + queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')
+      ? '?${queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')}'
       : '';
 
   final response = await api.get('/orders$query');
@@ -294,7 +294,7 @@ Future<Map<String, dynamic>> getOrderHistory(API api, {
   if (fromDate != null) queryParams['fromDate'] = fromDate.toIso8601String();
   if (toDate != null) queryParams['toDate'] = toDate.toIso8601String();
 
-  final query = '?' + queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
+  final query = '?${queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')}';
 
   final response = await api.get('/orders/history$query');
 
@@ -320,7 +320,7 @@ Future<Map<String, dynamic>> getOrderStats(API api, {
   if (toDate != null) queryParams['toDate'] = toDate.toIso8601String();
 
   final query = queryParams.isNotEmpty
-      ? '?' + queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')
+      ? '?${queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')}'
       : '';
 
   final response = await api.get('/orders/stats$query');

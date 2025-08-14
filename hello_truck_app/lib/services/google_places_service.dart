@@ -58,6 +58,51 @@ class GooglePlacesService {
     return null;
   }
 
+    /// Helper method to extract address component
+  static String? _extractAddressComponent(List components, String type) {
+    try {
+      return components
+          .firstWhere((c) => (c['types'] as List).contains(type))['long_name'];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Reverse geocode LatLng into a structured address
+  static Future<Map<String, dynamic>> getAddressFromLatLng(
+      double latitude, double longitude) async {
+    final String url =
+        'https://maps.googleapis.com/maps/api/geocode/json?'
+        'latlng=$latitude,$longitude&'
+        'key=$_googleApiKey';
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['status'] == 'OK' && data['results'].isNotEmpty) {
+        final result = data['results'][0];
+        final components = result['address_components'];
+
+        return {
+          'sublocality': _extractAddressComponent(components, 'sublocality'),
+          'sublocalityLevel1': _extractAddressComponent(components, 'sublocality_level_1'),
+          'sublocalityLevel2': _extractAddressComponent(components, 'sublocality_level_2'),
+          'sublocalityLevel3': _extractAddressComponent(components, 'sublocality_level_3'),
+          'postalCode': _extractAddressComponent(components, 'postal_code'),
+          'locality': _extractAddressComponent(components, 'locality'),
+          'administrativeAreaLevel2': _extractAddressComponent(components, 'administrative_area_level_2'),
+          'administrativeAreaLevel3': _extractAddressComponent(components, 'administrative_area_level_3'),
+          'administrativeAreaLevel1': _extractAddressComponent(components, 'administrative_area_level_1'),
+          'country': _extractAddressComponent(components, 'country'),
+          'latitude': latitude,
+          'longitude': longitude,
+          'formattedAddress': result['formatted_address'],
+        };
+      }
+    }
+    return {};
+  }
+
   // Get route polyline between two points
   static Future<List<LatLng>?> getRoutePolyline(LatLng origin, LatLng destination) async {
     final String url = 'https://maps.googleapis.com/maps/api/directions/json?'

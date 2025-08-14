@@ -29,8 +29,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
   bool _isLoading = true;
-  String _pickupAddress = '';
-  String? _deliveryAddress;
+  Map<String, dynamic> _pickupAddress = {};
+  Map<String, dynamic>? _deliveryAddress;
   int _selectedVehicleIndex = 1;
   bool _showVehiclePanel = false;
   List<PricingResult> _pricingResults = [];
@@ -254,7 +254,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       );
 
       setState(() {
-        _pickupAddress = pickupAddr['fullAddress'];
+        _pickupAddress = pickupAddr;
         _isLoading = false;
         _markers.add(
           Marker(
@@ -262,7 +262,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             position: LatLng(position.latitude, position.longitude),
             infoWindow: InfoWindow(
               title: 'Pickup Location',
-              snippet: _pickupAddress,
+              snippet: _pickupAddress['addressLine1'] ?? '',
             ),
             icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
           ),
@@ -306,7 +306,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
     setState(() {
       _deliveryLocation = location;
-      _deliveryAddress = address['fullAddress'];
+      _deliveryAddress = address;
 
       _markers.removeWhere((marker) => marker.markerId.value == 'delivery_location');
       _markers.add(
@@ -315,7 +315,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           position: location,
           infoWindow: InfoWindow(
             title: 'Delivery Location',
-            snippet: _deliveryAddress!,
+            snippet: _deliveryAddress!['addressLine1'] ?? '',
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         ),
@@ -334,12 +334,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddressSearchWidget(
-        currentAddress: isPickup ? _pickupAddress : (_deliveryAddress ?? ''),
-        onLocationSelected: (LatLng location, String address) {
+        currentAddress: isPickup ? _pickupAddress['formattedAddress'] : (_deliveryAddress?['formattedAddress'] ?? ''),
+        onLocationSelected: (LatLng location) {
           if (isPickup) {
-            _updatePickupLocation(location, address);
+            _updatePickupLocation(location);
           } else {
-            _updateDeliveryLocation(location, address);
+            _updateDeliveryLocation(location);
           }
         },
         title: isPickup ? 'Set Pickup Location' : 'Set Drop Location',
@@ -347,10 +347,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  Future<void> _updatePickupLocation(LatLng location, String address) async {
+  Future<void> _updatePickupLocation(LatLng location) async {
+    final address = await ref.read(locationServiceProvider).getAddressFromLatLng(location.latitude, location.longitude);
     setState(() {
       _pickupAddress = address;
-
       _markers.removeWhere((marker) => marker.markerId.value == 'pickup_location');
       _markers.add(
         Marker(
@@ -358,7 +358,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           position: location,
           infoWindow: InfoWindow(
             title: 'Pickup Location',
-            snippet: _pickupAddress,
+            snippet: _pickupAddress['addressLine1'] ?? '',
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
         ),
@@ -374,7 +374,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     }
   }
 
-  Future<void> _updateDeliveryLocation(LatLng location, String address) async {
+  Future<void> _updateDeliveryLocation(LatLng location) async {
+    final address = await ref.read(locationServiceProvider).getAddressFromLatLng(location.latitude, location.longitude);
     setState(() {
       _deliveryLocation = location;
       _deliveryAddress = address;
@@ -387,7 +388,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           position: location,
           infoWindow: InfoWindow(
             title: 'Delivery Location',
-            snippet: _deliveryAddress!,
+            snippet: _deliveryAddress?['addressLine1'] ?? '',
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         ),
@@ -486,7 +487,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       final now = DateTime.now();
       final pickupAddress = Address(
         id: 'pickup_temp',
-        addressLine1: _pickupAddress,
+        addressLine1: _pickupAddress['addressLine1'] ?? '',
         latitude: pickupLocation.latitude,
         longitude: pickupLocation.longitude,
         city: 'Current City', // Would be extracted from geocoding
@@ -501,7 +502,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       // Create delivery address
       final deliveryAddress = Address(
         id: 'delivery_temp',
-        addressLine1: _deliveryAddress ?? '',
+        addressLine1: _deliveryAddress?['addressLine1'] ?? '',
         latitude: _deliveryLocation!.latitude,
         longitude: _deliveryLocation!.longitude,
         city: 'Delivery City', // Would be extracted from geocoding
@@ -625,7 +626,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _pickupAddress.isNotEmpty ? _pickupAddress : 'Select pickup location',
+                          _pickupAddress.isNotEmpty ? _pickupAddress['formattedAddress'] : 'Select pickup location',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -680,7 +681,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _deliveryAddress ?? 'Where to?',
+                          _deliveryAddress?['formattedAddress'] ?? 'Where to?',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,

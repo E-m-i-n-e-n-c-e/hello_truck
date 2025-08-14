@@ -5,7 +5,7 @@ import '../services/google_places_service.dart';
 
 class AddressSearchWidget extends StatefulWidget {
   final String currentAddress;
-  final Function(LatLng, String) onLocationSelected;
+  final Function(LatLng) onLocationSelected;
   final String? title;
   final bool showBackButton;
 
@@ -88,7 +88,7 @@ class _AddressSearchWidgetState extends State<AddressSearchWidget> {
     });
 
     if (location != null) {
-      widget.onLocationSelected(location, prediction.description);
+      widget.onLocationSelected(location);
       if (mounted) {
         Navigator.pop(context);
       }

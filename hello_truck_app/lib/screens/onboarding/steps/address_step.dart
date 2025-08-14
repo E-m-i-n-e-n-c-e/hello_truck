@@ -105,7 +105,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
       backgroundColor: Colors.transparent,
       builder: (context) => AddressSearchWidget(
         currentAddress: widget.controller.addressLine1Controller.text,
-        onLocationSelected: (LatLng location, String address) {
+        onLocationSelected: (LatLng location) {
           _updateLocationAndAddress(location);
         },
         title: 'Search for Address',
