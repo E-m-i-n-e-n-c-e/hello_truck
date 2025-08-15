@@ -63,6 +63,12 @@ Future<void> deleteSavedAddress(API api, String id) async {
 
 /// Set an address as default
 Future<SavedAddress> setDefaultSavedAddress(API api, String id) async {
-  final response = await api.post('/customer/addresses/$id/default');
+  final response = await api.post('/customer/addresses/default/$id');
+  return SavedAddress.fromJson(response.data);
+}
+
+/// Get default address for the current user
+Future<SavedAddress> getDefaultSavedAddress(API api) async {
+  final response = await api.get('/customer/addresses/default');
   return SavedAddress.fromJson(response.data);
 }

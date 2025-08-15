@@ -21,17 +21,17 @@ class AuthClient with WidgetsBindingObserver {
   int _retryDelay = 0;
   bool _isRefreshing = false;
 
-  static const baseUrl = 'https://hello-truck-server.fly.dev';
-  // static const baseUrl = 'http://10.0.2.2:3000';
+  // static const baseUrl = 'https://hello-truck-server.fly.dev';
+  static const baseUrl = 'http://10.0.2.2:3000';
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed ) {
-      print('App resumed, Reinitializing');
+      debugPrint('App resumed, Reinitializing');
       initialize();
     }
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      print('App is inactive, stopping refresh loop');
+      debugPrint('App is inactive, stopping refresh loop');
       _refreshTimer?.cancel();
     }
   }

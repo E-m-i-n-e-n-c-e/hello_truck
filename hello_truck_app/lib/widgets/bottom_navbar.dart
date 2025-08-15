@@ -29,7 +29,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
               colorScheme: colorScheme,
             ),
             _buildNavItem(
-              icon: Icons.inventory_2,
+              icon: Icons.receipt_long,
               index: 1,
               colorScheme: colorScheme,
             ),
