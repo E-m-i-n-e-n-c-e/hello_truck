@@ -132,7 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             ? null
             : _controller.referralController.text.trim(),
         gstDetails: _controller.getGstDetails(),
-        address: _controller.getAddressForProfile(),
+        savedAddress: _controller.getSavedAddressForProfile(),
       );
 
       if (mounted) {

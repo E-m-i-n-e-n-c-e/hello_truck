@@ -11,7 +11,7 @@ import 'package:hello_truck_app/widgets/address_search_widget.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
 import 'package:hello_truck_app/services/pricing_service.dart';
 import 'package:hello_truck_app/models/package.dart';
-import 'package:hello_truck_app/models/address.dart';
+import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/api/orders_api.dart' as orders_api;
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -484,34 +484,19 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           .firstWhere((marker) => marker.markerId.value == 'pickup_location')
           .position;
 
-      final now = DateTime.now();
       final pickupAddress = Address(
-        id: 'pickup_temp',
-        addressLine1: _pickupAddress['addressLine1'] ?? '',
+        formattedAddress: _pickupAddress['formattedAddress'] ?? '',
+        addressDetails: _pickupAddress['addressDetails'] ?? '',
         latitude: pickupLocation.latitude,
         longitude: pickupLocation.longitude,
-        city: 'Current City', // Would be extracted from geocoding
-        district: 'Current District',
-        state: 'Current State',
-        pincode: '000000',
-        isDefault: false,
-        createdAt: now,
-        updatedAt: now,
       );
 
       // Create delivery address
       final deliveryAddress = Address(
-        id: 'delivery_temp',
-        addressLine1: _deliveryAddress?['addressLine1'] ?? '',
+        formattedAddress: _deliveryAddress?['formattedAddress'] ?? '',
+        addressDetails: _deliveryAddress?['addressDetails'] ?? '',
         latitude: _deliveryLocation!.latitude,
         longitude: _deliveryLocation!.longitude,
-        city: 'Delivery City', // Would be extracted from geocoding
-        district: 'Delivery District',
-        state: 'Delivery State',
-        pincode: '000000',
-        isDefault: false,
-        createdAt: now,
-        updatedAt: now,
       );
 
       // Create order request

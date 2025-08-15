@@ -319,3 +319,108 @@ class _OnboardingTextFieldState extends State<OnboardingTextField>
     );
   }
 }
+
+class OnboardingAddressField extends StatelessWidget {
+  final OnboardingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final bool isRequired;
+  final VoidCallback onTap;
+
+  const OnboardingAddressField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.isRequired = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return AnimatedBuilder(
+      animation: controller.slideAnimation,
+      builder: (context, _) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.3),
+            ),
+            color: colorScheme.surface,
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              label,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (isRequired) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.star,
+                                size: 8,
+                                color: colorScheme.error,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          controller.formattedAddressController.text.trim().isNotEmpty
+                              ? controller.formattedAddressController.text.trim()
+                              : hint,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: controller.formattedAddressController.text.trim().isNotEmpty
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontStyle: controller.formattedAddressController.text.trim().isEmpty
+                                ? FontStyle.italic
+                                : null,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

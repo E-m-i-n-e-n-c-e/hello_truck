@@ -1,7 +1,7 @@
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/models/customer.dart';
 import 'package:hello_truck_app/models/gst_details.dart';
-import 'package:hello_truck_app/models/address.dart';
+import 'package:hello_truck_app/models/saved_address.dart';
 
 /// Get customer profile
 Future<Customer> getCustomerProfile(API api) async {
@@ -15,7 +15,7 @@ Future<void> createCustomerProfile(API api, {
   String? googleIdToken,
   String? referralCode,
   GstDetails? gstDetails,
-  Address? address,
+  SavedAddress? savedAddress,
 }) async {
   await api.post('/customer/profile', data: {
     'firstName': firstName,
@@ -27,7 +27,7 @@ Future<void> createCustomerProfile(API api, {
       'businessName': gstDetails.businessName,
       'businessAddress': gstDetails.businessAddress,
     },
-    if (address != null) 'address':  address.toJson(),
+    if (savedAddress != null) 'savedAddress':  savedAddress.toJson(),
   });
 }
 

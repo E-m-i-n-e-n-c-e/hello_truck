@@ -67,13 +67,9 @@ class _AddressStepState extends ConsumerState<AddressStep> {
       location.longitude,
     );
 
-    // Update all address fields
-    widget.controller.addressLine1Controller.text = addressData['addressLine1'] ?? '';
-    widget.controller.landmarkController.text = addressData['landmark'] ?? '';
-    widget.controller.pincodeController.text = addressData['pincode'] ?? '';
-    widget.controller.cityController.text = addressData['city'] ?? '';
-    widget.controller.districtController.text = addressData['district'] ?? '';
-    widget.controller.stateController.text = addressData['state'] ?? '';
+    // Update formatted address
+    final formattedAddress = addressData['formattedAddress'] ?? '';
+    widget.controller.updateFormattedAddress(formattedAddress);
 
     // Move camera to location
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -104,7 +100,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddressSearchWidget(
-        currentAddress: widget.controller.addressLine1Controller.text,
+        currentAddress: widget.controller.formattedAddressController.text,
         onLocationSelected: (LatLng location) {
           _updateLocationAndAddress(location);
         },
@@ -138,14 +134,14 @@ class _AddressStepState extends ConsumerState<AddressStep> {
           // Title
           OnboardingStepTitle(
             controller: widget.controller,
-            title: 'Select Your Address',
+            title: 'Add Your First Address',
           ),
 
           const SizedBox(height: 12),
 
           OnboardingStepDescription(
             controller: widget.controller,
-            description: 'Tap the search icon to search for your address and tap on the map or drag the marker to select your precise location.',
+            description: 'Tap on the map or drag the marker to select your precise location. You can also search for an address.',
           ),
 
           const SizedBox(height: 32),
@@ -318,115 +314,120 @@ class _AddressStepState extends ConsumerState<AddressStep> {
   }
 
   Widget _buildAddressForm(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Address Line 1
+        // Address Name (Required)
         OnboardingTextField(
           controller: widget.controller,
-          textController: widget.controller.addressLine1Controller,
-          focusNode: widget.controller.addressLine1Focus,
-          label: 'Address Line 1',
-          hint: 'House/Building, Street',
-          icon: Icons.home_rounded,
-          isRequired: true,
-          onSubmitted: (_) => widget.controller.landmarkFocus.requestFocus(),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Landmark
-        OnboardingTextField(
-          controller: widget.controller,
-          textController: widget.controller.landmarkController,
-          focusNode: widget.controller.landmarkFocus,
-          label: 'Landmark (Optional)',
-          hint: 'Near landmark or area',
-          icon: Icons.place_rounded,
-          onSubmitted: (_) => widget.controller.pincodeFocus.requestFocus(),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Pincode and City Row
-        OnboardingTextField(
-          controller: widget.controller,
-          textController: widget.controller.pincodeController,
-          focusNode: widget.controller.pincodeFocus,
-          label: 'Pincode',
-          hint: 'Enter Pincode',
-          icon: Icons.pin_drop_rounded,
-          isRequired: true,
-          keyboardType: TextInputType.number,
-          onSubmitted: (_) => widget.controller.cityFocus.requestFocus(),
-        ),
-
-        const SizedBox(height: 16),
-
-        OnboardingTextField(
-          controller: widget.controller,
-          textController: widget.controller.cityController,
-          focusNode: widget.controller.cityFocus,
-          label: 'City',
-          hint: 'City name',
-          icon: Icons.location_city_rounded,
-          isRequired: true,
-          onSubmitted: (_) => widget.controller.districtFocus.requestFocus(),
-        ),
-
-        const SizedBox(height: 16),
-
-        // District and State Row
-        OnboardingTextField(
-          controller: widget.controller,
-          textController: widget.controller.districtController,
-          focusNode: widget.controller.districtFocus,
-          label: 'District',
-          hint: 'District name',
-          icon: Icons.map_rounded,
-          isRequired: true,
-          onSubmitted: (_) => widget.controller.stateFocus.requestFocus(),
-        ),
-
-        const SizedBox(height: 16),
-
-        OnboardingTextField(
-          controller: widget.controller,
-          textController: widget.controller.stateController,
-          focusNode: widget.controller.stateFocus,
-          label: 'State',
-          hint: 'State name',
-          icon: Icons.public_rounded,
-          isRequired: true,
-          onSubmitted: (_) => widget.controller.phoneNumberFocus.requestFocus(),
-        ),
-
-        const SizedBox(height: 16),
-        Divider(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
-        const SizedBox(height: 16),
-
-
-        // Phone Number and Label Row
-        OnboardingTextField(
-          controller: widget.controller,
-          textController: widget.controller.phoneNumberController,
-          focusNode: widget.controller.phoneNumberFocus,
-          label: 'Phone (Optional)',
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-          hint: 'Enter Phone Number',
-          icon: Icons.phone_rounded,
-          keyboardType: TextInputType.phone,
-          onSubmitted: (_) => widget.controller.addressLabelFocus.requestFocus(),
-        ),
-
-        const SizedBox(height: 16),
-
-        OnboardingTextField(
-          controller: widget.controller,
-          textController: widget.controller.addressLabelController,
-          focusNode: widget.controller.addressLabelFocus,
-          label: 'Label (Optional)',
+          textController: widget.controller.addressNameController,
+          focusNode: widget.controller.addressNameFocus,
+          label: 'Address Name',
           hint: 'Home, Office, etc.',
           icon: Icons.label_rounded,
+          isRequired: true,
+          onSubmitted: (_) => _showAddressSearchModal(),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Address Field (Non-editable, opens search)
+        OnboardingAddressField(
+          controller: widget.controller,
+          label: 'Address',
+          hint: 'Tap to search and select your address',
+          icon: Icons.location_on_rounded,
+          isRequired: true,
+          onTap: _showAddressSearchModal,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Address Details (Optional)
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.addressDetailsController,
+          focusNode: widget.controller.addressDetailsFocus,
+          label: 'Address Details',
+          hint: 'Apartment, floor, landmark, etc.',
+          icon: Icons.home_rounded,
+          maxLines: 2,
+          onSubmitted: (_) => widget.controller.contactNameFocus.requestFocus(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Divider
+        Divider(color: colorScheme.primary.withValues(alpha: 0.6)),
+        const SizedBox(height: 16),
+
+        // Contact Details Section
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Text(
+            'Contact Details',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Contact Name
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.contactNameController,
+          focusNode: widget.controller.contactNameFocus,
+          label: 'Contact Name',
+          hint: 'Name of person at this address',
+          icon: Icons.person_rounded,
+          onSubmitted: (_) => widget.controller.contactPhoneFocus.requestFocus(),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Contact Phone
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.contactPhoneController,
+          focusNode: widget.controller.contactPhoneFocus,
+          label: 'Contact Phone',
+          hint: 'Phone number',
+          icon: Icons.phone_rounded,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+          onSubmitted: (_) => widget.controller.noteToDriverFocus.requestFocus(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Driver Note Section
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Text(
+            'Note to Driver',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Note to Driver
+        OnboardingTextField(
+          controller: widget.controller,
+          textController: widget.controller.noteToDriverController,
+          focusNode: widget.controller.noteToDriverFocus,
+          label: 'Note to Driver',
+          hint: 'Any special instructions for the driver',
+          icon: Icons.note_rounded,
+          maxLines: 2,
           onSubmitted: (_) => widget.onNext(),
         ),
       ],

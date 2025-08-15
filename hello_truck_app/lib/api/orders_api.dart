@@ -1,6 +1,6 @@
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/models/package.dart';
-import 'package:hello_truck_app/models/address.dart';
+import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/services/pricing_service.dart';
 
 // Order status enum

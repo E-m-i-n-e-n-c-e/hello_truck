@@ -94,31 +94,32 @@ class ReviewStep extends StatelessWidget {
               icon: Icons.location_on_rounded,
               children: [
                 _buildReviewItem(
+                  'Name',
+                  controller.addressNameController.text.trim(),
+                ),
+                _buildReviewItem(
                   'Address',
-                  controller.addressLine1Controller.text.trim(),
+                  controller.formattedAddressController.text.trim(),
                 ),
-                if (controller.landmarkController.text.trim().isNotEmpty)
+                if (controller.addressDetailsController.text.trim().isNotEmpty)
                   _buildReviewItem(
-                    'Landmark',
-                    controller.landmarkController.text.trim(),
+                    'Details',
+                    controller.addressDetailsController.text.trim(),
                   ),
-                _buildReviewItem(
-                  'City',
-                  '${controller.cityController.text.trim()}, ${controller.stateController.text.trim()}',
-                ),
-                _buildReviewItem(
-                  'Pincode',
-                  controller.pincodeController.text.trim(),
-                ),
-                if (controller.phoneNumberController.text.trim().isNotEmpty)
+                if (controller.contactNameController.text.trim().isNotEmpty)
                   _buildReviewItem(
-                    'Phone',
-                    controller.phoneNumberController.text.trim(),
+                    'Contact Name',
+                    controller.contactNameController.text.trim(),
                   ),
-                if (controller.addressLabelController.text.trim().isNotEmpty)
+                if (controller.contactPhoneController.text.trim().isNotEmpty)
                   _buildReviewItem(
-                    'Label',
-                    controller.addressLabelController.text.trim(),
+                    'Contact Phone',
+                    controller.contactPhoneController.text.trim(),
+                  ),
+                if (controller.noteToDriverController.text.trim().isNotEmpty)
+                  _buildReviewItem(
+                    'Note to Driver',
+                    controller.noteToDriverController.text.trim(),
                   ),
               ],
             ),

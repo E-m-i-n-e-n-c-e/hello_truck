@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hello_truck_app/models/gst_details.dart';
-import 'package:hello_truck_app/models/address.dart';
+import 'package:hello_truck_app/models/saved_address.dart';
 
 class OnboardingController {
   // Page and Animation Controllers
@@ -22,15 +22,13 @@ class OnboardingController {
   final companyNameController = TextEditingController();
   final addressController = TextEditingController();
 
-  // Address Controllers for map step
-  final addressLine1Controller = TextEditingController();
-  final landmarkController = TextEditingController();
-  final pincodeController = TextEditingController();
-  final cityController = TextEditingController();
-  final districtController = TextEditingController();
-  final stateController = TextEditingController();
-  final phoneNumberController = TextEditingController();
-  final addressLabelController = TextEditingController();
+  // New Address Controllers for simplified structure
+  final addressNameController = TextEditingController();
+  final formattedAddressController = TextEditingController();
+  final addressDetailsController = TextEditingController();
+  final contactNameController = TextEditingController();
+  final contactPhoneController = TextEditingController();
+  final noteToDriverController = TextEditingController();
 
   // Focus Nodes
   final firstNameFocus = FocusNode();
@@ -41,15 +39,12 @@ class OnboardingController {
   final companyNameFocus = FocusNode();
   final addressFocus = FocusNode();
 
-  // Address Focus Nodes for map step
-  final addressLine1Focus = FocusNode();
-  final landmarkFocus = FocusNode();
-  final pincodeFocus = FocusNode();
-  final cityFocus = FocusNode();
-  final districtFocus = FocusNode();
-  final stateFocus = FocusNode();
-  final phoneNumberFocus = FocusNode();
-  final addressLabelFocus = FocusNode();
+  // New Address Focus Nodes
+  final addressNameFocus = FocusNode();
+  final addressDetailsFocus = FocusNode();
+  final contactNameFocus = FocusNode();
+  final contactPhoneFocus = FocusNode();
+  final noteToDriverFocus = FocusNode();
 
   // State Variables
   int _currentStep = 0;
@@ -236,32 +231,34 @@ class OnboardingController {
     _notifyStateChange();
   }
 
+  void updateFormattedAddress(String address) {
+    formattedAddressController.text = address;
+    _notifyStateChange();
+  }
+
   bool validateAddressStep() {
-    return addressLine1Controller.text.trim().isNotEmpty &&
-           pincodeController.text.trim().isNotEmpty &&
-           cityController.text.trim().isNotEmpty &&
-           districtController.text.trim().isNotEmpty &&
-           stateController.text.trim().isNotEmpty &&
+    return addressNameController.text.trim().isNotEmpty &&
+           formattedAddressController.text.trim().isNotEmpty &&
            _selectedLatitude != null &&
            _selectedLongitude != null;
   }
 
-  // Get address object for profile creation
-  Address? getAddressForProfile() {
+  // Get saved address object for profile creation
+  SavedAddress? getSavedAddressForProfile() {
     if (!validateAddressStep()) return null;
 
-    return Address(
+    return SavedAddress(
       id: '', // Will be set by backend
-      addressLine1: addressLine1Controller.text.trim(),
-      landmark: landmarkController.text.trim().isNotEmpty ? landmarkController.text.trim() : null,
-      pincode: pincodeController.text.trim(),
-      city: cityController.text.trim(),
-      district: districtController.text.trim(),
-      state: stateController.text.trim(),
-      latitude: _selectedLatitude!,
-      longitude: _selectedLongitude!,
-      phoneNumber: phoneNumberController.text.trim().isNotEmpty ? phoneNumberController.text.trim() : null,
-      label: addressLabelController.text.trim().isNotEmpty ? addressLabelController.text.trim() : null,
+      name: addressNameController.text.trim(),
+      address: Address(
+        formattedAddress: formattedAddressController.text.trim(),
+        addressDetails: addressDetailsController.text.trim().isNotEmpty ? addressDetailsController.text.trim() : null,
+        latitude: _selectedLatitude!,
+        longitude: _selectedLongitude!,
+      ),
+      contactName: contactNameController.text.trim().isNotEmpty ? contactNameController.text.trim() : null,
+      contactPhone: contactPhoneController.text.trim().isNotEmpty ? contactPhoneController.text.trim() : null,
+      noteToDriver: noteToDriverController.text.trim().isNotEmpty ? noteToDriverController.text.trim() : null,
       isDefault: true,
       createdAt: DateTime.now(), // Placeholder, will be set by backend
       updatedAt: DateTime.now(), // Placeholder, will be set by backend
@@ -317,15 +314,13 @@ class OnboardingController {
     companyNameController.dispose();
     addressController.dispose();
 
-    // Address controllers
-    addressLine1Controller.dispose();
-    landmarkController.dispose();
-    pincodeController.dispose();
-    cityController.dispose();
-    districtController.dispose();
-    stateController.dispose();
-    phoneNumberController.dispose();
-    addressLabelController.dispose();
+    // New address controllers
+    addressNameController.dispose();
+    formattedAddressController.dispose();
+    addressDetailsController.dispose();
+    contactNameController.dispose();
+    contactPhoneController.dispose();
+    noteToDriverController.dispose();
 
     firstNameFocus.dispose();
     lastNameFocus.dispose();
@@ -335,14 +330,11 @@ class OnboardingController {
     companyNameFocus.dispose();
     addressFocus.dispose();
 
-    // Address focus nodes
-    addressLine1Focus.dispose();
-    landmarkFocus.dispose();
-    pincodeFocus.dispose();
-    cityFocus.dispose();
-    districtFocus.dispose();
-    stateFocus.dispose();
-    phoneNumberFocus.dispose();
-    addressLabelFocus.dispose();
+    // New address focus nodes
+    addressNameFocus.dispose();
+    addressDetailsFocus.dispose();
+    contactNameFocus.dispose();
+    contactPhoneFocus.dispose();
+    noteToDriverFocus.dispose();
   }
 }
