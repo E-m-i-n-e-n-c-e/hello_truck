@@ -52,6 +52,42 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
     super.dispose();
   }
 
+
+  Widget _buildReactiveConfirmButton(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        _contactNameController,
+        _contactPhoneController,
+      ]),
+      builder: (context, _) {
+        final enabled = _canConfirm();
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: enabled ? _confirmAddress : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: enabled ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
+              foregroundColor: enabled ? Colors.white : Colors.grey.shade500,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Confirm',
+              style: textTheme.titleMedium?.copyWith(
+                color: enabled ? Colors.white : Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -121,30 +157,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
                     const SizedBox(height: 16),
 
             // Confirm Button
-                    SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _canConfirm() ? _confirmAddress : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _canConfirm()
-                      ? const Color(0xFF22AAAE)
-                      : Colors.grey.shade200,
-                  foregroundColor: _canConfirm() ? Colors.white : Colors.grey.shade500,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Confirm',
-                  style: textTheme.titleMedium?.copyWith(
-                    color: _canConfirm() ? Colors.white : Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
+                    _buildReactiveConfirmButton(context),
             // Add bottom padding for safe area
             SizedBox(height: MediaQuery.of(context).padding.bottom),
           ],
