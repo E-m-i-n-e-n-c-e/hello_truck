@@ -147,7 +147,7 @@ This document outlines the functional requirements for the **Booking Vehicle Pag
 ✅ **Agricultural Products**
 ✅ **Non-Agricultural Products**
 
-   **2) Agricultural Products**
+  **2) Agricultural Products**
 
 - If selected, the user must enter:
 

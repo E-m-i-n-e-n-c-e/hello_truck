@@ -7,6 +7,9 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/map_selection_page.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/add_or_edit_address_page.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
+
+enum _SavedAddressMenuAction { edit, delete }
 
 // Provider for saved addresses
 final savedAddressesProvider = FutureProvider.autoDispose<List<SavedAddress>>((ref) async {
@@ -313,10 +316,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
             } else {
               // Rest are saved addresses
               final address = addresses[index - 1];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _buildSavedAddressTile(address),
-              );
+              return _buildSavedAddressTile(address);
             }
           },
         );
@@ -468,28 +468,74 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
                 ],
               ),
             ),
-            InkWell(
-              onTap: () async {
-                // Open edit page
-                final updated = await Navigator.push<SavedAddress>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddOrEditAddressPage.edit(savedAddress: address),
+            PopupMenuButton<_SavedAddressMenuAction>(
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _SavedAddressMenuAction.edit,
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 18),
+                      SizedBox(width: 8),
+                      Text('Edit'),
+                    ],
                   ),
-                );
-                if (updated != null && mounted) {
-                  ref.invalidate(savedAddressesProvider);
+                ),
+                const PopupMenuItem(
+                  value: _SavedAddressMenuAction.delete,
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete'),
+                    ],
+                  ),
+                ),
+              ],
+              onSelected: (action) async {
+                switch (action) {
+                  case _SavedAddressMenuAction.edit:
+                    await Navigator.push<SavedAddress>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddOrEditAddressPage.edit(savedAddress: address),
+                      ),
+                    );
+                    if (!mounted) return;
+                    ref.invalidate(savedAddressesProvider);
+                    break;
+                  case _SavedAddressMenuAction.delete:
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete address?'),
+                        content: Text('"${address.name}" will be removed. This action cannot be undone.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: TextButton.styleFrom(foregroundColor: Colors.red),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm != true) return;
+                    try {
+                      final api = await ref.read(apiProvider.future);
+                      await deleteSavedAddress(api, address.id);
+                      if (!mounted) return;
+                      ref.invalidate(savedAddressesProvider);
+
+                    } catch (e) {
+                      if (!mounted) return;
+                        SnackBars.error(context, 'Failed to delete: $e');
+                    }
+                    break;
                 }
               },
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.edit,
-                  color: Colors.grey.shade400,
-                  size: 20,
-                ),
-              ),
             ),
           ],
         ),
@@ -517,8 +563,8 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
             id: '',
             name: prediction.structuredFormat ?? prediction.description.split(',').first,
             address: initialAddress,
-            contactName: null,
-            contactPhone: null,
+            contactName: '',
+            contactPhone: '',
             noteToDriver: null,
             isDefault: false,
             createdAt: DateTime.now(),

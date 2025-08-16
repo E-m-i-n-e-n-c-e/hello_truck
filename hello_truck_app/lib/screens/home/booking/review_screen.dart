@@ -497,7 +497,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (address.contactPhone != null) ...[
+              if (address.contactPhone.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(
                   '${address.contactName} • ${address.contactPhone}',

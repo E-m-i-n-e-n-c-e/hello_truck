@@ -30,10 +30,10 @@ class _AddressSelectionScreenState
   double _distanceKm = 0.0;
   bool _hasInitializedCurrentLocation = false;
   bool _hasCheckedDefaultAddress = false;
-  String? _pickupContactName;
-  String? _dropContactName;
-  String? _pickupContactNumber;
-  String? _dropContactNumber;
+  String? get _pickupContactNumber => _pickupAddress?.contactPhone;
+  String? get _pickupContactName => _pickupAddress?.contactName;
+  String? get _dropContactNumber => _dropAddress?.contactPhone;
+  String? get _dropContactName => _dropAddress?.contactName;
 
   Future<void> _checkDefaultAddress() async {
     if (_hasCheckedDefaultAddress) return;
@@ -41,14 +41,10 @@ class _AddressSelectionScreenState
     try {
       final api = await ref.read(apiProvider.future);
       final defaultAddress = await getDefaultSavedAddress(api);
-      final customer = await ref.read(customerProvider.future);
-      final customerName = '${customer.firstName} ${customer.lastName}'.trim();
 
       if (mounted) {
         setState(() {
           _pickupAddress = defaultAddress;
-          _pickupContactName = defaultAddress.contactName ?? customerName;
-          _pickupContactNumber = defaultAddress.contactPhone ?? customer.phoneNumber;
           _hasCheckedDefaultAddress = true;
         });
         _updateMapView();
@@ -72,12 +68,8 @@ class _AddressSelectionScreenState
           setState(() {
             if (isPickup) {
               _pickupAddress = address;
-              _pickupContactName = address.contactName;
-              _pickupContactNumber = address.contactPhone;
             } else {
               _dropAddress = address;
-              _dropContactName = address.contactName;
-              _dropContactNumber = address.contactPhone;
             }
           });
           _updateMapView();
@@ -134,8 +126,8 @@ class _AddressSelectionScreenState
           latitude: position.latitude,
           longitude: position.longitude,
         ),
-        contactName: null,
-        contactPhone: null,
+        contactName: customerName,
+        contactPhone: customer.phoneNumber,
         noteToDriver: null,
         isDefault: false,
         createdAt: DateTime.now(),
@@ -144,8 +136,6 @@ class _AddressSelectionScreenState
 
       setState(() {
         _pickupAddress = currentLocationAddress;
-        _pickupContactName = customerName;
-        _pickupContactNumber = customer.phoneNumber;
         _hasInitializedCurrentLocation = true;
       });
 

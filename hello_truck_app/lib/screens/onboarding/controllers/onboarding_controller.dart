@@ -256,8 +256,8 @@ class OnboardingController {
         latitude: _selectedLatitude!,
         longitude: _selectedLongitude!,
       ),
-      contactName: contactNameController.text.trim().isNotEmpty ? contactNameController.text.trim() : null,
-      contactPhone: contactPhoneController.text.trim().isNotEmpty ? contactPhoneController.text.trim() : null,
+      contactName: contactNameController.text.trim().isNotEmpty ? contactNameController.text.trim() : '',
+      contactPhone: contactPhoneController.text.trim().isNotEmpty ? contactPhoneController.text.trim() : '',
       noteToDriver: noteToDriverController.text.trim().isNotEmpty ? noteToDriverController.text.trim() : null,
       isDefault: true,
       createdAt: DateTime.now(), // Placeholder, will be set by backend

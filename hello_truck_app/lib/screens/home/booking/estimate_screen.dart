@@ -94,7 +94,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    if (widget.pickupAddress.contactPhone != null) ...[
+                                    if (widget.pickupAddress.contactPhone.isNotEmpty) ...[
                                       const SizedBox(height: 2),
                                       Text(
                                         '${widget.pickupAddress.contactName} • ${widget.pickupAddress.contactPhone}',

@@ -56,8 +56,8 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
       _selectedAddress = saved.address;
       _formattedAddressController.text = saved.address.formattedAddress;
       _addressDetailsController.text = saved.address.addressDetails ?? '';
-      _contactNameController.text = saved.contactName ?? '';
-      _contactPhoneController.text = saved.contactPhone ?? '';
+      _contactNameController.text = saved.contactName;
+      _contactPhoneController.text = saved.contactPhone;
       _noteToDriverController.text = saved.noteToDriver ?? '';
       _setAsDefault = saved.isDefault;
     }
@@ -79,6 +79,7 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.9,

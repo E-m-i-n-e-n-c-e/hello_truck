@@ -36,8 +36,8 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
   void initState() {
     super.initState();
     _addressDetailsController = TextEditingController(text: widget.savedAddress.address.addressDetails ?? '');
-    _contactNameController = TextEditingController(text: widget.savedAddress.contactName ?? '');
-    _contactPhoneController = TextEditingController(text: widget.savedAddress.contactPhone ?? '');
+    _contactNameController = TextEditingController(text: widget.savedAddress.contactName);
+    _contactPhoneController = TextEditingController(text: widget.savedAddress.contactPhone);
     _noteToDriverController = TextEditingController(text: widget.savedAddress.noteToDriver ?? '');
     _addressNameController = TextEditingController();
   }

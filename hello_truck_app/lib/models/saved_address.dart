@@ -2,8 +2,8 @@ class SavedAddress {
   final String id;
   final String name;
   final Address address;
-  final String? contactName;
-  final String? contactPhone;
+  final String contactName;
+  final String contactPhone;
   final String? noteToDriver;
   final bool isDefault;
   final DateTime createdAt;
@@ -13,8 +13,8 @@ class SavedAddress {
     required this.id,
     required this.name,
     required this.address,
-    this.contactName,
-    this.contactPhone,
+    required this.contactName,
+    required this.contactPhone,
     this.noteToDriver,
     required this.isDefault,
     required this.createdAt,
