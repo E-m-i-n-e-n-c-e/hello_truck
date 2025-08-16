@@ -5,10 +5,8 @@ import 'package:hello_truck_app/models/place_prediction.dart';
 import 'package:hello_truck_app/api/address_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
-import 'package:hello_truck_app/screens/home/booking/widgets/contact_details_dialog.dart';
-import 'package:hello_truck_app/screens/home/booking/widgets/save_address_dialog.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/map_selection_page.dart';
-import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/screens/home/booking/widgets/add_or_edit_address_page.dart';
 
 // Provider for saved addresses
 final savedAddressesProvider = FutureProvider.autoDispose<List<SavedAddress>>((ref) async {
@@ -36,7 +34,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
   final TextEditingController _searchController = TextEditingController();
   List<PlacePrediction> _predictions = [];
   bool _isLoading = false;
-  int _selectedTabIndex = 0; // 0: Recent, 1: Suggested, 2: Saved
+  int _selectedTabIndex = 0; // 0: Recent, 1: Saved
 
   @override
   void initState() {
@@ -154,8 +152,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
               child: Row(
                 children: [
                   _buildTabButton('Recent', 0),
-                  _buildTabButton('Suggested', 1),
-                  _buildTabButton('Saved', 2),
+                  _buildTabButton('Saved', 1),
                 ],
               ),
             ),
@@ -172,22 +169,26 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
                     // Choose on Map button
                     Padding(
                       padding: const EdgeInsets.only(bottom: 40.0),
-                      child: TextButton.icon(
-                        onPressed: _openMapSelection,
-                        icon: Icon(
-                          Icons.map,
-                          color: colorScheme.secondary.withValues(alpha: 0.8),
-                        ),
-                        label: Text(
-                          'Choose on Map',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: colorScheme.secondary.withValues(alpha: 0.8),
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
+                      child: InkWell(
+                        onTap: _openMapSelection,
+                        child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.map,
+                                size: Theme.of(context).textTheme.titleLarge?.fontSize,
+                                color: colorScheme.secondary.withValues(alpha: 0.8),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Choose on Map',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: colorScheme.secondary.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -199,7 +200,6 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
   }
 
   Widget _buildTabButton(String title, int index) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isSelected = _selectedTabIndex == index;
 
@@ -213,21 +213,15 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: isSelected ? colorScheme.primary : Colors.transparent,
-                width: 2,
-              ),
-            ),
+            color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.25) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             title,
             textAlign: TextAlign.center,
             style: textTheme.titleMedium?.copyWith(
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.onSurface.withValues(alpha: 0.6),
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -267,9 +261,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     switch (_selectedTabIndex) {
       case 0: // Recent
         return _buildRecentAddresses();
-      case 1: // Suggested
-        return _buildSuggestedAddresses();
-      case 2: // Saved
+      case 1: // Saved
         return _buildSavedAddresses();
       default:
         return const SizedBox.shrink();
@@ -301,60 +293,31 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     );
   }
 
-  Widget _buildSuggestedAddresses() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          _buildSuggestedTile(
-            icon: Icons.add,
-            title: 'Add new',
-            subtitle: '',
-            color: Theme.of(context).colorScheme.primary,
-            onTap: () {
-              // TODO: Add new address functionality
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildSuggestedTile(
-            icon: Icons.home,
-            title: 'Add home',
-            subtitle: '',
-            color: Colors.orange,
-            onTap: () {
-              // TODO: Add home address functionality
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildSuggestedTile(
-            icon: Icons.work,
-            title: 'Add work',
-            subtitle: '',
-            color: Colors.blue,
-            onTap: () {
-              // TODO: Add work address functionality
-            },
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildSavedAddresses() {
     final savedAddressesAsync = ref.watch(savedAddressesProvider);
 
     return savedAddressesAsync.when(
       data: (addresses) {
-        if (addresses.isEmpty) {
-          return const Center(child: Text('No saved addresses'));
-        }
-
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: addresses.length,
+          itemCount: addresses.length + 1, // +1 for "Add new" option
           itemBuilder: (context, index) {
-            final address = addresses[index];
-            return _buildSavedAddressTile(address);
+            if (index == 0) {
+              // First item is "Add new"
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildAddNewTile(),
+              );
+            } else {
+              // Rest are saved addresses
+              final address = addresses[index - 1];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildSavedAddressTile(address),
+              );
+            }
           },
         );
       },
@@ -416,87 +379,24 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     );
   }
 
-  Widget _buildSavedAddressTile(SavedAddress address) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildAddNewTile() {
     final textTheme = Theme.of(context).textTheme;
 
     return InkWell(
-      onTap: () => _selectSavedAddress(address),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.favorite, color: Colors.red, size: 16),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    address.name,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    address.address.formattedAddress,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.edit,
-              color: colorScheme.onSurface.withValues(alpha: 0.4),
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSuggestedTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return InkWell(
-      onTap: onTap,
+      onTap: () {
+        _onAddNewAddress();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 24),
+            Icon(Icons.add, color: Colors.blue, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                title,
+                'Add new',
                 style: textTheme.titleMedium?.copyWith(
-                  color: color,
+                  color: Colors.blue,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -507,6 +407,97 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     );
   }
 
+  Future<void> _onAddNewAddress() async {
+    // 1) Open map in direct mode to pick address
+    final address = await Navigator.push<Address>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapSelectionPage(
+          mode: MapSelectionMode.direct,
+        ),
+      ),
+    );
+
+    if (!mounted || address == null) return;
+
+    // 2) Open the add-address form prefilled with the picked address
+    final saved = await Navigator.push<SavedAddress>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddOrEditAddressPage.add(initialAddress: address),
+      ),
+    );
+
+    if (!mounted || saved == null) return;
+
+    // 3) Just refresh the saved addresses list
+    ref.invalidate(savedAddressesProvider);
+  }
+
+  Widget _buildSavedAddressTile(SavedAddress address) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: () => _selectSavedAddress(address),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.favorite, color: Colors.red, size: 20),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    address.name,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    address.address.formattedAddress,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            InkWell(
+              onTap: () async {
+                // Open edit page
+                final updated = await Navigator.push<SavedAddress>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddOrEditAddressPage.edit(savedAddress: address),
+                  ),
+                );
+                if (updated != null && mounted) {
+                  ref.invalidate(savedAddressesProvider);
+                }
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.edit,
+                  color: Colors.grey.shade400,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
   Future<void> _selectPrediction(PlacePrediction prediction) async {
     if (!mounted) return;
 
@@ -514,82 +505,41 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
       final placeDetails = await GooglePlacesService.getPlaceDetails(
         prediction.placeId,
       );
-      if (placeDetails != null && mounted) {
-        // Show contact details dialog for new address
-        final contactDetails = await showDialog<Map<String, String>>(
-          context: context,
-          builder: (context) => ContactDetailsDialog(
-            addressName:
-                prediction.structuredFormat ??
-                prediction.description.split(',').first,
-          ),
-        );
-
-        if (contactDetails != null && mounted) {
-          // Create address object
-          final address = Address(
+          if (placeDetails != null && mounted) {
+          // Create initial saved address for map selection
+          final initialAddress = Address(
             formattedAddress: prediction.description,
             latitude: placeDetails.latitude,
             longitude: placeDetails.longitude,
           );
 
-          // Check if user wants to save this address
-          final shouldSave = await showDialog<bool>(
-            context: context,
-            builder: (context) => SaveAddressDialog(
-              addressName:
-                  prediction.structuredFormat ??
-                  prediction.description.split(',').first,
-            ),
+          final initialSavedAddress = SavedAddress(
+            id: '',
+            name: prediction.structuredFormat ?? prediction.description.split(',').first,
+            address: initialAddress,
+            contactName: null,
+            contactPhone: null,
+            noteToDriver: null,
+            isDefault: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
           );
 
-          if (!mounted) return;
-
-          SavedAddress savedAddress;
-
-          if (shouldSave == true) {
-            // Save the address
-            try {
-              final api = await ref.read(apiProvider.future);
-              savedAddress = await createSavedAddress(
-                api,
-                name:
-                    prediction.structuredFormat ??
-                    prediction.description.split(',').first,
-                address: address,
-                contactName: contactDetails['contactName'],
-                contactPhone: contactDetails['contactPhone'],
-                noteToDriver: contactDetails['noteToDriver'],
-              );
-              ref.invalidate(savedAddressesProvider);
-            } catch (e) {
-              if (mounted) {
-                SnackBars.error(context, 'Error saving address: $e');
-              }
-              return;
-            }
-          } else {
-            // Create temporary saved address without saving to backend
-            savedAddress = SavedAddress(
-              id: '', // Will be set by the backend
-              name:
-                  prediction.structuredFormat ??
-                  prediction.description.split(',').first,
-              address: address,
-              contactName: contactDetails['contactName'],
-              contactPhone: contactDetails['contactPhone'],
-              noteToDriver: contactDetails['noteToDriver'],
-              isDefault: false,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            );
-          }
-
-          widget.onAddressSelected(savedAddress);
-          if (mounted) {
-            Navigator.pop(context);
-          }
-        }
+          // Navigate to map selection page
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MapSelectionPage(
+                isPickup: widget.isPickup,
+                initialSavedAddress: initialSavedAddress,
+                onAddressSelected: (selectedAddress) {
+                  widget.onAddressSelected(selectedAddress);
+                  // Close the address search page as well
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          );
       }
     } catch (e) {
       print('Error selecting prediction: $e');
@@ -607,36 +557,21 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
   Future<void> _selectSavedAddress(SavedAddress address) async {
     if (!mounted) return;
 
-    // Show contact details dialog with pre-filled data
-    final contactDetails = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => ContactDetailsDialog(
-        addressName: address.name,
-        initialContactName: address.contactName,
-        initialContactPhone: address.contactPhone,
-        initialNoteToDriver: address.noteToDriver,
+    // Navigate to map selection page with existing saved address
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapSelectionPage(
+          isPickup: widget.isPickup,
+          initialSavedAddress: address,
+          onAddressSelected: (selectedAddress) {
+            widget.onAddressSelected(selectedAddress);
+            // Close the address search page as well
+            Navigator.pop(context);
+          },
+        ),
       ),
     );
-
-    if (contactDetails != null && mounted) {
-      // Update the address with new contact details
-      final updatedAddress = SavedAddress(
-        id: address.id,
-        name: address.name,
-        address: address.address,
-        contactName: contactDetails['contactName'],
-        contactPhone: contactDetails['contactPhone'],
-        noteToDriver: contactDetails['noteToDriver'],
-        isDefault: address.isDefault,
-        createdAt: address.createdAt,
-        updatedAt: DateTime.now(),
-      );
-
-      widget.onAddressSelected(updatedAddress);
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    }
   }
 
   void _openMapSelection() {

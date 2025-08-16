@@ -27,19 +27,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final gstDetails = ref.watch(gstDetailsProvider);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           'Profile',
           style: textTheme.titleLarge?.copyWith(
-            color: colorScheme.onPrimary,
+            color: Colors.black87,
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: colorScheme.primary,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showGstDetailsDialog(),
-        child: const Icon(Icons.add),
+        backgroundColor: colorScheme.primary,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: customer.when(
         data: (customer) {
@@ -52,15 +56,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Center(
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
                         child: Text(
                           ('${customer.firstName.isNotEmpty ? customer.firstName[0] : ''}'
                                   '${customer.lastName.isNotEmpty ? customer.lastName[0] : ''}')
                               .toUpperCase(),
-                          style: textTheme.headlineMedium?.copyWith(
-                            color: colorScheme.primary,
+                          style: textTheme.headlineLarge?.copyWith(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -68,22 +75,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 16),
                       Text(
                         '${customer.firstName} ${customer.lastName}'.trim(),
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                       if (customer.email.isNotEmpty)
                         Text(
                           customer.email,
-                          style: textTheme.titleMedium?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.7),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey.shade600,
                           ),
                         ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
+
+                // Profile Info Section
+                Text(
+                  'Personal Information',
+                  style: textTheme.titleLarge?.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Profile Info with Edit Buttons
                 _EditableInfoTile(
@@ -129,121 +147,182 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
 
                 // GST Details Section
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
                 Text(
                   'GST Details',
-                  style: textTheme.titleLarge,
+                  style: textTheme.titleLarge?.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 gstDetails.when(
                   data: (details) {
-                    if (details.isEmpty) {
-                      return Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              size: 64,
-                              color: colorScheme.onSurface.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No GST details added yet',
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                         if (details.isEmpty) {
+                       return Container(
+                         width: double.infinity,
+                         padding: const EdgeInsets.all(32),
+                         decoration: BoxDecoration(
+                           color: Colors.grey.shade50,
+                           borderRadius: BorderRadius.circular(12),
+                         ),
+                         child: Column(
+                           children: [
+                             Icon(
+                               Icons.receipt_long_outlined,
+                               size: 48,
+                               color: Colors.grey.shade400,
+                             ),
+                             const SizedBox(height: 16),
+                             Text(
+                               'No GST details added yet',
+                               style: textTheme.titleMedium?.copyWith(
+                                 color: Colors.black87,
+                                 fontWeight: FontWeight.w500,
+                               ),
+                             ),
+                             const SizedBox(height: 8),
+                             Text(
+                               'Add your GST details to get tax invoices',
+                               style: textTheme.bodyMedium?.copyWith(
+                                 color: Colors.grey.shade600,
+                               ),
+                               textAlign: TextAlign.center,
+                             ),
+                           ],
+                         ),
+                       );
+                     }
+
+                    return Column(
+                      children: details.map((detail) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _GstDetailCard(
+                            gstDetail: detail,
+                            onEdit: () => _showGstDetailsDialog(existingDetails: detail),
+                            onDeactivate: () => _deactivateGstDetails(detail.id ?? ''),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, _) => Container(
+                     width: double.infinity,
+                     padding: const EdgeInsets.all(20),
+                     decoration: BoxDecoration(
+                       color: Colors.red.shade50,
+                       borderRadius: BorderRadius.circular(12),
+                     ),
+                     child: Column(
+                       children: [
+                         Icon(
+                           Icons.error_outline,
+                           size: 32,
+                           color: Colors.red.shade400,
+                         ),
+                         const SizedBox(height: 12),
+                         Text(
+                           'Error loading GST details',
+                           style: textTheme.titleMedium?.copyWith(
+                             color: Colors.red.shade700,
+                             fontWeight: FontWeight.w500,
+                           ),
+                         ),
+                         const SizedBox(height: 8),
+                         TextButton(
+                           onPressed: () => ref.invalidate(gstDetailsProvider),
+                           child: const Text('Try Again'),
+                         ),
+                       ],
+                     ),
+                   ),
+                ),
+
+                // Logout Button
+                const SizedBox(height: 40),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.red.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () async {
+                        final shouldLogout = await showDialog<bool>(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => AlertDialog(
+                            title: Text(
+                              'Logout',
+                              style: textTheme.titleLarge?.copyWith(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Add your GST details to get tax invoices',
+                            content: Text(
+                              'Are you sure you want to logout?',
                               style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text(
+                                  'CANCEL',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text(
+                                  'LOGOUT',
+                                  style: TextStyle(color: Colors.red.shade600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (shouldLogout == true && mounted) {
+                          await ref.read(apiProvider).value!.signOut();
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.logout,
+                              color: Colors.red.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Logout',
+                              style: textTheme.titleMedium?.copyWith(
+                                color: Colors.red.shade600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: details.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final detail = details[index];
-                        return _GstDetailCard(
-                          gstDetail: detail,
-                          onEdit: () => _showGstDetailsDialog(existingDetails: detail),
-                          onDeactivate: () => _deactivateGstDetails(detail.id ?? ''),
-                        );
-                      },
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: colorScheme.error,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error loading GST details: $error',
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.error,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () => ref.invalidate(gstDetailsProvider),
-                          child: const Text('Try Again'),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-
-                // Logout Button
-                const SizedBox(height: 32),
-                OutlinedButton(
-                  onPressed: () async {
-                    final shouldLogout = await showDialog<bool>(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Logout'),
-                        content: const Text('Are you sure you want to logout?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('CANCEL'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: Text(
-                              'LOGOUT',
-                              style: TextStyle(color: colorScheme.error),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (shouldLogout == true && mounted) {
-                      await ref.read(apiProvider).value!.signOut();
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colorScheme.error,
-                    minimumSize: const Size(double.infinity, 50),
-                    side: BorderSide(color: colorScheme.error),
-                  ),
-                  child: const Text('Logout'),
                 ),
               ],
             ),
@@ -258,15 +337,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Icon(
                   Icons.error_outline,
                   size: 48,
-                  color: colorScheme.error,
+                  color: Colors.red.shade400,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Error loading profile: $error',
+                  'Error loading profile',
                   style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.error,
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w500,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 TextButton(
@@ -419,10 +498,11 @@ class _EditableInfoTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
+          color: Colors.grey.shade200,
+          width: 1,
         ),
       ),
       child: Row(
@@ -433,7 +513,7 @@ class _EditableInfoTile extends StatelessWidget {
               color: colorScheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: colorScheme.primary),
+            child: Icon(icon, color: colorScheme.primary, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -445,7 +525,8 @@ class _EditableInfoTile extends StatelessWidget {
                     Text(
                       title,
                       style: textTheme.titleSmall?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     if (isLinked) ...[
@@ -462,6 +543,7 @@ class _EditableInfoTile extends StatelessWidget {
                 Text(
                   subtitle,
                   style: textTheme.titleMedium?.copyWith(
+                    color: Colors.black87,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -496,74 +578,82 @@ class _GstDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    gstDetail.businessName,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  gstDetail.businessName,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                PopupMenuButton(
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit),
-                          SizedBox(width: 8),
-                          Text('Edit'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'deactivate',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Deactivate', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      onEdit();
-                    } else if (value == 'deactivate') {
-                      onDeactivate();
-                    }
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'GST Number: ${gstDetail.gstNumber}',
-              style: textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              gstDetail.businessAddress,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.7),
               ),
+              PopupMenuButton<String>(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 20),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'deactivate',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                        SizedBox(width: 8),
+                        Text('Deactivate', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onEdit();
+                  } else if (value == 'deactivate') {
+                    onDeactivate();
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'GST Number: ${gstDetail.gstNumber}',
+            style: textTheme.bodyMedium?.copyWith(
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            gstDetail.businessAddress,
+            style: textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
       ),
     );
   }

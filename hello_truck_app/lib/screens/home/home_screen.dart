@@ -13,385 +13,236 @@ class HomeScreen extends ConsumerWidget {
     final api = ref.watch(apiProvider);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      extendBodyBehindAppBar: true,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Enhanced Header Section with better status bar handling
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.primary.withValues(alpha: 0.95),
-                    colorScheme.primary,
-                    colorScheme.primary.withValues(alpha: 0.9),
-                  ],
-                  stops: const [0.0, 0.7, 1.0],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Enhanced background decorative elements
-                  Positioned(
-                    right: -80,
-                    top: -20,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: -60,
-                    top: 100,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 20,
-                    top: 200,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                    ),
-                  ),
-                  // Status bar area with gradient overlay
-                  Container(
-                    height: MediaQuery.of(context).padding.top,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colorScheme.primary.withValues(alpha: 0.8),
-                          colorScheme.primary.withValues(alpha: 0.95),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Header content with proper padding
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).padding.top + 10,
-                      left: 20,
-                      right: 20,
-                      bottom: 30,
-                    ),
-                    child: Column(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top row with greeting and logout
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Top row with greeting and logout
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      '👋 Welcome Back!',
-                                      style: textTheme.titleMedium?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Ready to ship your parcel?',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              'Hello',
+                              style: textTheme.headlineMedium?.copyWith(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.logout, color: Colors.white),
-                                onPressed: () => _showLogoutDialog(context, colorScheme, api),
+                            Text(
+                              'Ready to ship your parcel?',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey.shade600,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 40),
-
-                        // Enhanced app logo and branding
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, -4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.local_shipping,
-                            size: 48,
-                            color: colorScheme.primary,
+                        IconButton(
+                          onPressed: () => _showLogoutDialog(context, colorScheme, api),
+                          icon: Icon(
+                            Icons.logout,
+                            color: Colors.grey.shade700,
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Hello Truck',
-                          style: textTheme.headlineLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '🚚 Fast, Reliable, Secure Delivery',
-                            style: textTheme.bodyLarge?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(height: 32),
 
-            // Main Content Section
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  // Main CTA Button - Book Parcel Transportation
-                  Container(
-                    width: double.infinity,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          colorScheme.primary,
-                          colorScheme.primary.withValues(alpha: 0.8),
+                    // App branding
+                    Center(
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.local_shipping,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Hello Truck',
+                            style: textTheme.headlineLarge?.copyWith(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Fast, Reliable, Secure Delivery',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
                         ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const AddressSelectionScreen(),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Book Parcel Transportation',
-                                      style: textTheme.titleLarge?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
+                  ],
+                ),
+              ),
+
+              // Main Content Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    // Main CTA Button
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                                                         Navigator.of(context).push(
+                               MaterialPageRoute(
+                                 builder: (context) => const AddressSelectionScreen(),
+                               ),
+                             );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Book Parcel Transportation',
+                                        style: textTheme.titleLarge?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Quick & easy booking process',
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Quick & easy booking process',
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
+                                const Icon(
                                   Icons.arrow_forward,
                                   color: Colors.white,
-                                  size: 28,
+                                  size: 24,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 40),
 
-                  // Features Section
-                  Row(
-                    children: [
-                      Text(
-                        'Why Choose Us',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 24,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Feature Cards Grid
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.1,
-                    children: [
-                      _buildModernFeatureCard(
-                        context,
-                        icon: Icons.flash_on,
-                        title: 'Fast Delivery',
-                        subtitle: 'Same day delivery available',
-                        color: Colors.orange,
-                      ),
-                      _buildModernFeatureCard(
-                        context,
-                        icon: Icons.security,
-                        title: 'Secure',
-                        subtitle: 'Your package is safe with us',
-                        color: Colors.green,
-                      ),
-                      _buildModernFeatureCard(
-                        context,
-                        icon: Icons.support_agent,
-                        title: '24/7 Support',
-                        subtitle: 'We\'re here to help anytime',
-                        color: Colors.blue,
-                      ),
-                      _buildModernFeatureCard(
-                        context,
-                        icon: Icons.payments,
-                        title: 'Easy Payment',
-                        subtitle: 'Multiple payment options',
-                        color: Colors.purple,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Quick Stats Section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.1),
+                    // Features Section
+                    Text(
+                      'Why Choose Us',
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
                       ),
                     ),
-                    child: Column(
+                    const SizedBox(height: 20),
+
+                    // Feature Cards
+                    Column(
                       children: [
-                        Text(
-                          'Our Performance',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                          ),
+                        _buildFeatureCard(
+                          context,
+                          icon: Icons.flash_on,
+                          title: 'Fast Delivery',
+                          subtitle: 'Same day delivery available',
+                          color: Colors.orange,
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildStatItem('1000+', 'Deliveries', colorScheme),
-                            _buildStatItem('98%', 'Success Rate', colorScheme),
-                            _buildStatItem('4.8★', 'Rating', colorScheme),
-                          ],
+                        _buildFeatureCard(
+                          context,
+                          icon: Icons.security,
+                          title: 'Secure',
+                          subtitle: 'Your package is safe with us',
+                          color: Colors.green,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFeatureCard(
+                          context,
+                          icon: Icons.support_agent,
+                          title: '24/7 Support',
+                          subtitle: 'We\'re here to help anytime',
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFeatureCard(
+                          context,
+                          icon: Icons.payments,
+                          title: 'Easy Payment',
+                          subtitle: 'Multiple payment options',
+                          color: Colors.purple,
                         ),
                       ],
                     ),
-                  ),
 
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 40),
+
+                    // Stats Section
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Our Performance',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStatItem('1000+', 'Deliveries'),
+                              _buildStatItem('98%', 'Success Rate'),
+                              _buildStatItem('4.8★', 'Rating'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -440,73 +291,67 @@ class HomeScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildModernFeatureCard(
+  Widget _buildFeatureCard(
     BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
     required Color color,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withValues(alpha: 0.2),
+          color: Colors.grey.shade200,
           width: 1,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: color,
-              ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
+            child: Icon(
+              icon,
+              size: 24,
+              color: color,
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatItem(String value, String label, ColorScheme colorScheme) {
+  Widget _buildStatItem(String value, String label) {
     return Column(
       children: [
         Text(
@@ -514,7 +359,7 @@ class HomeScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: colorScheme.primary,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 4),
@@ -522,7 +367,7 @@ class HomeScreen extends ConsumerWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Colors.grey.shade600,
           ),
         ),
       ],

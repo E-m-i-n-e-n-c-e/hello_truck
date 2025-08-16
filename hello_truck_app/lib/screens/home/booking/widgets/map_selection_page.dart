@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
-import 'package:hello_truck_app/screens/home/booking/widgets/contact_details_dialog.dart';
-import 'package:hello_truck_app/screens/home/booking/widgets/save_address_dialog.dart';
-import 'package:hello_truck_app/api/address_api.dart';
-import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/widgets/address_search_widget.dart';
+import 'package:hello_truck_app/screens/home/booking/widgets/address_confirmation_modal.dart';
+
+enum MapSelectionMode {
+  booking, // Current mode - shows modals, save options, etc.
+  direct,  // Direct mode - returns address directly without modals
+}
 
 class MapSelectionPage extends ConsumerStatefulWidget {
   final bool isPickup;
-  final Function(SavedAddress) onAddressSelected;
+  final Function(SavedAddress)? onAddressSelected;
   final String title;
+  final MapSelectionMode mode;
+  final SavedAddress? initialSavedAddress;
 
   const MapSelectionPage({
     super.key,
-    required this.isPickup,
-    required this.onAddressSelected,
-  }): title = isPickup ? 'Pickup Location' : 'Drop Location';
+    this.isPickup = true,
+    this.onAddressSelected,
+    this.mode = MapSelectionMode.booking,
+    this.initialSavedAddress,
+  }): title = mode == MapSelectionMode.direct
+      ? 'Location'
+      : (isPickup ? 'Pickup Location' : 'Drop Location');
 
   @override
   ConsumerState<MapSelectionPage> createState() => _MapSelectionPageState();
@@ -29,8 +38,44 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
   GoogleMapController? _mapController;
   LatLng? _selectedLocation;
   final Set<Marker> _markers = {};
+  final Set<Circle> _circles = {};
   bool _isLoading = false;
   String _selectedAddress = '';
+  String _addressName = '';
+
+  // Constants for distance calculation
+  static const double allowedRadiusMeters = 500.0; // 500m radius
+
+  void _initializeLocation() {
+    // Initialize with saved address if provided
+    if (widget.initialSavedAddress != null) {
+      _selectedLocation = LatLng(
+        widget.initialSavedAddress!.address.latitude,
+        widget.initialSavedAddress!.address.longitude,
+      );
+      _selectedAddress = widget.initialSavedAddress!.address.formattedAddress;
+
+      // Add 500m radius circle around the initial address
+      _circles.clear();
+      _circles.add(
+        Circle(
+          circleId: const CircleId('allowed_radius'),
+          center: _selectedLocation!,
+          radius: allowedRadiusMeters,
+          fillColor: Colors.blue.withValues(alpha: 0.1),
+          strokeColor: Colors.blue.withValues(alpha: 0.3),
+          strokeWidth: 2,
+        ),
+      );
+
+      // Add initial marker after the map is created
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_selectedLocation != null) {
+          _updateLocationAndAddress(_selectedLocation!);
+        }
+      });
+    }
+  }
 
   Future<BitmapDescriptor> _createCustomMarkerIcon() async {
     return BitmapDescriptor.defaultMarkerWithHue(
@@ -70,6 +115,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
       if (mounted) {
         setState(() {
           _selectedAddress = addressData['formattedAddress'] ?? 'Unknown location';
+          _addressName = addressData['formattedAddress'] ?? 'Unknown location';
           _isLoading = false;
         });
       }
@@ -77,11 +123,36 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
       if (mounted) {
         setState(() {
           _selectedAddress = 'Unable to get address';
+          _addressName = 'Unknown location';
           _isLoading = false;
         });
       }
       debugPrint('Error getting address: $e');
     }
+  }
+
+    // Calculate distance between two points using Geolocator
+  double _calculateDistance(LatLng point1, LatLng point2) {
+    return Geolocator.distanceBetween(
+      point1.latitude,
+      point1.longitude,
+      point2.latitude,
+      point2.longitude,
+    );
+  }
+
+  // Check if location is within allowed radius of initial address
+  bool _isWithinAllowedRadius(LatLng location) {
+    // If there is no initial address then location is considered out of radius
+    if (widget.initialSavedAddress == null) return false;
+
+    final initialLocation = LatLng(
+      widget.initialSavedAddress!.address.latitude,
+      widget.initialSavedAddress!.address.longitude,
+    );
+
+    final distance = _calculateDistance(initialLocation, location);
+    return distance <= allowedRadiusMeters;
   }
 
   void _recenterMap() async {
@@ -106,99 +177,58 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     });
 
     try {
-      // Get detailed address information
-      final addressData = await ref.read(locationServiceProvider).getAddressFromLatLng(
-        _selectedLocation!.latitude,
-        _selectedLocation!.longitude,
-      );
-
       if (!mounted) return;
 
-      // Show contact details dialog
-      final contactDetails = await showDialog<Map<String, String>>(
-        context: context,
-        builder: (context) => ContactDetailsDialog(
-          addressName:
-              addressData['locality'] ??
-              addressData['sublocality'] ??
-              'Selected Location',
-        ),
-      );
-
-      if (contactDetails != null && mounted) {
-        // Create address object
+      if (widget.mode == MapSelectionMode.direct) {
+        // Direct mode - return address directly without modals
         final address = Address(
-          formattedAddress: addressData['formattedAddress'] ?? _selectedAddress,
+          formattedAddress: _selectedAddress,
           latitude: _selectedLocation!.latitude,
           longitude: _selectedLocation!.longitude,
         );
 
-        // Check if user wants to save this address
-        final shouldSave = await showDialog<bool>(
-          context: context,
-          builder: (context) => SaveAddressDialog(
-            addressName:
-                addressData['locality'] ??
-                addressData['sublocality'] ??
-                'Selected Location',
-          ),
-        );
+        Navigator.pop(context, address);
+        return;
+      }
 
-        if (!mounted) return;
+      // Booking mode - show confirmation modal
+      final address = Address(
+        formattedAddress: _selectedAddress,
+        latitude: _selectedLocation!.latitude,
+        longitude: _selectedLocation!.longitude,
+      );
+        // If selected location is within allowed radius of initial saved address, use same name
+       if (_isWithinAllowedRadius(_selectedLocation!)) {
+         _addressName = widget.initialSavedAddress?.name ?? _addressName;
+       }
 
-        SavedAddress savedAddress;
+      final initialSavedAddress = SavedAddress(
+        id: widget.initialSavedAddress?.id ?? '',
+        name: _addressName,
+        address: address,
+        contactName: widget.initialSavedAddress?.contactName,
+        contactPhone: widget.initialSavedAddress?.contactPhone,
+        noteToDriver: widget.initialSavedAddress?.noteToDriver,
+        isDefault: widget.initialSavedAddress?.isDefault ?? false,
+        createdAt: widget.initialSavedAddress?.createdAt ?? DateTime.now(),
+        updatedAt: widget.initialSavedAddress?.updatedAt ?? DateTime.now(),
+      );
 
-        if (shouldSave == true) {
-          // Save the address
-          try {
-            final api = await ref.read(apiProvider.future);
-            savedAddress = await createSavedAddress(
-              api,
-              name:
-                  addressData['locality'] ??
-                  addressData['sublocality'] ??
-                  'Selected Location',
-              address: address,
-              contactName: contactDetails['contactName'],
-              contactPhone: contactDetails['contactPhone'],
-              noteToDriver: contactDetails['noteToDriver'],
-            );
-          } catch (e) {
-            // If saving fails, create a temporary saved address
-            savedAddress = SavedAddress(
-              id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-              name:
-                  addressData['locality'] ??
-                  addressData['sublocality'] ??
-                  'Selected Location',
-              address: address,
-              contactName: contactDetails['contactName'],
-              contactPhone: contactDetails['contactPhone'],
-              noteToDriver: contactDetails['noteToDriver'],
-              isDefault: false,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            );
-          }
-        } else {
-          // Create temporary saved address without saving to backend
-          savedAddress = SavedAddress(
-            id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-            name:
-                addressData['locality'] ??
-                addressData['sublocality'] ??
-                'Selected Location',
-            address: address,
-            contactName: contactDetails['contactName'],
-            contactPhone: contactDetails['contactPhone'],
-            noteToDriver: contactDetails['noteToDriver'],
-            isDefault: false,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-        }
+      // Show address confirmation modal
+      final confirmedAddress = await showModalBottomSheet<SavedAddress>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => AddressConfirmationModal(
+          savedAddress: initialSavedAddress,
+          onConfirm: (address) {
+            Navigator.pop(context, address);
+          },
+        ),
+      );
 
-        widget.onAddressSelected(savedAddress);
+      if (confirmedAddress != null && mounted) {
+        widget.onAddressSelected?.call(confirmedAddress);
         if (mounted) {
           Navigator.pop(context);
         }
@@ -231,7 +261,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: LocationPermissionHandler(
-        onPermissionGranted: () {},
+        onPermissionGranted: _initializeLocation,
         child: Stack(
           children: [
             // Google Map
@@ -241,10 +271,16 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                   _mapController = controller;
                 },
                 initialCameraPosition: CameraPosition(
-                  target: LatLng(position.latitude, position.longitude),
+                  target: widget.initialSavedAddress != null
+                      ? LatLng(
+                          widget.initialSavedAddress!.address.latitude,
+                          widget.initialSavedAddress!.address.longitude,
+                        )
+                      : LatLng(position.latitude, position.longitude),
                   zoom: 16.0,
                 ),
                 markers: _markers,
+                circles: _circles,
                 onTap: _updateLocationAndAddress,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: false,
@@ -306,8 +342,12 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                 onTap: _showSearchOverlay,
                                 child: Text(
                                   _selectedAddress.isEmpty
-                                      ? widget.isPickup ? 'Pick up item at?' : 'Drop item at?'
-                                      : _selectedAddress,
+                                      ? widget.mode == MapSelectionMode.direct
+                                          ? 'Pick up or drop item at?'
+                                          : (widget.isPickup ? 'Pick up item at?' : 'Drop item at?')
+                                      : (widget.initialSavedAddress != null && _isWithinAllowedRadius(_selectedLocation!))
+                                          ? widget.initialSavedAddress!.name
+                                          : _selectedAddress,
                                   style: textTheme.bodyMedium?.copyWith(
                                     color: _selectedAddress.isEmpty
                                         ? Colors.grey.shade600
@@ -335,19 +375,73 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
               ),
             ),
 
-            // My Location Button
-            Positioned(
-              bottom: 220,
-              right: 20,
-              child: FloatingActionButton(
-                mini: true,
-                onPressed: _recenterMap,
-                backgroundColor: Colors.white,
-                foregroundColor: colorScheme.primary,
-                elevation: 8,
-                child: const Icon(Icons.my_location),
-              ),
-            ),
+                              // Custom My Location button (bottom left)
+                              Positioned(
+                                bottom: 280,
+                                left: 16,
+                                child: Material(
+                                  elevation: 4,
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: _recenterMap,
+                                    child: Container(
+                                      width: 40,
+                                      height: 36,
+                                      alignment: Alignment.center,
+                                      child: Icon(Icons.my_location_rounded, size: 20, color: colorScheme.primary),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Zoom controls (bottom right)
+                              Positioned(
+                                right: 16,
+                                bottom: 280,
+                                child: Material(
+                                  elevation: 4,
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      InkWell(
+                                        onTap: () {
+                                          _mapController?.moveCamera(CameraUpdate.zoomIn());
+                                        },
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(12),
+                                          topRight: Radius.circular(12),
+                                        ),
+                                        child: Container(
+                                          width: 40,
+                                          height: 36,
+                                          alignment: Alignment.center,
+                                          child: Icon(Icons.add, size: 20, color: colorScheme.primary),
+                                        ),
+                                      ),
+                                      const Divider(height: 1, thickness: 1, color: Color(0xFFDDDDDD)),
+                                      InkWell(
+                                        onTap: () {
+                                          _mapController?.moveCamera(CameraUpdate.zoomOut());
+                                        },
+                                        borderRadius: const BorderRadius.only(
+                                          bottomLeft: Radius.circular(12),
+                                          bottomRight: Radius.circular(12),
+                                        ),
+                                        child: Container(
+                                          width: 40,
+                                          height: 36,
+                                          alignment: Alignment.center,
+                                          child: Icon(Icons.remove, size: 20, color: colorScheme.primary),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
 
             // Bottom Sheet
             Positioned(
@@ -465,7 +559,9 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                   ),
                                 )
                               : Text(
-                                  'Confirm ${widget.isPickup ? 'Pickup' : 'Drop'} Location',
+                                  widget.mode == MapSelectionMode.direct
+                                      ? 'Confirm Location'
+                                      : 'Confirm ${widget.isPickup ? 'Pickup' : 'Drop'} Location',
                                   style: textTheme.titleMedium?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
