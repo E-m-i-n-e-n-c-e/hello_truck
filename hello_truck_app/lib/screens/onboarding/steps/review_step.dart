@@ -87,7 +87,7 @@ class ReviewStep extends StatelessWidget {
           ],
 
           // Address Information
-          if (controller.validateAddressStep()) ...[
+          if (controller.validateAddressStep() == null) ...[
             _buildReviewCard(
               context,
               title: 'Address Information',

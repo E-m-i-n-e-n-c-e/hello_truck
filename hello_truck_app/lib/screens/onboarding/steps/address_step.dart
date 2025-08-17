@@ -385,6 +385,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
           label: 'Contact Name',
           hint: 'Name of person at this address',
           icon: Icons.person_rounded,
+          isRequired: true,
           onSubmitted: (_) => widget.controller.contactPhoneFocus.requestFocus(),
         ),
 
@@ -400,6 +401,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
           icon: Icons.phone_rounded,
           keyboardType: TextInputType.phone,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+          isRequired: true,
           onSubmitted: (_) => widget.controller.noteToDriverFocus.requestFocus(),
         ),
 

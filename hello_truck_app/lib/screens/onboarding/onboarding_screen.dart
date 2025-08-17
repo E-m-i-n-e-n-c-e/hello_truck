@@ -101,8 +101,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         return true;
 
       case 3: // Address
-        if (!_controller.validateAddressStep()) {
-          _showError('Please complete all required address fields and select a location');
+        final error = _controller.validateAddressStep();
+        if (error != null) {
+          _showError(error);
           _controller.shake();
           return false;
         }

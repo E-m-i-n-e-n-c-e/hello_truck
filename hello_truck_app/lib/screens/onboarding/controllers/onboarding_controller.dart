@@ -236,16 +236,31 @@ class OnboardingController {
     _notifyStateChange();
   }
 
-  bool validateAddressStep() {
-    return addressNameController.text.trim().isNotEmpty &&
-           formattedAddressController.text.trim().isNotEmpty &&
-           _selectedLatitude != null &&
-           _selectedLongitude != null;
+  String? validateAddressStep() {
+    if (addressNameController.text.trim().isEmpty) {
+      return 'Address Name is required';
+    }
+    if (formattedAddressController.text.trim().isEmpty) {
+      return 'Formatted Address is required';
+    }
+    if (_selectedLatitude == null || _selectedLongitude == null) {
+      return 'Location is required';
+    }
+    if (contactNameController.text.trim().isEmpty) {
+      return 'Contact Name is required';
+    }
+    if (contactPhoneController.text.trim().isEmpty) {
+      return 'Contact Phone is required';
+    }
+    if(!RegExp(r'^[0-9]{10}$').hasMatch(contactPhoneController.text.trim())) {
+      return 'Invalid phone number';
+    }
+    return null;
   }
 
   // Get saved address object for profile creation
   SavedAddress? getSavedAddressForProfile() {
-    if (!validateAddressStep()) return null;
+    if (validateAddressStep() != null) return null;
 
     return SavedAddress(
       id: '', // Will be set by backend
@@ -256,9 +271,9 @@ class OnboardingController {
         latitude: _selectedLatitude!,
         longitude: _selectedLongitude!,
       ),
-      contactName: contactNameController.text.trim().isNotEmpty ? contactNameController.text.trim() : '',
-      contactPhone: contactPhoneController.text.trim().isNotEmpty ? contactPhoneController.text.trim() : '',
-      noteToDriver: noteToDriverController.text.trim().isNotEmpty ? noteToDriverController.text.trim() : null,
+      contactName: contactNameController.text.trim(),
+      contactPhone: contactPhoneController.text.trim(),
+      noteToDriver: noteToDriverController.text.trim(),
       isDefault: true,
       createdAt: DateTime.now(), // Placeholder, will be set by backend
       updatedAt: DateTime.now(), // Placeholder, will be set by backend
