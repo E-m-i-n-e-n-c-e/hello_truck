@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:http_cache_hive_store/http_cache_hive_store.dart';
@@ -91,6 +92,36 @@ class API {
       _dio.patch('$baseUrl$path', data: data);
 
   Future<Response> delete(String path) => _dio.delete('$baseUrl$path');
+
+  Future<String> uploadFile(File file, String filePath, String type) async {
+    final prefix = ['png', 'jpg', 'jpeg'].contains(type.split('/').last) ? 'image' : 'application';
+    final fileType = '$prefix/${type.split('/').last}';
+    try {
+      final signedUrlResponse = await _dio.get(
+        '$baseUrl/bookings/customer/upload-url?filePath=$filePath&type=$fileType',
+      );
+
+      final signedUrl = signedUrlResponse.data['signedUrl'];
+      final publicUrl = signedUrlResponse.data['publicUrl'];
+      final token = signedUrlResponse.data['token'];
+
+      await _dio.put(
+        signedUrl,
+        data: file.readAsBytesSync(),
+        options: Options(
+          contentType: fileType,
+          headers: {
+            'x-goog-meta-firebasestoragedownloadtokens': token,
+          },
+        ),
+      );
+
+      return publicUrl;
+    } catch (e) {
+      print('Error uploading file: $e');
+      rethrow;
+    }
+  }
 
   Future<void> clearCache() async {
     await _cacheStore.clean();

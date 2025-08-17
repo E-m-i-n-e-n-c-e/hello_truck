@@ -1,7 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/enums/package_enums.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
+import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/screens/home/booking/estimate_screen.dart';
+import 'package:hello_truck_app/widgets/document_upload_card.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 
 class PackageDetailsScreen extends ConsumerStatefulWidget {
   final SavedAddress pickupAddress;
@@ -30,7 +37,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   // Agricultural product fields
   final _productNameController = TextEditingController();
   final _weightController = TextEditingController();
-  String _weightUnit = 'KG';
+  String _weightUnit = 'kg';
 
   // Non-agricultural product fields
   final _avgWeightController = TextEditingController();
@@ -38,9 +45,23 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   final _lengthController = TextEditingController();
   final _widthController = TextEditingController();
   final _heightController = TextEditingController();
-  String _dimensionUnit = 'CM';
+  String _dimensionUnit = 'cm';
   final _numberOfProductsController = TextEditingController();
   final _descriptionController = TextEditingController();
+
+  // Document upload state
+  File? _packageImage;
+  String? _packageImageUrl;
+  bool _isUploadingPackageImage = false;
+
+  File? _gstBillImage;
+  String? _gstBillUrl;
+  bool _isUploadingGstBill = false;
+
+  // Multiple transportation documents
+  final List<File> _transportDocs = [];
+  final List<String> _transportDocUrls = [];
+  final List<bool> _isUploadingTransportDocs = [];
 
   @override
   void dispose() {
@@ -88,7 +109,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             children: [
               // Package Type Section
               _buildSectionCard(
-                title: 'Package Type',
+                title: 'Select Package Type',
                 child: Column(
                   children: [
                     RadioListTile<bool>(
@@ -104,7 +125,6 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                     ),
                     RadioListTile<bool>(
                       title: const Text('Commercial Use'),
-                      subtitle: const Text('GST bill mandatory'),
                       value: true,
                       groupValue: _isCommercialUse,
                       onChanged: (value) {
@@ -122,7 +142,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
 
               // Product Type Section
               _buildSectionCard(
-                title: 'Product Type Selection',
+                title: 'Select Product Type',
                 child: Column(
                   children: [
                     CheckboxListTile(
@@ -160,17 +180,13 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
               // Agricultural Products Details
               if (_isAgriculturalProduct) ...[
                 _buildSectionCard(
-                  title: 'Agricultural Product Details',
+                  title: 'Enter Product Details',
                   child: Column(
                     children: [
-                      TextFormField(
+                      _buildFormField(
                         controller: _productNameController,
-                        decoration: InputDecoration(
-                          labelText: 'Product Name *',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        label: 'Product Name',
+                        isRequired: true,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Product name is required';
@@ -183,18 +199,21 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                         children: [
                           Expanded(
                             flex: 2,
-                            child: TextFormField(
+                            child: _buildFormField(
                               controller: _weightController,
-                              decoration: InputDecoration(
-                                labelText: 'Approximate Weight *',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              label: 'Approximate Weight',
+                              isRequired: true,
                               keyboardType: TextInputType.number,
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Weight is required';
+                                }
+                                final weight = double.tryParse(value.trim());
+                                if (weight == null) {
+                                  return 'Please enter a valid number';
+                                }
+                                if (weight <= 0) {
+                                  return 'Weight must be greater than 0';
                                 }
                                 return null;
                               },
@@ -202,25 +221,31 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: _weightUnit,
-                              decoration: InputDecoration(
-                                labelText: 'Unit',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 16),
+                                DropdownButtonFormField<String>(
+                                  value: _weightUnit,
+                                  decoration: InputDecoration(
+                                    labelText: 'Unit',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  items: ['kg', 'quintal'].map((unit) {
+                                    return DropdownMenuItem(
+                                      value: unit,
+                                      child: Text(unit),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _weightUnit = value!;
+                                    });
+                                  },
                                 ),
-                              ),
-                              items: ['KG', 'Quintal'].map((unit) {
-                                return DropdownMenuItem(
-                                  value: unit,
-                                  child: Text(unit),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _weightUnit = value!;
-                                });
-                              },
+                              ],
                             ),
                           ),
                         ],
@@ -234,94 +259,109 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
               // Non-Agricultural Products Details
               if (_isNonAgriculturalProduct) ...[
                 _buildSectionCard(
-                  title: 'Non-Agricultural Product Details',
+                  title: 'Enter Product Details',
                   child: Column(
                     children: [
                       // Weight Section
-                      Text(
-                        'Weight Information',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
                       const SizedBox(height: 12),
-                      TextFormField(
+                      _buildFormField(
                         controller: _avgWeightController,
-                        decoration: InputDecoration(
-                          labelText: 'Average Weight of Shipment (KG) *',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        label: 'Average Weight of Shipment (KG)',
+                        isRequired: true,
                         keyboardType: TextInputType.number,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Average weight is required';
                           }
+                          final weight = double.tryParse(value.trim());
+                          if (weight == null) {
+                            return 'Invalid weight value';
+                          }
+                          if (weight <= 0) {
+                            return 'Weight must be greater than 0';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      _buildFormField(
                         controller: _bundleWeightController,
-                        decoration: InputDecoration(
-                          labelText: 'Weight of Each Bundle (KG)',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        label: 'Weight of Each Bundle (KG)',
                         keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value != null && value.trim().isNotEmpty) {
+                            final weight = double.tryParse(value.trim());
+                            if (weight == null) {
+                              return 'Invalid weight value';
+                            }
+                            if (weight <= 0) {
+                              return 'Weight must be greater than 0';
+                            }
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
 
-                      // Dimensions Section
-                      Text(
-                        'Product Dimensions (Optional)',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
-                            child: TextFormField(
+                            child: _buildFormField(
                               controller: _lengthController,
-                              decoration: InputDecoration(
-                                labelText: 'Length',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              label: 'Length',
                               keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.trim().isNotEmpty) {
+                                  final length = double.tryParse(value.trim());
+                                  if (length == null) {
+                                    return 'Invalid length value';
+                                  }
+                                  if (length <= 0) {
+                                    return 'Length must be greater than 0';
+                                  }
+                                }
+                                return null;
+                              },
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: TextFormField(
+                            child: _buildFormField(
                               controller: _widthController,
-                              decoration: InputDecoration(
-                                labelText: 'Width',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              label: 'Width',
                               keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.trim().isNotEmpty) {
+                                  final width = double.tryParse(value.trim());
+                                  if (width == null) {
+                                    return 'Invalid width value';
+                                  }
+                                  if (width <= 0) {
+                                    return 'Width must be greater than 0';
+                                  }
+                                }
+                                return null;
+                              },
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: TextFormField(
+                            child: _buildFormField(
                               controller: _heightController,
-                              decoration: InputDecoration(
-                                labelText: 'Height',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              label: 'Height',
                               keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.trim().isNotEmpty) {
+                                  final height = double.tryParse(value.trim());
+                                  if (height == null) {
+                                    return 'Invalid height value';
+                                  }
+                                  if (height <= 0) {
+                                    return 'Height must be greater than 0';
+                                  }
+                                }
+                                return null;
+                              },
                             ),
                           ),
                         ],
@@ -338,7 +378,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              items: ['CM', 'IN'].map((unit) {
+                              items: ['cm', 'inches'].map((unit) {
                                 return DropdownMenuItem(
                                   value: unit,
                                   child: Text(unit),
@@ -362,6 +402,18 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                 ),
                               ),
                               keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.trim().isNotEmpty) {
+                                  final numberOfProducts = int.tryParse(value.trim());
+                                  if (numberOfProducts == null) {
+                                    return 'Invalid integer value';
+                                  }
+                                  if (numberOfProducts <= 0) {
+                                    return 'Number of products must be greater than 0';
+                                  }
+                                }
+                                return null;
+                              },
                             ),
                           ),
                         ],
@@ -369,38 +421,25 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                       const SizedBox(height: 16),
 
                       // Description
-                      TextFormField(
+                      _buildFormField(
                         controller: _descriptionController,
-                        decoration: InputDecoration(
-                          labelText: 'Package Description',
-                          hintText: 'Describe your package...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        label: 'Package Description',
+                        isRequired: false,
+                        // hint removed to match consistent style
+                        // use maxLines for larger input area
                         maxLines: 3,
                       ),
                       const SizedBox(height: 16),
 
-                      // Upload buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                // TODO: Implement image upload
-                              },
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('Upload Image'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      // Package Image Upload
+                      DocumentUploadCard(
+                        title: 'Package Image',
+                        subtitle: 'Upload a photo of your package',
+                        icon: Icons.camera_alt_rounded,
+                        selectedFile: _packageImage,
+                        uploadedUrl: _packageImageUrl,
+                        isUploading: _isUploadingPackageImage,
+                        onUpload: () => _handleDocumentUpload('packageImage'),
                       ),
                     ],
                   ),
@@ -408,54 +447,66 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                 const SizedBox(height: 20),
               ],
 
-              // Document Upload Section
+              // GST Bill Upload Section (for commercial use)
               if (_isCommercialUse) ...[
-                _buildSectionCard(
-                  title: 'Required Documents',
-                  child: Column(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          // TODO: Implement GST bill upload
-                        },
-                        icon: const Icon(Icons.upload_file),
-                        label: const Text('Upload GST Bill (Mandatory)'),
+                DocumentUploadCard(
+                  title: 'GST Bill',
+                  subtitle: 'Upload your GST bill',
+                  icon: Icons.receipt_long_rounded,
+                  selectedFile: _gstBillImage,
+                  uploadedUrl: _gstBillUrl,
+                  isUploading: _isUploadingGstBill,
+                  onUpload: () => _handleDocumentUpload('gstBill'),
+                  isRequired: true,
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Additional Documents Section
+              _buildSectionCard(
+                title: 'Additional Documents',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Upload other documents like images, receipts, or any supporting files',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Existing transportation documents
+                    ..._transportDocs.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final file = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: DocumentUploadCard(
+                          title: 'Document ${index + 1}',
+                          subtitle: 'Upload additional document',
+                          icon: Icons.attach_file_rounded,
+                          selectedFile: file,
+                          uploadedUrl: _transportDocUrls[index],
+                          isUploading: _isUploadingTransportDocs[index],
+                          onUpload: () => _handleDocumentUpload('transportDoc', index: index),
+                        ),
+                      );
+                    }),
+
+                    // Add new document button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _addNewTransportDocument(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Another Document'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // Transportation Documents
-              _buildSectionCard(
-                title: 'Transportation Documents (Optional)',
-                child: Column(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        // TODO: Implement document upload
-                      },
-                      icon: const Icon(Icons.attach_file),
-                      label: const Text('Upload Documents'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Support for multiple document upload',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -464,31 +515,8 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
 
               const SizedBox(height: 32),
 
-              // Continue Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _canProceed() ? _proceedToEstimate : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _canProceed()
-                      ? colorScheme.primary
-                      : colorScheme.onSurface.withValues(alpha: 0.3),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: _canProceed() ? 8 : 2,
-                  ),
-                  child: Text(
-                    'Proceed to Estimate',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+              // Continue Button (reactive)
+              _buildReactiveProceedButton(colorScheme, textTheme),
 
               const SizedBox(height: 20),
             ],
@@ -540,53 +568,288 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
       return false;
     }
 
+    bool hasRequiredFields = false;
+
     if (_isAgriculturalProduct) {
-      return _productNameController.text.trim().isNotEmpty &&
-             _weightController.text.trim().isNotEmpty;
+      hasRequiredFields = _productNameController.text.trim().isNotEmpty &&
+                         _weightController.text.trim().isNotEmpty;
+    } else if (_isNonAgriculturalProduct) {
+      hasRequiredFields = _avgWeightController.text.trim().isNotEmpty;
     }
 
-    if (_isNonAgriculturalProduct) {
-      return _avgWeightController.text.trim().isNotEmpty;
+    // Check if GST bill is required and uploaded for commercial use
+    if (_isCommercialUse && (_gstBillUrl == null || _gstBillUrl!.isEmpty)) {
+      return false;
     }
 
-    return false;
+    return hasRequiredFields;
+  }
+
+    Future<void> _handleDocumentUpload(String documentType, {int? index}) async {
+    try {
+      // Pick file
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final file = File(result.files.first.path!);
+
+      // Set loading state
+      setState(() {
+        switch (documentType) {
+          case 'packageImage':
+            _packageImage = file;
+            _isUploadingPackageImage = true;
+            break;
+          case 'gstBill':
+            _gstBillImage = file;
+            _isUploadingGstBill = true;
+            break;
+          case 'transportDoc':
+            if (index != null) {
+              // Ensure the lists are large enough
+              while (_transportDocs.length <= index) {
+                _transportDocs.add(File(''));
+                _transportDocUrls.add('');
+                _isUploadingTransportDocs.add(false);
+              }
+              _transportDocs[index] = file;
+              _isUploadingTransportDocs[index] = true;
+            }
+            break;
+        }
+      });
+
+      // Upload file
+      final api = await ref.read(apiProvider.future);
+      final fileName = '${documentType}_${DateTime.now().millisecondsSinceEpoch}';
+      final filePath = 'customer/documents/$fileName';
+
+      // Determine MIME type based on file extension
+      final extension = result.files.first.extension?.toLowerCase() ?? 'jpg';
+      final mimeType = extension == 'pdf' ? 'application/pdf' : 'image/$extension';
+
+      final uploadedUrl = await api.uploadFile(file, filePath, mimeType);
+
+      // Update state with uploaded URL
+      setState(() {
+        switch (documentType) {
+          case 'packageImage':
+            _packageImageUrl = uploadedUrl;
+            _isUploadingPackageImage = false;
+            break;
+          case 'gstBill':
+            _gstBillUrl = uploadedUrl;
+            _isUploadingGstBill = false;
+            break;
+          case 'transportDoc':
+            if (index != null && index < _transportDocUrls.length) {
+              _transportDocUrls[index] = uploadedUrl;
+              _isUploadingTransportDocs[index] = false;
+            }
+            break;
+        }
+      });
+    } catch (e) {
+      // Reset loading state on error
+      setState(() {
+        switch (documentType) {
+          case 'packageImage':
+            _isUploadingPackageImage = false;
+            break;
+          case 'gstBill':
+            _isUploadingGstBill = false;
+            break;
+          case 'transportDoc':
+            if (index != null && index < _isUploadingTransportDocs.length) {
+              _isUploadingTransportDocs[index] = false;
+            }
+            break;
+        }
+      });
+      if (mounted) {
+        SnackBars.error(context, 'Failed to upload $documentType: $e');
+      }
+    }
+  }
+
+  void _addNewTransportDocument() {
+    setState(() {
+      _transportDocs.add(File(''));
+      _transportDocUrls.add('');
+      _isUploadingTransportDocs.add(false);
+    });
+  }
+
+  Package _buildPackage() {
+    final packageType = _isCommercialUse ? PackageType.commercial : PackageType.personal;
+
+    if (_isAgriculturalProduct) {
+      return Package.agricultural(
+        packageType: packageType,
+        productName: _productNameController.text.trim(),
+        approximateWeight: double.tryParse(_weightController.text.trim()) ?? 0.0,
+        weightUnit: WeightUnit.fromString(_weightUnit.toUpperCase()),
+        gstBillUrl: _isCommercialUse ? _gstBillUrl : null,
+        transportDocUrls: _transportDocUrls.where((url) => url.isNotEmpty).toList(),
+      );
+    } else if (_isNonAgriculturalProduct) {
+      return Package.nonAgricultural(
+        packageType: packageType,
+        averageWeight: double.tryParse(_avgWeightController.text.trim()) ?? 0.0,
+        bundleWeight: _bundleWeightController.text.trim().isNotEmpty
+            ? double.tryParse(_bundleWeightController.text.trim())
+            : null,
+        length: _lengthController.text.trim().isNotEmpty
+            ? double.tryParse(_lengthController.text.trim())
+            : null,
+        width: _widthController.text.trim().isNotEmpty
+            ? double.tryParse(_widthController.text.trim())
+            : null,
+        height: _heightController.text.trim().isNotEmpty
+            ? double.tryParse(_heightController.text.trim())
+            : null,
+        dimensionUnit: DimensionUnit.fromString(_dimensionUnit.toUpperCase()),
+        numberOfProducts: _numberOfProductsController.text.trim().isNotEmpty
+            ? int.tryParse(_numberOfProductsController.text.trim())
+            : null,
+        description: _descriptionController.text.trim(),
+        packageImageUrl: _packageImageUrl,
+        gstBillUrl: _isCommercialUse ? _gstBillUrl : null,
+        transportDocUrls: _transportDocUrls.where((url) => url.isNotEmpty).toList(),
+      );
+    } else {
+      // Default case - should not happen if validation is working
+      return Package(
+        packageType: packageType,
+        productType: ProductType.agricultural,
+      );
+    }
   }
 
   void _proceedToEstimate() {
     if (_formKey.currentState!.validate()) {
+      final package = _buildPackage();
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => EstimateScreen(
             pickupAddress: widget.pickupAddress,
             dropAddress: widget.dropAddress,
-            packageDetails: _buildPackageDetails(),
+            package: package,
           ),
         ),
       );
     }
   }
 
-  Map<String, dynamic> _buildPackageDetails() {
-    return {
-      'isCommercialUse': _isCommercialUse,
-      'isAgriculturalProduct': _isAgriculturalProduct,
-      'isNonAgriculturalProduct': _isNonAgriculturalProduct,
-      if (_isAgriculturalProduct) ...{
-        'productName': _productNameController.text.trim(),
-        'weight': _weightController.text.trim(),
-        'weightUnit': _weightUnit,
+  // Consistent form field used across app (label above with red * for required)
+  Widget _buildFormField({
+    required TextEditingController controller,
+    required String label,
+    bool isRequired = false,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: textTheme.bodySmall?.copyWith(
+                color: Colors.black.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (isRequired)
+              Text(
+                ' *',
+                style: textTheme.bodySmall?.copyWith(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            filled: true,
+            fillColor: Colors.white,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Reactive proceed button that listens to text controllers and document states
+  Widget _buildReactiveProceedButton(ColorScheme colorScheme, TextTheme textTheme) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        _productNameController,
+        _weightController,
+        _avgWeightController,
+        _bundleWeightController,
+        _lengthController,
+        _widthController,
+        _heightController,
+        _numberOfProductsController,
+        _descriptionController,
+      ]),
+      builder: (context, _) {
+        final enabled = _canProceed();
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: enabled ? _proceedToEstimate : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: enabled ? colorScheme.primary : Colors.grey.shade200,
+              foregroundColor: enabled ? Colors.white : Colors.grey.shade500,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Proceed to Estimate',
+              style: textTheme.titleMedium?.copyWith(
+                color: enabled ? Colors.white : Colors.grey.shade500,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
       },
-      if (_isNonAgriculturalProduct) ...{
-        'avgWeight': _avgWeightController.text.trim(),
-        'bundleWeight': _bundleWeightController.text.trim(),
-        'length': _lengthController.text.trim(),
-        'width': _widthController.text.trim(),
-        'height': _heightController.text.trim(),
-        'dimensionUnit': _dimensionUnit,
-        'numberOfProducts': _numberOfProductsController.text.trim(),
-        'description': _descriptionController.text.trim(),
-      },
-    };
+    );
   }
 }

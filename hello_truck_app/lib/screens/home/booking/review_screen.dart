@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/enums/package_enums.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
+import 'package:hello_truck_app/models/package.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final SavedAddress pickupAddress;
   final SavedAddress dropAddress;
-  final Map<String, dynamic> packageDetails;
+  final Package package;
   final String deliveryType;
   final String vehicleType;
   final double totalAmount;
@@ -14,7 +16,7 @@ class ReviewScreen extends ConsumerStatefulWidget {
     super.key,
     required this.pickupAddress,
     required this.dropAddress,
-    required this.packageDetails,
+    required this.package,
     required this.deliveryType,
     required this.vehicleType,
     required this.totalAmount,
@@ -524,35 +526,35 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Type: ${widget.packageDetails['isCommercialUse'] ? 'Commercial' : 'Personal'}',
+          'Type: ${widget.package.packageType == PackageType.commercial ? 'Commercial' : 'Personal'}',
           style: textTheme.bodyMedium,
         ),
         const SizedBox(height: 4),
-        if (widget.packageDetails['isAgriculturalProduct']) ...[
+        if (widget.package.productType == ProductType.agricultural) ...[
           Text(
-            'Product: ${widget.packageDetails['productName']}',
+            'Product: ${widget.package.productName}',
             style: textTheme.bodyMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            'Weight: ${widget.packageDetails['weight']} ${widget.packageDetails['weightUnit']}',
+            'Weight: ${widget.package.approximateWeight} ${widget.package.weightUnit?.value}',
             style: textTheme.bodyMedium,
           ),
         ],
-        if (widget.packageDetails['isNonAgriculturalProduct']) ...[
+        if (widget.package.productType == ProductType.nonAgricultural) ...[
           Text(
             'Category: Non-Agricultural Product',
             style: textTheme.bodyMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            'Weight: ${widget.packageDetails['avgWeight']} KG',
+            'Weight: ${widget.package.averageWeight} KG',
             style: textTheme.bodyMedium,
           ),
-          if (widget.packageDetails['description']?.isNotEmpty ?? false) ...[
+          if (widget.package.description?.isNotEmpty ?? false) ...[
             const SizedBox(height: 4),
             Text(
-              'Description: ${widget.packageDetails['description']}',
+              'Description: ${widget.package.description}',
               style: textTheme.bodyMedium,
             ),
           ],

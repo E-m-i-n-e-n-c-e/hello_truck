@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
+import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/screens/home/booking/review_screen.dart';
 
 class EstimateScreen extends ConsumerStatefulWidget {
   final SavedAddress pickupAddress;
   final SavedAddress dropAddress;
-  final Map<String, dynamic> packageDetails;
+  final Package package;
 
   const EstimateScreen({
     super.key,
     required this.pickupAddress,
     required this.dropAddress,
-    required this.packageDetails,
+    required this.package,
   });
 
   @override
@@ -576,7 +577,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
         builder: (context) => ReviewScreen(
           pickupAddress: widget.pickupAddress,
           dropAddress: widget.dropAddress,
-          packageDetails: widget.packageDetails,
+          package: widget.package,
           deliveryType: _selectedDeliveryType,
           vehicleType: _selectedVehicleType,
           totalAmount: 36.10,
