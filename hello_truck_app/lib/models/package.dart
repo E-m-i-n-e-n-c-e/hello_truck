@@ -100,20 +100,26 @@ class Package {
       'packageType': packageType.value,
       'productType': productType.value,
       if (productType == ProductType.agricultural) ...{
-        'productName': productName,
-        'approximateWeight': approximateWeight,
-        'weightUnit': weightUnit?.value,
+        'agricultural': {
+          'productName': productName,
+          'approximateWeight': approximateWeight,
+          'weightUnit': weightUnit?.value,
+        },
       },
       if (productType == ProductType.nonAgricultural) ...{
-        'averageWeight': averageWeight,
-        'bundleWeight': bundleWeight,
-        'length': length,
-        'width': width,
-        'height': height,
-        'dimensionUnit': dimensionUnit?.value,
-        'numberOfProducts': numberOfProducts,
-        'description': description,
-        'packageImageUrl': packageImageUrl,
+        'nonAgricultural': {
+          'averageWeight': averageWeight,
+          'bundleWeight': bundleWeight,
+          'numberOfProducts': numberOfProducts,
+          'packageDimensions': {
+            'length': length,
+            'width': width,
+            'height': height,
+            'unit': dimensionUnit?.value,
+          },
+          'packageDescription': description,
+          'packageImageUrl': packageImageUrl,
+        },
       },
       if (packageType == PackageType.commercial) ...{
         'gstBillUrl': gstBillUrl,
