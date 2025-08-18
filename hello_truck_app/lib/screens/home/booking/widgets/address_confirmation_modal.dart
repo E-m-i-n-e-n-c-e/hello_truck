@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/api/address_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class AddressConfirmationModal extends ConsumerStatefulWidget {
   final SavedAddress savedAddress;
@@ -668,12 +669,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
         widget.onConfirm(savedAddress);
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error saving address: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          SnackBars.error(context, 'Error saving address: $e');
         }
       } finally {
         if (mounted) {

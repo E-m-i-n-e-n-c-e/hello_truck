@@ -8,6 +8,7 @@ import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final SavedAddress pickupAddress;
@@ -689,12 +690,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Booking failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBars.error(context, 'Booking failed: $e');
       }
     } finally {
       if (mounted) {

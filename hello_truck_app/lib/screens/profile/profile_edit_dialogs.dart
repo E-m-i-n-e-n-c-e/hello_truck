@@ -48,9 +48,7 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        SnackBars.error(context, 'Failed to save: $e');
       }
     } finally {
       if (mounted) {

@@ -5,6 +5,7 @@ import 'package:hello_truck_app/api/address_api.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/map_selection_page.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 enum AddOrEditAddressMode { add, edit }
 
@@ -160,12 +161,7 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving address: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBars.error(context, 'Error saving address: $e');
       }
     } finally {
       if (mounted) {

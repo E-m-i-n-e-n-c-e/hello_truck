@@ -590,12 +590,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     } catch (e) {
       print('Error selecting prediction: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error selecting location: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBars.error(context, 'Error selecting location: $e');
       }
     }
   }

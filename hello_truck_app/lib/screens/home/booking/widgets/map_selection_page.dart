@@ -7,6 +7,7 @@ import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/widgets/address_search_widget.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_confirmation_modal.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 enum MapSelectionMode {
   booking, // Current mode - shows modals, save options, etc.
@@ -257,12 +258,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     } catch (e) {
       debugPrint('Error confirming location: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error confirming location: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBars.error(context, 'Error confirming location: $e');
       }
     } finally {
       if (mounted) {
