@@ -83,22 +83,22 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+          icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Package Details',
           style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+            color: Colors.black.withValues(alpha: 0.85),
+            fontWeight: FontWeight.w500,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: Form(
         key: _formKey,
@@ -471,7 +471,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                     Text(
                       'Upload other documents like images, receipts, or any supporting files',
                       style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: colorScheme.onSurface.withValues(alpha: 0.68),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -527,7 +527,6 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
@@ -551,8 +550,8 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             Text(
               title,
               style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+                color: Colors.black.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 16),
@@ -765,7 +764,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             Text(
               label,
               style: textTheme.bodySmall?.copyWith(
-                color: Colors.black.withValues(alpha: 0.7),
+                color: Colors.black.withValues(alpha: 0.68),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -838,7 +837,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              elevation: 0,
+              elevation: enabled ? 2 : 1,
             ),
             child: Text(
               'Proceed to Estimate',

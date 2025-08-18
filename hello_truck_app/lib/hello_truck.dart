@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/auth_state.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/screens/home/home_screen.dart';
@@ -42,6 +43,8 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
         ref.read(currentPositionStreamProvider);
         ref.read(customerProvider);
         ref.read(gstDetailsProvider);
+        ref.read(activeBookingsProvider);
+        ref.read(bookingHistoryProvider);
 
         // Show offline snackbar if user is offline
         if (authState.value?.isOffline == true) {
@@ -92,7 +95,10 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _selectedIndex,
         onItemSelected: (index) {
-          if (index == 2) {
+          if (index == 1) {
+            ref.invalidate(activeBookingsProvider);
+            ref.invalidate(bookingHistoryProvider);
+          } else if (index == 2) {
             ref.invalidate(customerProvider);
             ref.invalidate(gstDetailsProvider);
           }

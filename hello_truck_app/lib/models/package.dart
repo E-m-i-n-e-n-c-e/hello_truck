@@ -136,19 +136,19 @@ class Package {
       packageType: packageType,
       productType: productType,
       productName: json['productName'],
-      approximateWeight: json['approximateWeight'] != null ? double.parse(json['approximateWeight']) : null,
+      approximateWeight: json['approximateWeight']?.toDouble(),
       weightUnit: json['weightUnit'] != null
           ? WeightUnit.fromString(json['weightUnit'])
           : null,
-      averageWeight: json['averageWeight'] != null ? double.parse(json['averageWeight']) : null,
-      bundleWeight: json['bundleWeight'] != null ? double.parse(json['bundleWeight']) : null,
-      length: json['length'] != null ? double.parse(json['length']) : null,
-      width: json['width'] != null ? double.parse(json['width']) : null ,
-      height: json['height'] != null ? double.parse(json['height']) : null,
+      averageWeight: json['averageWeight']?.toDouble(),
+      bundleWeight: json['bundleWeight']?.toDouble(),
+      length: json['length']?.toDouble(),
+      width: json['width']?.toDouble(),
+      height: json['height']?.toDouble(),
       dimensionUnit: json['dimensionUnit'] != null
           ? DimensionUnit.fromString(json['dimensionUnit'])
           : null,
-      numberOfProducts: json['numberOfProducts'] != null ? int.parse(json['numberOfProducts']) : null,
+      numberOfProducts: json['numberOfProducts']?.toInt(),
       description: json['description'],
       packageImageUrl: json['packageImageUrl'],
       gstBillUrl: json['gstBillUrl'],

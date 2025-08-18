@@ -85,6 +85,9 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
         height: MediaQuery.of(context).size.height * 0.9,
         child: MapSelectionPage(
           mode: MapSelectionMode.direct,
+          initialAddress: widget.mode == AddOrEditAddressMode.add
+              ? widget.initialAddress
+              : widget.initialSavedAddress?.address,
         ),
       ),
     );

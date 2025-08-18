@@ -1,5 +1,6 @@
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/models/booking.dart';
+import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
@@ -43,14 +44,14 @@ Future<Booking> getBookingDetails(API api, String bookingId) async {
   return Booking.fromJson(response.data);
 }
 
-Future<Booking> getBookingHistory(API api) async {
+Future<List<Booking>> getBookingHistory(API api) async {
   final response = await api.get('/bookings/customer/history');
-  return Booking.fromJson(response.data);
+  return (response.data as List).map((json) => Booking.fromJson(json)).toList();
 }
 
-Future<Booking> getActiveBooking(API api) async {
+Future<List<Booking>> getActiveBookings(API api) async {
   final response = await api.get('/bookings/customer/active');
-  return Booking.fromJson(response.data);
+  return (response.data as List).map((json) => Booking.fromJson(json)).toList();
 }
 
 /// Cancel a booking

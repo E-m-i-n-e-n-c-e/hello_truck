@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/screens/home/booking/review_screen.dart';
+import 'package:hello_truck_app/providers/booking_providers.dart';
+import 'package:hello_truck_app/models/enums/booking_enums.dart';
 
 class EstimateScreen extends ConsumerStatefulWidget {
   final SavedAddress pickupAddress;
@@ -21,556 +24,449 @@ class EstimateScreen extends ConsumerStatefulWidget {
 }
 
 class _EstimateScreenState extends ConsumerState<EstimateScreen> {
-  String _selectedDeliveryType = 'instant';
-  final String _selectedVehicleType = 'bike';
-  bool _hasItemDetails = false;
+  VehicleType? _selectedVehicleType;
+  bool _acknowledged = false;
+
+  double? _selectedOptionCost(BookingEstimate estimate) {
+    if (_selectedVehicleType == null) return null;
+    try {
+      return estimate.vehicleOptions
+          .firstWhere((o) => o.vehicleType == _selectedVehicleType)
+          .estimatedCost;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    final estimateAsync = ref.watch(bookingEstimateProvider((
+      pickupAddress: widget.pickupAddress,
+      dropAddress: widget.dropAddress,
+      package: widget.package,
+    )));
+
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+          icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Estimate & Details',
+          'Select Vehicle',
           style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+            color: Colors.black.withValues(alpha: 0.85),
+            fontWeight: FontWeight.w500,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Location Summary Card
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          // Pickup Location
-                          Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.pickupAddress.name,
-                                      style: textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    if (widget.pickupAddress.contactPhone.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${widget.pickupAddress.contactName} • ${widget.pickupAddress.contactPhone}',
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // Dotted line
-                          Container(
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            child: Row(
-                              children: [
-                                const SizedBox(width: 6),
-                                SizedBox(
-                                  width: 2,
-                                  height: 30,
-                                  child: CustomPaint(
-                                    painter: DottedLinePainter(
-                                      color: colorScheme.onSurface.withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                              ],
-                            ),
-                          ),
-
-                          // Drop Location
-                          Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.dropAddress.name,
-                                      style: textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Add recipient details *',
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Add more stops
-                          Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.onSurface.withValues(alpha: 0.3),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Text(
-                                'Add more stops',
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Delivery Options
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          // Instant Delivery
-                          _buildDeliveryOption(
-                            icon: Icons.flash_on,
-                            iconColor: Colors.green,
-                            title: 'Instant',
-                            subtitle: 'Urgent Delivery? Prioritise your order.',
-                            value: 'instant',
-                            badge: 'Priority',
-                            badgeColor: Colors.green,
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Bike Delivery
-                          _buildDeliveryOption(
-                            icon: Icons.motorcycle,
-                            iconColor: Colors.blue,
-                            title: 'Bike',
-                            subtitle: 'Recommended based on your item.',
-                            value: 'bike',
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Item Details
-                          _buildItemDetailsOption(),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Apply Offers
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Apply Offers',
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          InkWell(
-                            onTap: () {
-                              // TODO: Show offers
-                            },
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.local_offer,
-                                    color: Colors.orange,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    'Use Offers to get discounts',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.chevron_right,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-
-          // Bottom Section with Total and Review Button
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
+      body: estimateAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
+                const SizedBox(height: 12),
+                Text('Failed to load estimate', style: textTheme.titleMedium),
+                const SizedBox(height: 6),
+                Text(error.toString(), textAlign: TextAlign.center, style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(bookingEstimateProvider((
+                    pickupAddress: widget.pickupAddress,
+                    dropAddress: widget.dropAddress,
+                    package: widget.package,
+                  ))),
+                  child: const Text('Retry'),
+                )
               ],
             ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total',
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          'S\$36.10',
-                          style: textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
+          ),
+        ),
+        data: (estimate) {
+          // Set selected vehicle type if not already set
+          if (_selectedVehicleType == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {
+                _selectedVehicleType = estimate.suggestedVehicleType;
+              });
+            });
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      // Suggested vehicle banner
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+                                  ],
+                                ),
+                                child: const Icon(Icons.recommend, color: Color(0xFF22AAAE)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Suggested vehicle', style: textTheme.bodySmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _vehicleLabel(estimate.suggestedVehicleType),
+                                      style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Suggested based on weight',
+                                      style: textTheme.bodySmall?.copyWith(color: Colors.black.withValues(alpha: 0.6)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (_selectedOptionCost(estimate) != null)
+                                Text(
+                                  '₹${_selectedOptionCost(estimate)!.toStringAsFixed(2)}',
+                                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.keyboard_arrow_up,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Vehicle Options (from estimate)
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Choose a vehicle',
+                                style: textTheme.titleLarge?.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ...estimate.vehicleOptions.map((opt) => _buildVehicleOptionTile(opt)),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                  const SizedBox(height: 12),
+
+                  // Disclaimer
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Terms and Conditions',
+                          style: textTheme.titleSmall?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '• Prices are estimates and may vary based on real-time factors.\n'
+                          '• Loading distance limit: up to 50 feet from vehicle (longer distances may incur additional charges).\n'
+                          '• Additional charges may apply for extended waiting time after pickup verification, change of destination, or change in package details.',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: Colors.black.withValues(alpha: 0.75),
+                            height: 1.35,
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _proceedToReview,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Acknowledge checkbox with better styling
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _acknowledged
+                        ? colorScheme.primary.withValues(alpha: 0.08)
+                        : Colors.grey.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _acknowledged
+                          ? colorScheme.primary.withValues(alpha: 0.3)
+                          : colorScheme.outline.withValues(alpha: 0.2),
+                        width: 1.5,
                       ),
-                      elevation: 8,
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.bookmark_border),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Review Order',
-                          style: textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                        InkWell(
+                          onTap: () => setState(() => _acknowledged = !_acknowledged),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: _acknowledged ? colorScheme.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: _acknowledged
+                                  ? colorScheme.primary
+                                  : colorScheme.outline.withValues(alpha: 0.5),
+                                width: 2,
+                              ),
+                            ),
+                            child: _acknowledged
+                              ? Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
+                              : null,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeliveryOption({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required String value,
-    String? badge,
-    Color? badgeColor,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final isSelected = _selectedDeliveryType == value;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedDeliveryType = value;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3),
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected ? colorScheme.primary.withValues(alpha: 0.05) : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        title,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeColor?.withValues(alpha: 0.1) ?? Colors.grey.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            badge,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: badgeColor ?? Colors.grey,
-                              fontWeight: FontWeight.w600,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _acknowledged = !_acknowledged),
+                            child: Text(
+                              'I have read and acknowledge the terms and conditions for this booking.',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: _acknowledged
+                                  ? colorScheme.primary
+                                  : Colors.black.withValues(alpha: 0.85),
+                                height: 1.4,
+                              ),
                             ),
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
-                ],
+
+                  const SizedBox(height: 24),
+
+                      // Review button at the end (no sticky footer, no total)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: (_selectedVehicleType != null && _acknowledged)
+                              ? () => _proceedToReview(estimate)
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 8,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.bookmark_border),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Review Order',
+                                style: textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildItemDetailsOption() {
+  Widget _buildVehicleOptionTile(VehicleOption option) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final isSelected = _selectedVehicleType == option.vehicleType;
+    final isDisabled = !option.isAvailable;
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _hasItemDetails = !_hasItemDetails;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
+    IconData leadingIcon;
+    switch (option.vehicleType) {
+      case VehicleType.twoWheeler:
+        leadingIcon = Icons.two_wheeler;
+        break;
+      case VehicleType.threeWheeler:
+        leadingIcon = Icons.delivery_dining; // better visual for three-wheeler
+        break;
+      case VehicleType.fourWheeler:
+        leadingIcon = Icons.local_shipping;
+        break;
+    }
+
+    final card = Container(
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.3),
+            color: isDisabled
+                ? colorScheme.outline.withValues(alpha: 0.15)
+                : (isSelected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3)),
+            width: isSelected && !isDisabled ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
+          color: isDisabled
+              ? Colors.grey.shade100
+              : (isSelected ? colorScheme.primary.withValues(alpha: 0.05) : null),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: isDisabled ? Colors.grey.shade200 : colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
-                Icons.inventory_2,
-                color: Colors.orange,
-                size: 24,
-              ),
+              child: Icon(leadingIcon, color: isDisabled ? Colors.grey : colorScheme.primary),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'Add item details',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
+                      Expanded(
+                        child: Text(
+                          _vehicleLabel(option.vehicleType),
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: isDisabled ? Colors.grey : null,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 4),
                       Text(
-                        '*',
+                        isDisabled ? '--' : '₹${option.estimatedCost.toStringAsFixed(2)}',
                         style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
+                          fontWeight: FontWeight.w700,
+                          color: isDisabled ? Colors.grey : null,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Delivery Guarantee • 1 Basic',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _pill(option.isAvailable ? 'Available' : 'Unavailable', option.isAvailable ? Colors.green : Colors.grey),
+                      const SizedBox(width: 8),
+                      _pill('Up to ${option.weightLimit.toStringAsFixed(0)} kg', isDisabled ? Colors.grey : colorScheme.primary),
+                    ],
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
           ],
         ),
-      ),
+      );
+
+    if (isDisabled) {
+      return IgnorePointer(ignoring: true, child: card);
+    }
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedVehicleType = option.vehicleType;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: card,
     );
   }
 
-  void _proceedToReview() {
+  Widget _pill(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
+    );
+  }
+
+  // Removed calculation breakdown per selection requirements
+
+  String _vehicleLabel(VehicleType type) {
+    switch (type) {
+      case VehicleType.twoWheeler:
+        return 'Two Wheeler';
+      case VehicleType.threeWheeler:
+        return 'Three Wheeler';
+      case VehicleType.fourWheeler:
+        return 'Four Wheeler';
+    }
+  }
+
+  void _proceedToReview(BookingEstimate estimate) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -578,9 +474,8 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
           pickupAddress: widget.pickupAddress,
           dropAddress: widget.dropAddress,
           package: widget.package,
-          deliveryType: _selectedDeliveryType,
-          vehicleType: _selectedVehicleType,
-          totalAmount: 36.10,
+          estimate: estimate,
+          selectedVehicleType: _selectedVehicleType!,
         ),
       ),
     );

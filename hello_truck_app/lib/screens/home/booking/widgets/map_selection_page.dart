@@ -19,6 +19,7 @@ class MapSelectionPage extends ConsumerStatefulWidget {
   final String title;
   final MapSelectionMode mode;
   final SavedAddress? initialSavedAddress;
+  final Address? initialAddress; // Add initial address parameter
 
   const MapSelectionPage({
     super.key,
@@ -26,6 +27,7 @@ class MapSelectionPage extends ConsumerStatefulWidget {
     this.onAddressSelected,
     this.mode = MapSelectionMode.booking,
     this.initialSavedAddress,
+    this.initialAddress, // Add to constructor
   }): title = mode == MapSelectionMode.direct
       ? 'Location'
       : (isPickup ? 'Pickup Location' : 'Drop Location');
@@ -47,6 +49,25 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
   static const double allowedRadiusMeters = 500.0; // 500m radius
 
   void _initializeLocation() {
+    if (widget.mode == MapSelectionMode.direct) {
+      // For direct mode, initialize with provided initial address
+      if (widget.initialAddress != null) {
+        _selectedLocation = LatLng(
+          widget.initialAddress!.latitude,
+          widget.initialAddress!.longitude,
+        );
+        _selectedAddress = widget.initialAddress!.formattedAddress;
+
+        // Add marker after the map is created
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_selectedLocation != null) {
+            _updateLocationAndAddress(_selectedLocation!);
+          }
+        });
+      }
+      return;
+    }
+
     // Initialize with saved address if provided
     if (widget.initialSavedAddress != null) {
       _selectedLocation = LatLng(
@@ -276,7 +297,12 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                           widget.initialSavedAddress!.address.latitude,
                           widget.initialSavedAddress!.address.longitude,
                         )
-                      : LatLng(position.latitude, position.longitude),
+                      : (widget.initialAddress != null && widget.mode == MapSelectionMode.direct)
+                          ? LatLng(
+                              widget.initialAddress!.latitude,
+                              widget.initialAddress!.longitude,
+                            )
+                          : LatLng(position.latitude, position.longitude),
                   zoom: 16.0,
                 ),
                 markers: _markers,

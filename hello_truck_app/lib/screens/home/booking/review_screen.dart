@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/enums/package_enums.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/package.dart';
+import 'package:hello_truck_app/models/enums/booking_enums.dart';
+import 'package:hello_truck_app/api/booking_api.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final SavedAddress pickupAddress;
   final SavedAddress dropAddress;
   final Package package;
-  final String deliveryType;
-  final String vehicleType;
-  final double totalAmount;
+  final BookingEstimate estimate;
+  final VehicleType selectedVehicleType;
 
   const ReviewScreen({
     super.key,
     required this.pickupAddress,
     required this.dropAddress,
     required this.package,
-    required this.deliveryType,
-    required this.vehicleType,
-    required this.totalAmount,
+    required this.estimate,
+    required this.selectedVehicleType,
   });
 
   @override
@@ -28,6 +31,24 @@ class ReviewScreen extends ConsumerStatefulWidget {
 
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   bool _isBooking = false;
+  late SavedAddress _pickupAddress;
+  late SavedAddress _dropAddress;
+  VehicleOption? get _selectedOption {
+    try {
+      return widget.estimate.vehicleOptions.firstWhere(
+        (o) => o.vehicleType == widget.selectedVehicleType,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _pickupAddress = widget.pickupAddress;
+    _dropAddress = widget.dropAddress;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,8 +103,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                           Text(
                             'Order Summary',
                             style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -93,7 +114,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                             icon: Icons.circle,
                             iconColor: colorScheme.primary,
                             title: 'Pickup',
-                            address: widget.pickupAddress,
+                            address: _pickupAddress,
                             onEdit: () => _editLocation(true),
                           ),
 
@@ -122,7 +143,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                             icon: Icons.circle,
                             iconColor: Colors.red,
                             title: 'Drop',
-                            address: widget.dropAddress,
+                            address: _dropAddress,
                             onEdit: () => _editLocation(false),
                           ),
                         ],
@@ -157,8 +178,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                               Text(
                                 'Package Details',
                                 style: textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
                                 ),
                               ),
                               TextButton(
@@ -182,7 +203,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Delivery Options Card
+                  // Delivery Options / Vehicle Card
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -205,10 +226,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Delivery Options',
+                                'Selected Vehicle',
                                 style: textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
                                 ),
                               ),
                               TextButton(
@@ -229,48 +250,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.flash_on,
-                                  color: Colors.green,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.deliveryType.toUpperCase(),
-                                      style: textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Priority delivery',
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
                                   color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
-                                  Icons.motorcycle,
+                                  Icons.local_shipping,
                                   color: Colors.blue,
                                   size: 20,
                                 ),
@@ -281,7 +265,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      widget.vehicleType.toUpperCase(),
+                                      widget.selectedVehicleType.name.toUpperCase(),
                                       style: textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -295,6 +279,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                   ],
                                 ),
                               ),
+                              if (_selectedOption != null)
+                                Text(
+                                  '₹${_selectedOption!.estimatedCost.toStringAsFixed(2)}',
+                                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                ),
                             ],
                           ),
                         ],
@@ -304,7 +293,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Price Breakdown Card
+                  // Price Breakdown Card (from estimate)
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -326,18 +315,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                           Text(
                             'Price Breakdown',
                             style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildPriceRow('Base fare', 25.00),
-                          _buildPriceRow('Distance charge', 8.50),
-                          _buildPriceRow('Priority fee', 2.60),
+                          if (_selectedOption != null) ...[
+                            _buildPriceRow('Base fare', _selectedOption!.breakdown.baseFare),
+                            _buildPriceRow('Distance charge', _selectedOption!.breakdown.distanceCharge),
+                            _buildPriceRow('Weight multiplier', _selectedOption!.breakdown.weightMultiplier, isMultiplier: true),
+                            _buildPriceRow('Vehicle multiplier', _selectedOption!.breakdown.vehicleMultiplier, isMultiplier: true),
+                            const Divider(height: 24),
+                            _buildPriceRow('Total multiplier', _selectedOption!.breakdown.totalMultiplier, isMultiplier: true),
+                          ],
                           const Divider(height: 24),
                           _buildPriceRow(
                             'Total',
-                            widget.totalAmount,
+                            _selectedOption?.estimatedCost ?? 0.0,
                             isTotal: true,
                           ),
                         ],
@@ -407,17 +401,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text('Total Amount', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w500, color: Colors.black)),
                     Text(
-                      'Total Amount',
+                      '₹${(_selectedOption?.estimatedCost ?? 0.0).toStringAsFixed(2)}',
                       style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      '₹${widget.totalAmount.toStringAsFixed(2)}',
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         color: colorScheme.primary,
                       ),
                     ),
@@ -427,7 +415,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isBooking ? null : _confirmBooking,
+                    onPressed: _isBooking || _selectedOption == null ? null : _confirmBooking,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       foregroundColor: Colors.white,
@@ -563,7 +551,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
-  Widget _buildPriceRow(String label, double amount, {bool isTotal = false}) {
+  Widget _buildPriceRow(String label, double amount, {bool isTotal = false, bool isMultiplier = false}) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -580,7 +568,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             ),
           ),
           Text(
-            '₹${amount.toStringAsFixed(2)}',
+            isMultiplier ? '${amount.toStringAsFixed(2)}x' : '₹${amount.toStringAsFixed(2)}',
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
               color: isTotal ? colorScheme.primary : colorScheme.onSurface,
@@ -592,10 +580,26 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   void _editLocation(bool isPickup) {
-    if (mounted) {
-      // Navigate back to location selection
-      Navigator.popUntil(context, (route) => route.isFirst);
-    }
+    if (!mounted) return;
+    showModalBottomSheet<BuildContext>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      enableDrag: false,
+      backgroundColor: Colors.white,
+      builder: (context) => AddressSearchPage(
+        isPickup: isPickup,
+        onAddressSelected: (address) {
+          setState(() {
+            if (isPickup) {
+              _pickupAddress = address;
+            } else {
+              _dropAddress = address;
+            }
+          });
+        },
+      ),
+    );
   }
 
   void _editPackageDetails() {
@@ -619,8 +623,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     });
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      final api = await ref.read(apiProvider.future);
+      await createBooking(
+        api,
+        pickupAddress: _pickupAddress.address,
+        dropAddress: _dropAddress.address,
+        package: widget.package,
+        selectedVehicleType: widget.selectedVehicleType,
+      );
 
       if (mounted) {
         // Show success dialog
