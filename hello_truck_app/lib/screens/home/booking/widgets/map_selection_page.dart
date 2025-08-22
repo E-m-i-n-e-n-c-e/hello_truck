@@ -240,6 +240,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
       final confirmedAddress = await showModalBottomSheet<SavedAddress>(
         context: context,
         isScrollControlled: true,
+        useSafeArea: true,
         backgroundColor: Colors.transparent,
         builder: (context) => AddressConfirmationModal(
           savedAddress: initialSavedAddress,

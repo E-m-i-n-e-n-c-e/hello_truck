@@ -112,7 +112,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
           children: [
             // Header with back button and title
           Container(
-            padding: const EdgeInsets.fromLTRB(12, 16, 16, 0),
+            padding: const EdgeInsets.fromLTRB(12, 12, 16, 0),
             child: Row(
               children: [
                 IconButton(
@@ -138,7 +138,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
               child: Form(
                 key: _formKey,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding:  EdgeInsets.only(left: 16, right: 16, top: 12, bottom:16 + MediaQuery.of(context).viewInsets.bottom),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -186,43 +186,30 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header with title only (no back button)
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Center(
-              child: Text(
-                'Save Details',
-                style: textTheme.titleLarge?.copyWith(
-                  color: Colors.black.withValues(alpha: 0.85),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-
           Flexible(
             child: Form(
               key: _formKey,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding:  EdgeInsets.only(left: 16, right: 16, top: 16, bottom:16 + MediaQuery.of(context).viewInsets.bottom),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Question text
                     Text(
                       'What do you want to save this address as?',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: Colors.black87,
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: Colors.black,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     // Name input field
                     _buildTextField(
                       controller: _addressNameController,
                       label: 'Name',
                       hint: 'e.g. Home, Office, Gym',
+                      autoFocus: true,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Address name is required';
@@ -458,6 +445,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
     Function(String)? onChanged,
+    bool autoFocus = false,
   }) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
@@ -533,6 +521,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
           style: textTheme.bodyMedium?.copyWith(
             color: Colors.black87,
           ),
+          autofocus: autoFocus,
           maxLines: maxLines,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
