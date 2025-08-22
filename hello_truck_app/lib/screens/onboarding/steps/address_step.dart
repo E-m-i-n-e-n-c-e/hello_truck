@@ -305,7 +305,67 @@ class _AddressStepState extends ConsumerState<AddressStep> {
           const SizedBox(height: 24),
 
           // Address Form Fields
+          if (!widget.controller.isAddressSkipped)
           _buildAddressForm(context),
+
+          const SizedBox(height: 24),
+          // Skip checkbox
+          GestureDetector(
+            onTap: () {
+              widget.controller.setAddressSkipped(!widget.controller.isAddressSkipped);
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: widget.controller.isAddressSkipped
+                    ? const Color(0xFF22AAAE).withValues(alpha: 0.1)
+                    : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: widget.controller.isAddressSkipped
+                      ? const Color(0xFF22AAAE).withValues(alpha: 0.5)
+                      : Colors.grey.shade300,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Skip for now',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: widget.controller.isAddressSkipped
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 1.2,
+                    child: Checkbox(
+                      value: widget.controller.isAddressSkipped,
+                      onChanged: (value) {
+                        widget.controller.setAddressSkipped(value ?? false);
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      side: BorderSide(
+                        color: widget.controller.isAddressSkipped
+                            ? const Color(0xFF22AAAE)
+                            : Colors.grey.shade400,
+                        width: 1.5,
+                      ),
+                      activeColor: const Color(0xFF22AAAE),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
           const SizedBox(height: 40),
         ],

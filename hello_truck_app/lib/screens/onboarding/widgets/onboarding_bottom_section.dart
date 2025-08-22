@@ -24,6 +24,9 @@ class OnboardingBottomSection extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isLastStep = controller.currentStep == controller.getTotalSteps() - 1;
     final isFirstStep = controller.currentStep == 0;
+    final canProceed = isLastStep
+        ? controller.canSubmitProfile()
+        : controller.canProceedFromCurrentStep();
 
     return AnimatedBuilder(
       animation: controller.fadeAnimation,
@@ -86,7 +89,7 @@ class OnboardingBottomSection extends StatelessWidget {
                   Expanded(
                     flex: showBackButton && !isFirstStep ? 1 : 2,
                     child: ElevatedButton(
-                      onPressed: controller.isLoading
+                      onPressed: (controller.isLoading || !canProceed)
                           ? null
                           : (isLastStep ? onSubmit : onNext),
                       style: ElevatedButton.styleFrom(

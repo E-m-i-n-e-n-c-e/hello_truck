@@ -51,6 +51,7 @@ class OnboardingController {
   final int totalSteps = 5; // Personal Info, Email, Business Details (optional), Address, Review
   bool _isLoading = false;
   bool _isBusiness = false;
+  bool _isAddressSkipped = false;
   String? _googleIdToken;
   String? _userEmail;
 
@@ -65,6 +66,7 @@ class OnboardingController {
   int get currentStep => _currentStep;
   bool get isLoading => _isLoading;
   bool get isBusiness => _isBusiness;
+  bool get isAddressSkipped => _isAddressSkipped;
   String? get googleIdToken => _googleIdToken;
   String? get userEmail => _userEmail;
   double? get selectedLatitude => _selectedLatitude;
@@ -72,6 +74,24 @@ class OnboardingController {
 
   OnboardingController({required TickerProvider vsync}) {
     _initializeAnimations(vsync);
+    // Add listeners to notify UI reactively on field edits
+    for (final c in [
+      firstNameController,
+      lastNameController,
+      emailController,
+      referralController,
+      gstNumberController,
+      companyNameController,
+      addressController,
+      addressNameController,
+      formattedAddressController,
+      addressDetailsController,
+      contactNameController,
+      contactPhoneController,
+      noteToDriverController,
+    ]) {
+      c.addListener(_notifyStateChange);
+    }
   }
 
   void setStateChangeCallback(VoidCallback callback) {
@@ -178,6 +198,12 @@ class OnboardingController {
     _notifyStateChange();
   }
 
+  // Address skip toggle
+  void setAddressSkipped(bool value) {
+    _isAddressSkipped = value;
+    _notifyStateChange();
+  }
+
   // Loading state
   void setLoading(bool loading) {
     _isLoading = loading;
@@ -237,6 +263,9 @@ class OnboardingController {
   }
 
   String? validateAddressStep() {
+    if (_isAddressSkipped) {
+      return null;
+    }
     if (addressNameController.text.trim().isEmpty) {
       return 'Address Name is required';
     }
@@ -260,6 +289,7 @@ class OnboardingController {
 
   // Get saved address object for profile creation
   SavedAddress? getSavedAddressForProfile() {
+    if (_isAddressSkipped) return null;
     if (validateAddressStep() != null) return null;
 
     return SavedAddress(
@@ -278,6 +308,51 @@ class OnboardingController {
       createdAt: DateTime.now(), // Placeholder, will be set by backend
       updatedAt: DateTime.now(), // Placeholder, will be set by backend
     );
+  }
+
+  // Reactive readiness helpers for enabling/disabling buttons
+  bool hasRequiredPersonalInfo() {
+    return firstNameController.text.trim().isNotEmpty;
+  }
+
+  bool hasRequiredBusinessDetails() {
+    if (!_isBusiness) return true;
+    return gstNumberController.text.trim().isNotEmpty &&
+        companyNameController.text.trim().isNotEmpty &&
+        addressController.text.trim().isNotEmpty;
+  }
+
+  bool hasRequiredAddress() {
+    if (_isAddressSkipped) return true;
+    final phone = contactPhoneController.text.trim();
+    final isPhone10Digits = RegExp(r'^[0-9]{10}$').hasMatch(phone);
+    return addressNameController.text.trim().isNotEmpty &&
+        formattedAddressController.text.trim().isNotEmpty &&
+        _selectedLatitude != null &&
+        _selectedLongitude != null &&
+        contactNameController.text.trim().isNotEmpty &&
+        isPhone10Digits;
+  }
+
+  bool canProceedFromCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return hasRequiredPersonalInfo();
+      case 1:
+        return true; // Email step optional
+      case 2:
+        return hasRequiredBusinessDetails();
+      case 3:
+        return hasRequiredAddress();
+      case 4:
+        return canSubmitProfile();
+      default:
+        return false;
+    }
+  }
+
+  bool canSubmitProfile() {
+    return hasRequiredPersonalInfo() && hasRequiredBusinessDetails() && hasRequiredAddress();
   }
 
   // Get total steps - always 5 steps: Personal, Email, Business, Address, Review
