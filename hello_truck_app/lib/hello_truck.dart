@@ -11,6 +11,7 @@ import 'package:hello_truck_app/screens/bookings/bookings_screen.dart';
 import 'package:hello_truck_app/screens/onboarding/onboarding_screen.dart';
 import 'package:hello_truck_app/widgets/bottom_navbar.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/providers/fcm_providers.dart';
 
 class HelloTruck extends ConsumerStatefulWidget {
   const HelloTruck({super.key});
@@ -39,12 +40,15 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
 
   void _setupListeners(AsyncValue<AuthState> authState) {
       if (!_hasSetupListener) {
-        // Preload providers
+        // Initialize providers
         ref.read(currentPositionStreamProvider);
         ref.read(customerProvider);
         ref.read(gstDetailsProvider);
         ref.read(activeBookingsProvider);
         ref.read(bookingHistoryProvider);
+
+        // Initialize FCM service
+        ref.read(fcmServiceProvider);
 
         // Show offline snackbar if user is offline
         if (authState.value?.isOffline == true) {

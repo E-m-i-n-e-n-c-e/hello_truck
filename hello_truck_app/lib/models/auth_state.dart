@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 class AuthState extends Equatable {
   final String userId;
+  final String phoneNumber;
   final bool isAuthenticated;
   final String token;
   final bool isOffline;
@@ -10,6 +11,7 @@ class AuthState extends Equatable {
 
   const AuthState({
     required this.userId,
+    required this.phoneNumber,
     required this.isAuthenticated,
     required this.token,
     this.isOffline = false,
@@ -19,6 +21,7 @@ class AuthState extends Equatable {
   @override
   List<Object> get props => [
     userId,
+    phoneNumber,
     isAuthenticated,
     token,
     isOffline,
@@ -34,6 +37,7 @@ class AuthState extends Equatable {
       final payload = JwtDecoder.decode(token);
       return AuthState(
         userId: payload['userId'],
+        phoneNumber: payload['phoneNumber'],
         isAuthenticated: true,
         token: token,
         isOffline: isOffline,
@@ -47,6 +51,7 @@ class AuthState extends Equatable {
   factory AuthState.unauthenticated() {
     return AuthState(
       userId: '',
+      phoneNumber: '',
       isAuthenticated: false,
       token: '',
     );

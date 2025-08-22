@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "691159300275-f0f6ruso1741m5sincqjstinkf71fpvt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.hello_truck_app",
+            "certificate_hash": "07a0898ec9aaed2d22b04c79b0c4029afd1376e1"
+          }
+        },
+        {
           "client_id": "691159300275-37gn4bpd7jrkld0cmot36vl181s3tsf3.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -31,10 +39,10 @@
               "client_type": 3
             },
             {
-              "client_id": "691159300275-s9v0k9mqlbjouq7lhakik86hj99n5gob.apps.googleusercontent.com",
+              "client_id": "691159300275-6ekgfjoamobldtttb5qun858e3gk8828.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.helloTruckDriver"
+                "bundle_id": "com.example.helloTruckApp"
               }
             }
           ]
@@ -139,10 +147,10 @@
               "client_type": 3
             },
             {
-              "client_id": "691159300275-s9v0k9mqlbjouq7lhakik86hj99n5gob.apps.googleusercontent.com",
+              "client_id": "691159300275-6ekgfjoamobldtttb5qun858e3gk8828.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.helloTruckDriver"
+                "bundle_id": "com.example.helloTruckApp"
               }
             }
           ]
