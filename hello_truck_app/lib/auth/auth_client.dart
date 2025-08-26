@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import '../models/auth_state.dart';
 import 'package:flutter/widgets.dart';
+import 'package:hello_truck_app/utils/constants.dart';
 
 class AuthClient with WidgetsBindingObserver {
   static final AuthClient _instance = AuthClient._();
@@ -20,9 +21,6 @@ class AuthClient with WidgetsBindingObserver {
   Timer? _retryTimer;
   int _retryDelay = 0;
   bool _isRefreshing = false;
-
-  static const baseUrl = 'https://hello-truck-server.fly.dev';
-  // static const baseUrl = 'http://10.0.2.2:3000';
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {

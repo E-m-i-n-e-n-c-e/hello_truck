@@ -9,7 +9,6 @@ enum VehicleType {
   static VehicleType fromString(String value) {
     return VehicleType.values.firstWhere(
       (type) => type.value == value,
-      orElse: () => VehicleType.fourWheeler,
     );
   }
 }
@@ -33,7 +32,6 @@ enum BookingStatus {
   static BookingStatus fromString(String value) {
     return BookingStatus.values.firstWhere(
       (status) => status.value == value,
-      orElse: () => BookingStatus.pending,
     );
   }
 }
@@ -50,7 +48,6 @@ enum AssignmentStatus {
   static AssignmentStatus fromString(String value) {
     return AssignmentStatus.values.firstWhere(
       (status) => status.value == value,
-      orElse: () => AssignmentStatus.offered,
     );
   }
 }

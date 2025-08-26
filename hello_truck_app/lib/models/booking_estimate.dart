@@ -1,4 +1,3 @@
-
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 
 class BookingEstimate {

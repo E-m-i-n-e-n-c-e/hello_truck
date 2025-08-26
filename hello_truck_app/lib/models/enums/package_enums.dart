@@ -8,7 +8,6 @@ enum PackageType {
   static PackageType fromString(String value) {
     return PackageType.values.firstWhere(
       (type) => type.value == value,
-      orElse: () => PackageType.personal,
     );
   }
 }
@@ -23,7 +22,6 @@ enum ProductType {
   static ProductType fromString(String value) {
     return ProductType.values.firstWhere(
       (type) => type.value == value,
-      orElse: () => ProductType.agricultural,
     );
   }
 }
@@ -38,7 +36,6 @@ enum WeightUnit {
   static WeightUnit fromString(String value) {
     return WeightUnit.values.firstWhere(
       (unit) => unit.value == value,
-      orElse: () => WeightUnit.kg,
     );
   }
 }
@@ -53,7 +50,6 @@ enum DimensionUnit {
   static DimensionUnit fromString(String value) {
     return DimensionUnit.values.firstWhere(
       (unit) => unit.value == value,
-      orElse: () => DimensionUnit.cm,
     );
   }
 }

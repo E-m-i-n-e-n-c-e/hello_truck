@@ -52,7 +52,9 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
 
         // Show offline snackbar if user is offline
         if (authState.value?.isOffline == true) {
-          SnackBars.error(context, 'You are offline. Please check your internet connection.');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            SnackBars.error(context, 'You are offline. Please check your internet connection.');
+          });
         }
 
         _hasSetupListener = true;

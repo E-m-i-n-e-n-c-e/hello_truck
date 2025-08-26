@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hello_truck_app/auth/api.dart';
+import 'package:hello_truck_app/models/enums/fcm_enums.dart';
 
 class FCMService {
   final API _api;
@@ -13,52 +14,19 @@ class FCMService {
   bool _isInitialized = false;
   StreamSubscription? _tokenRefreshSubscription;
   StreamSubscription? _foregroundMessageSubscription;
+  final StreamController<FcmEventType> _eventController = StreamController<FcmEventType>.broadcast();
+
+  // Stream to listen to FCM events
+  Stream<FcmEventType> get eventStream => _eventController.stream;
 
   FCMService(this._api);
 
-  Future<void> _initializeLocalNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
-
-    await _localNotifications.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        if (kDebugMode) debugPrint('Local notification tapped: ${response.payload}');
-        // Handle notification tap here
-      },
-    );
-
-    // Create notification channel for Android
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'fcm_default_channel',
-      'FCM Notifications',
-      description: 'Your notifications from the app',
-      importance: Importance.high,
-    );
-
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-  }
 
   Future<void> initialize() async {
     if (_isInitialized || _api.accessToken == null) return;
 
     // Initialize local notifications first
-    await _initializeLocalNotifications();
+    await _initializeNotifications(_localNotifications);
 
     await _messaging.setForegroundNotificationPresentationOptions(
       alert: false, // Prevent duplicate notifications on iOS
@@ -89,9 +57,13 @@ class FCMService {
 
       _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         if (kDebugMode) debugPrint('FCM foreground message: ${message.notification?.title} - ${message.notification?.body}');
-
-        // Show local notification for foreground messages
-        _showLocalNotification(message);
+        if(message.data['event'] != null) {
+          _eventController.add(FcmEventType.fromString(message.data['event']!));
+        }
+        else {
+          // Show local notification for foreground messages
+          _showNotification(message, _localNotifications);
+        }
       });
 
       _isInitialized = true;
@@ -128,9 +100,49 @@ class FCMService {
     }
   }
 
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    if (message.notification != null) {
-      await _localNotifications.show(
+  // Static method to initialize notifications
+  static Future<void> _initializeNotifications(FlutterLocalNotificationsPlugin localNotifications) async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+
+    await localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (kDebugMode) debugPrint('Local notification tapped: ${response.payload}');
+        // Handle notification tap here
+      },
+    );
+
+    // Create notification channel for Android
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'fcm_default_channel',
+      'FCM Notifications',
+      description: 'Your notifications from the app',
+      importance: Importance.high,
+    );
+
+    await localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  // Static method to show notification
+  static Future<void> _showNotification(RemoteMessage message, FlutterLocalNotificationsPlugin localNotifications) async {
+    if (message.notification?.title != null && message.notification?.body != null) {
+      await localNotifications.show(
         message.notification!.hashCode,
         message.notification!.title,
         message.notification!.body,
@@ -152,5 +164,14 @@ class FCMService {
         ),
       );
     }
+  }
+
+  /// Static background handler to be registered in main()
+  static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+    final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
+
+    await _initializeNotifications(localNotifications);
+
+    await _showNotification(message, localNotifications);
   }
 }
