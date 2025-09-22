@@ -346,8 +346,7 @@ class _AddressSelectionScreenState
                 child: Stack(
                   children: [
                     // Full Map Section
-                    currentPositionAsync.when(
-                      data: (position) => Stack(
+                      Stack(
                         children: [
                           GoogleMap(
                             onMapCreated: (GoogleMapController controller) {
@@ -355,15 +354,15 @@ class _AddressSelectionScreenState
                               _updateMapView();
                             },
                             initialCameraPosition: CameraPosition(
-                              target: LatLng(
-                                position.latitude,
-                                position.longitude,
-                              ),
+                            target: LatLng(
+                              _pickupAddress?.address.latitude ?? currentPositionAsync.value?.latitude ?? 9.75603120,
+                              _pickupAddress?.address.longitude ?? currentPositionAsync.value?.longitude ?? 76.64798330,
+                            ),
                               zoom: 14.0,
                             ),
                             markers: _markers,
                             polylines: _polylines,
-                            myLocationEnabled: false,
+                            myLocationEnabled: true,
                             myLocationButtonEnabled: false,
                             mapType: MapType.normal,
                             zoomControlsEnabled: false,
@@ -726,11 +725,6 @@ class _AddressSelectionScreenState
                           ),
                         ],
                       ),
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (error, stack) =>
-                          Center(child: Text('Error loading map: $error')),
-                    ),
                   ],
                 ),
               ),
