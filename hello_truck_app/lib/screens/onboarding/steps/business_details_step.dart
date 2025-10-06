@@ -86,7 +86,7 @@ class BusinessDetailsStep extends StatelessWidget {
                 Switch(
                   value: controller.isBusiness,
                   onChanged: (value) => controller.toggleBusiness(value),
-                  activeColor: colorScheme.secondary,
+                  activeThumbColor: colorScheme.secondary,
                 ),
               ],
             ),

@@ -1,10 +1,11 @@
 // lib/services/ fcm_service.dart
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/models/enums/fcm_enums.dart';
+
+import '../utils/logger.dart';
 
 class FCMService {
   final API _api;
@@ -40,37 +41,33 @@ class FCMService {
       sound: true,
     );
 
-    if (kDebugMode) debugPrint('FCM permission status: ${settings.authorizationStatus}');
+    AppLogger.log('FCM permission status: ${settings.authorizationStatus}');
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      final token = await _messaging.getToken();
-      if (kDebugMode) debugPrint('FCM token: $token');
+    final token = await _messaging.getToken();
+    AppLogger.log('FCM token: $token');
 
-      if (token != null) {
-        await _upsertToken(token);
-      }
-
-      _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((newToken) {
-        _upsertToken(newToken);
-      });
-
-      _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        if (kDebugMode) debugPrint('FCM foreground message: ${message.notification?.title} - ${message.notification?.body}');
-        if(message.data['event'] != null) {
-          _eventController.add(FcmEventType.fromString(message.data['event']!));
-        }
-        else {
-          // Show local notification for foreground messages
-          _showNotification(message, _localNotifications);
-        }
-      });
-
-      _isInitialized = true;
-      if (kDebugMode) debugPrint('FCM initialized');
-    } else {
-      if (kDebugMode) debugPrint('FCM permission denied');
+    if (token != null) {
+      await _upsertToken(token);
     }
+
+    _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((newToken) {
+      _upsertToken(newToken);
+    });
+
+    _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      AppLogger.log('FCM event received: ${message.data['event']}');
+      AppLogger.log('FCM foreground messagessssss: ${message.notification?.title} - ${message.notification?.body}');
+      if(message.data['event'] != null) {
+        _eventController.add(FcmEventType.fromString(message.data['event']!));
+      }
+      else {
+        // Show local notification for foreground messages
+        _showNotification(message, _localNotifications);
+      }
+    });
+
+    _isInitialized = true;
+    AppLogger.log('FCM initialized');
   }
 
   Future<void> stop() async {
@@ -82,7 +79,7 @@ class FCMService {
     _foregroundMessageSubscription = null;
     _isInitialized = false;
 
-    if (kDebugMode) debugPrint('FCM stopped');
+    AppLogger.log('FCM stopped');
   }
 
   bool get isInitialized => _isInitialized;
@@ -90,13 +87,13 @@ class FCMService {
   Future<void> _upsertToken(String fcmToken) async {
     try {
       if (_api.accessToken == null) {
-        if (kDebugMode) debugPrint('FCM upsert skipped: API not ready');
+        AppLogger.log('FCM upsert skipped: API not ready');
         return;
       }
       await _api.put('/customer/profile/fcm-token', data: { 'fcmToken': fcmToken });
-      if (kDebugMode) debugPrint('FCM token upserted successfully');
+      AppLogger.log('FCM token upserted successfully');
     } catch (e) {
-      if (kDebugMode) debugPrint('Failed to upsert FCM token: $e');
+      AppLogger.log('Failed to upsert FCM token: $e');
     }
   }
 
@@ -120,7 +117,7 @@ class FCMService {
     await localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        if (kDebugMode) debugPrint('Local notification tapped: ${response.payload}');
+        AppLogger.log('Local notification tapped: ${response.payload}');
         // Handle notification tap here
       },
     );

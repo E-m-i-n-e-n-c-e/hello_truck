@@ -226,7 +226,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                               children: [
                                 const SizedBox(height: 16),
                                 DropdownButtonFormField<String>(
-                                  value: _weightUnit,
+                                  initialValue: _weightUnit,
                                   decoration: InputDecoration(
                                     labelText: 'Unit',
                                     border: OutlineInputBorder(
@@ -371,7 +371,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _dimensionUnit,
+                              initialValue: _dimensionUnit,
                               decoration: InputDecoration(
                                 labelText: 'Unit',
                                 border: OutlineInputBorder(
