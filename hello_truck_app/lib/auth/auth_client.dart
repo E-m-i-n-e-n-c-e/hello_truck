@@ -5,6 +5,8 @@ import '../models/auth_state.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hello_truck_app/utils/constants.dart';
 
+import '../utils/logger.dart';
+
 class AuthClient with WidgetsBindingObserver {
   static final AuthClient _instance = AuthClient._();
   factory AuthClient() => _instance;
@@ -25,11 +27,11 @@ class AuthClient with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed ) {
-      debugPrint('App resumed, Reinitializing');
+      AppLogger.log('App resumed, Reinitializing');
       initialize();
     }
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      debugPrint('App is inactive, stopping refresh loop');
+      AppLogger.log('App is inactive, stopping refresh loop');
       _refreshTimer?.cancel();
     }
   }
@@ -64,12 +66,12 @@ class AuthClient with WidgetsBindingObserver {
 
       _controller.add(AuthState.fromToken(newAccessToken));
       _retryDelay = 0;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionError ||
+ } on Exception catch (e) {
+      if (e is DioException && (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        print('🔄 Token refresh error: $e');
+          e.type == DioExceptionType.receiveTimeout)) {
+        AppLogger.log('🔄 Token refresh error: $e');
         final accessToken = await _storage.read(key: 'accessToken');
         _controller.add(AuthState.fromToken(accessToken, isOffline: true));
         _retryDelay++;
@@ -77,8 +79,9 @@ class AuthClient with WidgetsBindingObserver {
         _retryTimer = Timer(Duration(seconds: _retryDelay.clamp(1, 8)), () {
          refreshTokens();
         });
-      } else if (e.response?.statusCode == 400 || e.response?.statusCode == 401) { // If token is missing or invalid
-        print('🔄 Token refresh error: $e');
+      } else {
+        // If token is missing or invalid or if corrupted secure storage
+        AppLogger.log('🔄 Token refresh error: $e');
         await _storage.deleteAll();
         _controller.add(AuthState.unauthenticated());
       }
