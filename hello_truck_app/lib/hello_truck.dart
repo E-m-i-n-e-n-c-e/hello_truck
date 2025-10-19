@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/auth_state.dart';
+import 'package:hello_truck_app/providers/app_initializer_provider.dart.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
-import 'package:hello_truck_app/providers/location_providers.dart';
+import 'package:hello_truck_app/providers/fcm_providers.dart';
 import 'package:hello_truck_app/screens/home/home_screen.dart';
 import 'package:hello_truck_app/screens/profile/profile_screen.dart';
 import 'package:hello_truck_app/screens/bookings/bookings_screen.dart';
 import 'package:hello_truck_app/screens/onboarding/onboarding_screen.dart';
 import 'package:hello_truck_app/widgets/bottom_navbar.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
-import 'package:hello_truck_app/providers/fcm_providers.dart';
 
 class HelloTruck extends ConsumerStatefulWidget {
   const HelloTruck({super.key});
@@ -40,16 +40,6 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
 
   void _setupListeners(AsyncValue<AuthState> authState) {
       if (!_hasSetupListener) {
-        // Initialize providers
-        ref.read(currentPositionStreamProvider);
-        ref.read(customerProvider);
-        ref.read(gstDetailsProvider);
-        ref.read(activeBookingsProvider);
-        ref.read(bookingHistoryProvider);
-
-        // Initialize FCM service
-        ref.read(fcmServiceProvider);
-
         // Show offline snackbar if user is offline
         if (authState.value?.isOffline == true) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -90,6 +80,15 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
     if (authState.value?.hasCompletedOnboarding!=true) {
       return const OnboardingScreen();
     }
+
+    // Run app initializer and watch it to keep it running
+    ref.watch(appInitializerProvider);
+
+    // Handle fcm events
+    ref.watch(fcmEventsHandlerProvider);
+
+    // Handle app lifecycle events
+    ref.watch(appLifecycleHandlerProvider);
 
     _loadScreen(_selectedIndex);
 

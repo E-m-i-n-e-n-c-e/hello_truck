@@ -15,7 +15,9 @@ class AuthClient with WidgetsBindingObserver {
   }
 
   final _controller = StreamController<AuthState>.broadcast();
+  final _appLifecycleController = StreamController<AppLifecycleState>.broadcast();
   Stream<AuthState> get authStateStream => _controller.stream;
+  Stream<AppLifecycleState> get appLifecycleStream => _appLifecycleController.stream;
 
   final _storage = const FlutterSecureStorage();
   final _dio = Dio();
@@ -26,6 +28,7 @@ class AuthClient with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appLifecycleController.add(state);
     if (state == AppLifecycleState.resumed ) {
       AppLogger.log('App resumed, Reinitializing');
       initialize();
@@ -126,5 +129,6 @@ class AuthClient with WidgetsBindingObserver {
     _refreshTimer?.cancel();
     _refreshTimer = null;
     _controller.close();
+    _appLifecycleController.close();
   }
 }

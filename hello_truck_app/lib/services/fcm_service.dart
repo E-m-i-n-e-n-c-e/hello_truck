@@ -1,14 +1,52 @@
 // lib/services/ fcm_service.dart
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/models/enums/fcm_enums.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/logger.dart';
 
+// Background FCM handler must be a top-level function and annotated for AOT
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
+  await FCMService._initializeNotifications(localNotifications);
+
+  // Show notification only if the default notification payload is null
+  // and data contains title & body
+  final hasNotification = message.notification != null;
+  final hasDataTitle = message.data['title'] != null;
+  final hasDataBody = message.data['body'] != null;
+
+  if (!hasNotification && hasDataTitle && hasDataBody) {
+    await FCMService._showNotification(
+      RemoteMessage(
+        data: message.data,
+        notification: RemoteNotification(
+          title: message.data['title'],
+          body: message.data['body'],
+        ),
+      ),
+      localNotifications,
+    );
+  }
+
+  developer.log('🔥 Background FCM received: ${message.data}');
+  final event = message.data['event'];
+  if (event != null) {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload(); // Ensure latest values from disk
+    final pendingEvents = prefs.getStringList('pending_events') ?? [];
+    await prefs.setStringList('pending_events', [...pendingEvents, event]);
+    developer.log('FCM background message pending events: $pendingEvents');
+  }
+}
+
 class FCMService {
-  final API _api;
+  late API _api;
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -20,11 +58,16 @@ class FCMService {
   // Stream to listen to FCM events
   Stream<FcmEventType> get eventStream => _eventController.stream;
 
-  FCMService(this._api);
+  // Function to allow others to add events to the controller
+  void addEvent(FcmEventType event) {
+    _eventController.add(event);
+  }
 
+  FCMService();
 
-  Future<void> initialize() async {
-    if (_isInitialized || _api.accessToken == null) return;
+  Future<void> initialize(API api) async {
+    if (_isInitialized) return;
+    _api = api;
 
     // Initialize local notifications first
     await _initializeNotifications(_localNotifications);
@@ -86,10 +129,6 @@ class FCMService {
 
   Future<void> _upsertToken(String fcmToken) async {
     try {
-      if (_api.accessToken == null) {
-        AppLogger.log('FCM upsert skipped: API not ready');
-        return;
-      }
       await _api.put('/customer/profile/fcm-token', data: { 'fcmToken': fcmToken });
       AppLogger.log('FCM token upserted successfully');
     } catch (e) {
@@ -161,14 +200,5 @@ class FCMService {
         ),
       );
     }
-  }
-
-  /// Static background handler to be registered in main()
-  static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-    final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
-
-    await _initializeNotifications(localNotifications);
-
-    await _showNotification(message, localNotifications);
   }
 }
