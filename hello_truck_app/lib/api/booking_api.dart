@@ -4,6 +4,8 @@ import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
+import 'package:hello_truck_app/utils/constants.dart';
+import 'package:hello_truck_app/utils/logger.dart';
 
 /// Get booking estimate with all vehicle options
 Future<BookingEstimate> getBookingEstimate(
@@ -55,6 +57,13 @@ Future<Booking> createBooking(
   });
 
   return Booking.fromJson(response.data);
+}
+
+/// Stream live driver navigation updates for a specific booking (SSE)
+Stream<Map<String, dynamic>> getDriverNavigationStream(API api, String bookingId) {
+  final absoluteUrl = '$baseUrl/bookings/customer/driver-navigation/$bookingId';
+  AppLogger.log('🚛 SSE connecting for booking $bookingId');
+  return api.streamSseJson(absoluteUrl);
 }
 
 Future<Booking> getBookingDetails(API api, String bookingId) async {

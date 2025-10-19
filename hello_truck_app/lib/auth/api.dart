@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:http_cache_hive_store/http_cache_hive_store.dart';
@@ -128,6 +130,92 @@ class API {
 
   Future<void> dispose() async {
     await _cacheStore.close();
+  }
+
+  // ==========================
+  // SSE streaming helpers
+  // ==========================
+  Stream<String> streamSseRaw(String absoluteUrl) {
+    final controller = StreamController<String>();
+    var cancelled = false;
+
+    Future<void> connect([int attempt = 0]) async {
+      if (cancelled) return;
+      try {
+        final res = await _dio.get(
+          absoluteUrl,
+          options: Options(
+            responseType: ResponseType.stream,
+            headers: { HttpHeaders.acceptHeader: 'text/event-stream' },
+            receiveTimeout: Duration.zero,
+          ),
+        );
+        if (res.statusCode != 200 || res.data == null) {
+          throw StateError('SSE HTTP ${res.statusCode}');
+        }
+
+        final stream = (res.data as ResponseBody).stream.map((c) => utf8.decode(c));
+        final buffer = StringBuffer();
+        var dataAcc = '';
+
+        final sub = stream.listen((chunk) {
+          buffer.write(chunk);
+          final parts = buffer.toString().split('\n');
+          buffer
+            ..clear()
+            ..write(parts.removeLast());
+          for (final line in parts) {
+            final l = line.trimRight();
+            if (l.isEmpty) {
+              if (dataAcc.isNotEmpty) {
+                controller.add(dataAcc.trim());
+                dataAcc = '';
+              }
+              continue;
+            }
+            if (l.startsWith(':')) continue;
+            if (l.startsWith('data:')) {
+              dataAcc += '${l.substring(5).trimLeft()}\n';
+            }
+          }
+        });
+
+        sub.onDone(() {
+          if (cancelled) return;
+          final backoff = Duration(seconds: (2 * (attempt + 1)).clamp(0, 15));
+          Future.delayed(backoff, () => connect(attempt + 1));
+        });
+
+        sub.onError((_) {
+          if (cancelled) return;
+          final backoff = Duration(seconds: (2 * (attempt + 1)).clamp(0, 15));
+          Future.delayed(backoff, () => connect(attempt + 1));
+        });
+      } catch (_) {
+        if (cancelled) return;
+        final backoff = Duration(seconds: (2 * (attempt + 1)).clamp(0, 15));
+        Future.delayed(backoff, () => connect(attempt + 1));
+      }
+    }
+
+    controller.onListen = connect;
+    controller.onCancel = () async {
+      cancelled = true;
+      await controller.close();
+    };
+
+    return controller.stream;
+  }
+
+  Stream<Map<String, dynamic>> streamSseJson(String absoluteUrl) {
+    return streamSseRaw(absoluteUrl).map((payload) {
+      try {
+        final decoded = jsonDecode(payload);
+        return decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+      } catch (_) {
+        return {'raw': payload};
+      }
+    });
   }
 
   // Auth Methods

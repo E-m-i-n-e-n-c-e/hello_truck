@@ -5,6 +5,7 @@ import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/utils/logger.dart';
 
 // Provider for active bookings
 final activeBookingsProvider = FutureProvider<List<Booking>>((ref) async {
@@ -37,4 +38,19 @@ final bookingEstimateProvider = FutureProvider.autoDispose.family<BookingEstimat
     dropAddress: params.dropAddress.address,
     package: params.package,
   );
+});
+
+/// SSE stream provider for driver navigation (live updates)
+final driverNavigationStreamProvider = StreamProvider.autoDispose.family<Map<String, dynamic>, String>((ref, bookingId) async* {
+  final api = await ref.watch(apiProvider.future);
+
+  AppLogger.log('🎯 Subscribing to driver navigation for booking: $bookingId');
+
+  final stream = getDriverNavigationStream(api, bookingId);
+
+  ref.onDispose(() {
+    AppLogger.log('🧹 Disposing driver navigation stream for $bookingId');
+  });
+
+  yield* stream;
 });
