@@ -24,14 +24,32 @@ Future<BookingEstimate> getBookingEstimate(
 /// Create a new booking
 Future<Booking> createBooking(
   API api, {
-  required Address pickupAddress,
-  required Address dropAddress,
+  required SavedAddress pickupAddress,
+  required SavedAddress dropAddress,
   required Package package,
   required VehicleType selectedVehicleType,
 }) async {
   final response = await api.post('/bookings/customer', data: {
-    'pickupAddress': pickupAddress.toJson(),
-    'dropAddress': dropAddress.toJson(),
+    'pickupAddress': {
+      'addressName': pickupAddress.name,
+      'contactName': pickupAddress.contactName,
+      'contactPhone': pickupAddress.contactPhone,
+      'noteToDriver': pickupAddress.noteToDriver,
+      'formattedAddress': pickupAddress.address.formattedAddress,
+      'addressDetails': pickupAddress.address.addressDetails,
+      'latitude': pickupAddress.address.latitude,
+      'longitude': pickupAddress.address.longitude,
+    },
+    'dropAddress': {
+      'addressName': dropAddress.name,
+      'contactName': dropAddress.contactName,
+      'contactPhone': dropAddress.contactPhone,
+      'noteToDriver': dropAddress.noteToDriver,
+      'formattedAddress': dropAddress.address.formattedAddress,
+      'addressDetails': dropAddress.address.addressDetails,
+      'latitude': dropAddress.address.latitude,
+      'longitude': dropAddress.address.longitude,
+    },
     'package': package.toJson(),
     'selectedVehicleType': selectedVehicleType.value,
   });

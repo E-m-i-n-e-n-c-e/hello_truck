@@ -627,8 +627,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       final api = await ref.read(apiProvider.future);
       await createBooking(
         api,
-        pickupAddress: _pickupAddress.address,
-        dropAddress: _dropAddress.address,
+        pickupAddress: _pickupAddress,
+        dropAddress: _dropAddress,
         package: widget.package,
         selectedVehicleType: widget.selectedVehicleType,
       );

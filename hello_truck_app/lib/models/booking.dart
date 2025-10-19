@@ -4,6 +4,7 @@ import 'saved_address.dart';
 
 class Booking {
   final String id;
+  final int bookingNumber;
   final Package package;
   final Address pickupAddress;
   final Address dropAddress;
@@ -16,12 +17,23 @@ class Booking {
   final double vehicleMultiplier;
   final VehicleType suggestedVehicleType;
   final BookingStatus status;
+  final String? assignedDriverId;
+  final Driver? assignedDriver;
+  final DateTime? pickupArrivedAt;
+  final DateTime? pickupVerifiedAt;
+  final DateTime? dropArrivedAt;
+  final DateTime? dropVerifiedAt;
+  final DateTime? completedAt;
+  final String? rzpOrderId;
+  final String? rzpPaymentId;
+  final String? rzpPaymentUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? scheduledAt;
 
   const Booking({
     required this.id,
+    required this.bookingNumber,
     required this.package,
     required this.pickupAddress,
     required this.dropAddress,
@@ -34,6 +46,16 @@ class Booking {
     required this.vehicleMultiplier,
     required this.suggestedVehicleType,
     required this.status,
+    this.assignedDriverId,
+    this.assignedDriver,
+    this.pickupArrivedAt,
+    this.pickupVerifiedAt,
+    this.dropArrivedAt,
+    this.dropVerifiedAt,
+    this.completedAt,
+    this.rzpOrderId,
+    this.rzpPaymentId,
+    this.rzpPaymentUrl,
     required this.createdAt,
     required this.updatedAt,
     this.scheduledAt,
@@ -42,6 +64,7 @@ class Booking {
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
       id: json['id'],
+      bookingNumber: json['bookingNumber'],
       package: Package.fromJson(json['package']),
       pickupAddress: Address.fromJson(json['pickupAddress']),
       dropAddress: Address.fromJson(json['dropAddress']),
@@ -54,6 +77,16 @@ class Booking {
       vehicleMultiplier: json['vehicleMultiplier']?.toDouble(),
       suggestedVehicleType: VehicleType.fromString(json['suggestedVehicleType'] ?? 'FOUR_WHEELER'),
       status: BookingStatus.fromString(json['status'] ?? 'PENDING'),
+      assignedDriverId: json['assignedDriverId'],
+      assignedDriver: json['assignedDriver'] != null ? Driver.fromJson(json['assignedDriver']) : null,
+      pickupArrivedAt: json['pickupArrivedAt'] != null ? DateTime.parse(json['pickupArrivedAt']) : null,
+      pickupVerifiedAt: json['pickupVerifiedAt'] != null ? DateTime.parse(json['pickupVerifiedAt']) : null,
+      dropArrivedAt: json['dropArrivedAt'] != null ? DateTime.parse(json['dropArrivedAt']) : null,
+      dropVerifiedAt: json['dropVerifiedAt'] != null ? DateTime.parse(json['dropVerifiedAt']) : null,
+      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
+      rzpOrderId: json['rzpOrderId'],
+      rzpPaymentId: json['rzpPaymentId'],
+      rzpPaymentUrl: json['rzpPaymentUrl'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
       scheduledAt: json['scheduledAt'] != null
@@ -61,25 +94,34 @@ class Booking {
           : null,
     );
   }
+}
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'package': package.toJson(),
-      'pickupAddress': pickupAddress.toJson(),
-      'dropAddress': dropAddress.toJson(),
-      'estimatedCost': estimatedCost,
-      'finalCost': finalCost,
-      'distanceKm': distanceKm,
-      'baseFare': baseFare,
-      'distanceCharge': distanceCharge,
-      'weightMultiplier': weightMultiplier,
-      'vehicleMultiplier': vehicleMultiplier,
-      'suggestedVehicleType': suggestedVehicleType.value,
-      'status': status.value,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'scheduledAt': scheduledAt?.toIso8601String(),
-    };
+
+class Driver {
+  final String phoneNumber;
+  final String? firstName;
+  final String? lastName;
+  final String? email;
+  final String? photo;
+  final int score;
+
+  const Driver({
+    required this.phoneNumber,
+    this.firstName,
+    this.lastName,
+    this.email,
+    this.photo,
+    required this.score,
+  });
+
+  factory Driver.fromJson(Map<String, dynamic> json) {
+    return Driver(
+      phoneNumber: json['phoneNumber'],
+      firstName: json['firstName'],
+      lastName: json['lastName'],
+      email: json['email'],
+      photo: json['photo'],
+      score: json['score'],
+    );
   }
 }

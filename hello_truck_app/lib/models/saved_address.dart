@@ -48,33 +48,50 @@ class SavedAddress {
 }
 
 class Address {
+  final String? addressName;
   final String formattedAddress;
   final String? addressDetails;
   final double latitude;
   final double longitude;
 
+  final String? contactName;
+  final String? contactPhone;
+  final String? noteToDriver;
+
   Address({
+    this.addressName,
     required this.formattedAddress,
     this.addressDetails,
     required this.latitude,
     required this.longitude,
+    this.contactName,
+    this.contactPhone,
+    this.noteToDriver,
   });
 
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
+      addressName: json['addressName'],
       formattedAddress: json['formattedAddress'],
       addressDetails: json['addressDetails'],
       latitude: json['latitude'] != null ? double.parse(json['latitude'].toString()) : 0.0,
       longitude: json['longitude'] != null ? double.parse(json['longitude'].toString()) : 0.0,
+      contactName: json['contactName'],
+      contactPhone: json['contactPhone'],
+      noteToDriver: json['noteToDriver'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'addressName': addressName,
       'formattedAddress': formattedAddress,
       'addressDetails': addressDetails,
       'latitude': latitude,
       'longitude': longitude,
+      'contactName': contactName,
+      'contactPhone': contactPhone,
+      'noteToDriver': noteToDriver,
     };
   }
 }

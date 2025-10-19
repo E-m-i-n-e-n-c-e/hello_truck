@@ -281,6 +281,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () => setState(() => _acknowledged = !_acknowledged),
+                            behavior: HitTestBehavior.opaque,
                             child: Text(
                               'I have read and acknowledge the terms and conditions for this booking.',
                               style: textTheme.bodyMedium?.copyWith(
