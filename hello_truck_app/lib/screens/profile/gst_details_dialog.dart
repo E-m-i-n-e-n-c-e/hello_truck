@@ -75,7 +75,6 @@ class _GstDetailsDialogState extends ConsumerState<GstDetailsDialog> {
     } catch (e) {
       if (mounted) {
         if (e.toString().contains('GST number already exists but is inactive. Please reactivate it.')) {
-          Navigator.pop(context);
           _showReactivateDialog(_gstNumberController.text.trim());
         } else {
           SnackBars.error(context, 'Failed to ${widget.existingDetails == null ? 'add' : 'update'} GST details: $e');
@@ -143,6 +142,7 @@ class _GstDetailsDialogState extends ConsumerState<GstDetailsDialog> {
         await gst_api.reactivateGstDetails(api, gstNumber);
         if (mounted) {
           widget.onSuccess();
+          Navigator.of(context).pop();
           SnackBars.success(context, 'GST details reactivated successfully');
         }
       } catch (e) {
