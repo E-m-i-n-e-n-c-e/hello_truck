@@ -15,24 +15,38 @@ enum MapSelectionMode {
   direct,  // Direct mode - returns address directly without modals
 }
 
+const double predictionRadius = 50.0;
+
 class MapSelectionPage extends ConsumerStatefulWidget {
   final bool isPickup;
   final Function(SavedAddress)? onAddressSelected;
   final String title;
   final MapSelectionMode mode;
   final SavedAddress? initialSavedAddress;
-  final Address? initialAddress; // Add initial address parameter
+  final Address? initialAddress;
+  final double? constraintRadius;
 
-  const MapSelectionPage({
+  // Constructor for booking (indirect) mode
+  const MapSelectionPage.booking({
     super.key,
     this.isPickup = true,
     this.onAddressSelected,
-    this.mode = MapSelectionMode.booking,
     this.initialSavedAddress,
-    this.initialAddress, // Add to constructor
-  }): title = mode == MapSelectionMode.direct
-      ? 'Location'
-      : (isPickup ? 'Pickup Location' : 'Drop Location');
+  })  : mode = MapSelectionMode.booking,
+        initialAddress = null,
+        constraintRadius = null,
+        title = isPickup ? 'Pickup Location' : 'Drop Location';
+
+  // Constructor for direct mode
+  const MapSelectionPage.direct({
+    super.key,
+    this.initialAddress,
+    this.constraintRadius,
+    this.onAddressSelected,
+  })  : mode = MapSelectionMode.direct,
+        initialSavedAddress = null,
+        title = 'Location',
+        isPickup = true; // Not used in direct mode
 
   @override
   ConsumerState<MapSelectionPage> createState() => _MapSelectionPageState();
@@ -46,9 +60,8 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
   bool _isLoading = false;
   String _selectedAddress = '';
   String _addressName = '';
-
-  // Constants for distance calculation
-  static const double allowedRadiusMeters = 500.0; // 500m radius
+  LatLng? _predictionCenter;
+  String? _predictionName;
 
   void _initializeLocation() {
     if (widget.mode == MapSelectionMode.direct) {
@@ -59,6 +72,20 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
           widget.initialAddress!.longitude,
         );
         _selectedAddress = widget.initialAddress!.formattedAddress;
+
+        if(widget.constraintRadius != null) {
+          _circles.clear();
+          _circles.add(
+            Circle(
+              circleId: const CircleId('constraint_radius'),
+              center: LatLng(widget.initialAddress!.latitude, widget.initialAddress!.longitude),
+              radius: widget.constraintRadius!,
+              fillColor: Colors.blue.withValues(alpha: 0.1),
+              strokeColor: Colors.blue.withValues(alpha: 0.3),
+              strokeWidth: 2,
+            ),
+          );
+        }
 
         // Add marker after the map is created
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,20 +98,25 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     }
 
     // Initialize with saved address if provided
-    if (widget.initialSavedAddress != null) {
+    if (widget.initialSavedAddress != null && widget.mode == MapSelectionMode.booking) {
       _selectedLocation = LatLng(
         widget.initialSavedAddress!.address.latitude,
         widget.initialSavedAddress!.address.longitude,
       );
+      _predictionCenter = LatLng(
+        widget.initialSavedAddress!.address.latitude,
+        widget.initialSavedAddress!.address.longitude,
+      );
+      _predictionName = widget.initialSavedAddress!.name;
       _selectedAddress = widget.initialSavedAddress!.address.formattedAddress;
 
-      // Add 500m radius circle around the initial address
+      // Add radius circle around the prediction center
       _circles.clear();
       _circles.add(
         Circle(
-          circleId: const CircleId('allowed_radius'),
-          center: _selectedLocation!,
-          radius: allowedRadiusMeters,
+          circleId: const CircleId('prediction_radius'),
+          center: _predictionCenter!,
+          radius: predictionRadius,
           fillColor: Colors.blue.withValues(alpha: 0.1),
           strokeColor: Colors.blue.withValues(alpha: 0.3),
           strokeWidth: 2,
@@ -129,18 +161,34 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     _mapController?.animateCamera(CameraUpdate.newLatLngZoom(location, 18.0));
 
     try {
-      // Get address from coordinates, use prediction if provided
-      String formattedAddress;
+      // Get address from coordinates
+      final addressData = await ref.read(locationServiceProvider).getAddressFromLatLng(
+        location.latitude,
+        location.longitude,
+      );
+      final formattedAddress = addressData.formattedAddress;
+
+      // If prediction is provided, use it to set the address name and prediction center
       String addressName;
-      if (prediction != null && prediction.description.isNotEmpty) {
-        formattedAddress = prediction.description;
+      if (prediction != null && prediction.description.isNotEmpty && widget.mode == MapSelectionMode.booking) {
         addressName = prediction.structuredFormat ?? prediction.description.split(',').first;
-      } else {
-        final addressData = await ref.read(locationServiceProvider).getAddressFromLatLng(
+        _predictionCenter = LatLng(
           location.latitude,
           location.longitude,
         );
-        formattedAddress = addressData.formattedAddress;
+        _predictionName = addressName;
+        _circles.clear();
+        _circles.add(
+          Circle(
+            circleId: const CircleId('prediction_radius'),
+            center: _predictionCenter!,
+            radius: predictionRadius,
+            fillColor: Colors.blue.withValues(alpha: 0.1),
+            strokeColor: Colors.blue.withValues(alpha: 0.3),
+            strokeWidth: 2,
+          ),
+        );
+      } else {
         addressName = formattedAddress.split(',').length > 3
             ? formattedAddress.split(',').sublist(0, 3).join(',')
             : formattedAddress;
@@ -176,17 +224,21 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
   }
 
   // Check if location is within allowed radius of initial address
-  bool _isWithinAllowedRadius(LatLng location) {
-    // If there is no initial address then location is considered out of radius
-    if (widget.initialSavedAddress == null) return false;
+  bool _isWithinPredictionRadius(LatLng location) {
+    // If there is no prediction center then location is considered outside radius always
+    if (_predictionCenter == null) return false;
 
-    final initialLocation = LatLng(
-      widget.initialSavedAddress!.address.latitude,
-      widget.initialSavedAddress!.address.longitude,
-    );
+    final distance = _calculateDistance(_predictionCenter!, location);
+    return distance <= predictionRadius;
+  }
 
-    final distance = _calculateDistance(initialLocation, location);
-    return distance <= allowedRadiusMeters;
+  bool _isWithinConstraintRadius(LatLng location) {
+    // return false;
+    // If there is no constraint radius then location is considered within radius always
+    if (widget.constraintRadius == null || widget.initialAddress == null) return true;
+
+    final distance = _calculateDistance(LatLng(widget.initialAddress!.latitude, widget.initialAddress!.longitude), location);
+    return distance <= widget.constraintRadius!;
   }
 
   void _recenterMap() async {
@@ -231,9 +283,9 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
         latitude: _selectedLocation!.latitude,
         longitude: _selectedLocation!.longitude,
       );
-        // If selected location is within allowed radius of initial saved address, use same name
-       if (_isWithinAllowedRadius(_selectedLocation!)) {
-         _addressName = widget.initialSavedAddress?.name ?? _addressName;
+        // If selected location is within allowed radius of prediction center, use prediction address and name
+       if (_isWithinPredictionRadius(_selectedLocation!)) {
+         _addressName = _predictionName ?? _addressName;
        }
 
       final initialSavedAddress = SavedAddress(
@@ -380,8 +432,8 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                       ? widget.mode == MapSelectionMode.direct
                                           ? 'Pick up or drop item at?'
                                           : (widget.isPickup ? 'Pick up item at?' : 'Drop item at?')
-                                      : (widget.initialSavedAddress != null && _isWithinAllowedRadius(_selectedLocation!))
-                                          ? widget.initialSavedAddress!.name
+                                      : (_predictionName != null && _isWithinPredictionRadius(_selectedLocation!))
+                                          ? _predictionName!
                                           : _addressName,
                                   style: textTheme.bodyMedium?.copyWith(
                                     color: _addressName.isEmpty
@@ -558,6 +610,28 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                     : colorScheme.onSurface,
                               ),
                             ),
+                            // Constraint radius check message
+                            if (_selectedLocation != null &&
+                                !_isWithinConstraintRadius(_selectedLocation!))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.error_outline, size: 18, color: colorScheme.error),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Selected location is too far from the allowed area.',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.error,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -568,11 +642,14 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _selectedLocation != null && !_isLoading
+                          onPressed: _selectedLocation != null &&
+                                  !_isLoading &&
+                                  _isWithinConstraintRadius(_selectedLocation!)
                               ? _confirmLocation
                               : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _selectedLocation != null
+                            backgroundColor: _selectedLocation != null &&
+                                    _isWithinConstraintRadius(_selectedLocation!)
                                 ? colorScheme.primary
                                 : colorScheme.onSurface.withValues(alpha: 0.3),
                             foregroundColor: Colors.white,

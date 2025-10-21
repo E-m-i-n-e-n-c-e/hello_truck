@@ -6,6 +6,7 @@ class SavedAddress {
   final String contactPhone;
   final String? noteToDriver;
   final bool isDefault;
+  final bool isLocalRecent;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,11 +18,12 @@ class SavedAddress {
     required this.contactPhone,
     this.noteToDriver,
     required this.isDefault,
+    this.isLocalRecent = true,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory SavedAddress.fromJson(Map<String, dynamic> json) {
+  factory SavedAddress.fromJson(Map<String, dynamic> json, {bool isLocalRecent = false}) {
     return SavedAddress(
       id: json['id'] ,
       name: json['name'],
@@ -30,6 +32,7 @@ class SavedAddress {
       contactPhone: json['contactPhone'],
       noteToDriver: json['noteToDriver'],
       isDefault: json['isDefault'],
+      isLocalRecent: isLocalRecent,  // When fetching from server set to false, if from local cache set to true
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
     );
@@ -69,6 +72,7 @@ class Address {
     this.noteToDriver,
   });
 
+  // Get full address details along with metadata
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
       addressName: json['addressName'],
@@ -82,16 +86,13 @@ class Address {
     );
   }
 
+  // Only send necessary details
   Map<String, dynamic> toJson() {
     return {
-      'addressName': addressName,
       'formattedAddress': formattedAddress,
       'addressDetails': addressDetails,
       'latitude': latitude,
       'longitude': longitude,
-      'contactName': contactName,
-      'contactPhone': contactPhone,
-      'noteToDriver': noteToDriver,
     };
   }
 }

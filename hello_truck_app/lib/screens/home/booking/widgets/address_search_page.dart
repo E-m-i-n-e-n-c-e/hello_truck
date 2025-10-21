@@ -10,14 +10,9 @@ import 'package:hello_truck_app/services/google_places_service.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/map_selection_page.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/add_or_edit_address_page.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/providers/addresse_providers.dart';
 
 enum _SavedAddressMenuAction { edit, delete }
-
-// Provider for saved addresses
-final savedAddressesProvider = FutureProvider.autoDispose<List<SavedAddress>>((ref) async {
-  final api = await ref.watch(apiProvider.future);
-  return getSavedAddresses(api);
-});
 
 class AddressSearchPage extends ConsumerStatefulWidget {
   final bool isPickup;
@@ -35,22 +30,24 @@ class AddressSearchPage extends ConsumerStatefulWidget {
       _AddressSearchPageState();
 }
 
-class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
+class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   List<PlacePrediction> _predictions = [];
   bool _isLoading = false;
-  int _selectedTabIndex = 0; // 0: Recent, 1: Saved
+  late TabController _tabController; // 0: Recent, 1: Saved
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -65,7 +62,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
   }
 
   Future<void> _searchPlaces(String query) async {
-    if (query.length < 3) {
+    if (query.length < 2) {
       setState(() {
         _predictions.clear();
       });
@@ -161,21 +158,40 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
           if (_searchController.text.isEmpty) ...[
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  _buildTabButton('Recent', 0),
-                  _buildTabButton('Saved', 1),
+              child: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Recent'),
+                  Tab(text: 'Saved'),
                 ],
+                indicator: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicatorPadding: const EdgeInsets.only(left: 1, right: 1, top: 0, bottom: 1),
+                dividerColor: Colors.transparent,
+                labelStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                unselectedLabelStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                labelColor: Colors.black87,
+                unselectedLabelColor: Colors.black87,
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
           ],
 
                     // Content
                     Expanded(
                       child: _searchController.text.isNotEmpty
                           ? _buildSearchResults()
-                          : _buildTabContent(),
+                          : TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _buildRecentAddresses(),
+                                _buildSavedAddresses(),
+                              ],
+                            ),
                     ),
 
                     // Choose on Map button
@@ -211,35 +227,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
             );
   }
 
-  Widget _buildTabButton(String title, int index) {
-    final textTheme = Theme.of(context).textTheme;
-    final isSelected = _selectedTabIndex == index;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedTabIndex = index;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.25) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: textTheme.titleMedium?.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // Removed custom tab button; using TabBar/TabBarView for swipeable tabs
 
   Widget _buildSearchResults() {
     if (_isLoading) {
@@ -269,43 +257,50 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     );
   }
 
-  Widget _buildTabContent() {
-    switch (_selectedTabIndex) {
-      case 0: // Recent
-        return _buildRecentAddresses();
-      case 1: // Saved
-        return _buildSavedAddresses();
-      default:
-        return const SizedBox.shrink();
-    }
-  }
+  // Tab content handled by TabBarView
 
   Widget _buildRecentAddresses() {
     final savedAddressesAsync = ref.watch(savedAddressesProvider);
+    final localRecentAsync = ref.watch(recentAddressesProvider);
 
     return savedAddressesAsync.when(
-      data: (addresses) {
-        final recentAddresses = addresses.take(3).toList();
-        if (recentAddresses.isEmpty) {
-          return const Center(child: Text('No recent addresses'));
-        }
+      data: (savedAddresses) {
+        return localRecentAsync.when(
+          data: (localRecents) {
+            // Index saved addresses by formattedAddress (case-insensitive)
+            final Map<String, SavedAddress> savedByFormatted = {
+              for (final a in savedAddresses) a.address.formattedAddress.trim().toLowerCase(): a,
+            };
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: recentAddresses.length,
-          itemBuilder: (context, index) {
-            final address = recentAddresses[index];
-            return _buildSavedAddressTile(address);
+            // Compose the list of up to 5 recent items, preferring saved if formattedAddress matches
+            final List<SavedAddress> composed = localRecents
+                .map((r) {
+                  final key = r.address.formattedAddress.trim().toLowerCase();
+                  return savedByFormatted[key] ?? r;
+                })
+                .toList();
+
+            if (composed.isEmpty) {
+              return const Center(child: Text('No recent addresses'));
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: composed.length,
+              itemBuilder: (context, index) {
+                final item = composed[index];
+                return item.isLocalRecent ? _buildRecentLocalTile(item) : _buildSavedAddressTile(item, isRecentTab: true);
+              },
+            );
           },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          Center(child: Text('Error loading addresses: $error')),
+      error: (error, stack) => Center(child: Text('Error: $error')),
     );
   }
-
-
 
   Widget _buildSavedAddresses() {
     final savedAddressesAsync = ref.watch(savedAddressesProvider);
@@ -318,10 +313,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
           itemBuilder: (context, index) {
             if (index == 0) {
               // First item is "Add new"
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _buildAddNewTile(),
-              );
+              return _buildAddNewTile();
             } else {
               // Rest are saved addresses
               final address = addresses[index - 1];
@@ -421,8 +413,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     final address = await Navigator.push<Address>(
       context,
       MaterialPageRoute(
-        builder: (context) => MapSelectionPage(
-          mode: MapSelectionMode.direct,
+        builder: (context) => MapSelectionPage.direct(
         ),
       ),
     );
@@ -443,7 +434,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     ref.invalidate(savedAddressesProvider);
   }
 
-  Widget _buildSavedAddressTile(SavedAddress address) {
+  Widget _buildSavedAddressTile(SavedAddress address, {bool isRecentTab = false}) {
     final textTheme = Theme.of(context).textTheme;
 
     return InkWell(
@@ -503,13 +494,13 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
               onSelected: (action) async {
                 switch (action) {
                   case _SavedAddressMenuAction.edit:
-                    await Navigator.push<SavedAddress>(
+                    final saved = await Navigator.push<SavedAddress>(
                       context,
                       MaterialPageRoute(
                         builder: (context) => AddOrEditAddressPage.edit(savedAddress: address),
                       ),
                     );
-                    if (!mounted) return;
+                    if (!mounted || saved == null) return;
                     ref.invalidate(savedAddressesProvider);
                     break;
                   case _SavedAddressMenuAction.delete:
@@ -536,13 +527,84 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
                       final api = await ref.read(apiProvider.future);
                       await deleteSavedAddress(api, address.id);
                       if (!mounted) return;
+                      if (isRecentTab) {
+                        final service = ref.read(recentAddressesServiceProvider);
+                        await service.deleteByFormattedAddress(address.address.formattedAddress);
+                        ref.invalidate(recentAddressesProvider);
+                      }
                       ref.invalidate(savedAddressesProvider);
-
                     } catch (e) {
                       if (!mounted) return;
                         SnackBars.error(context, 'Failed to delete: $e');
                     }
                     break;
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentLocalTile(SavedAddress address) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: () => _selectSavedAddress(address),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        child: Row(
+          children: [
+            Icon(Icons.access_time, color: Colors.grey.shade600, size: 20),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    address.name,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    address.address.formattedAddress,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<int>(
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 1,
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete'),
+                    ],
+                  ),
+                ),
+              ],
+              onSelected: (value) async {
+                if (value == 1) {
+                  try {
+                    final service = ref.read(recentAddressesServiceProvider);
+                    await service.deleteByFormattedAddress(address.address.formattedAddress);
+                    if (!mounted) return;
+                    ref.invalidate(recentAddressesProvider);
+                  } catch (e) {
+                    if (!mounted) return;
+                    SnackBars.error(context, 'Failed to delete: $e');
+                  }
                 }
               },
             ),
@@ -584,10 +646,11 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => MapSelectionPage(
+              builder: (context) => MapSelectionPage.booking(
                 isPickup: widget.isPickup,
                 initialSavedAddress: initialSavedAddress,
                 onAddressSelected: (selectedAddress) {
+                  _cacheRecent(selectedAddress);
                   widget.onAddressSelected(selectedAddress);
                   // Close the address search page as well
                   Navigator.pop(context);
@@ -611,11 +674,12 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MapSelectionPage(
+        builder: (context) => MapSelectionPage.booking(
           isPickup: widget.isPickup,
           initialSavedAddress: address,
           onAddressSelected: (selectedAddress) {
             widget.onAddressSelected(selectedAddress);
+            _cacheRecent(selectedAddress);
             // Close the address search page as well
             Navigator.pop(context);
           },
@@ -628,14 +692,25 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MapSelectionPage(
+        builder: (context) => MapSelectionPage.booking(
           isPickup: widget.isPickup,
           onAddressSelected: (address) {
             widget.onAddressSelected(address);
+            _cacheRecent(address);
             Navigator.pop(context);
           },
         ),
       ),
     );
+  }
+
+  Future<void> _cacheRecent(SavedAddress address) async {
+    try {
+      final service = ref.read(recentAddressesServiceProvider);
+      await service.addRecent(address);
+      if (mounted) {
+        ref.invalidate(recentAddressesProvider);
+      }
+    } catch (_) {}
   }
 }

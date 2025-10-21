@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
-import 'package:hello_truck_app/screens/home/booking/location_selection_screen.dart';
+import 'package:hello_truck_app/screens/home/booking/address_selection_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

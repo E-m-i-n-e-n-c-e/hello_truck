@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
+import 'package:hello_truck_app/providers/addresse_providers.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
@@ -56,6 +57,8 @@ class _AddressSelectionScreenState
   }
 
   void _showAddressSearch(bool isPickup) {
+    ref.invalidate(savedAddressesProvider);
+    ref.invalidate(recentAddressesProvider);
     showModalBottomSheet<BuildContext>(
       context: context,
       isScrollControlled: true,

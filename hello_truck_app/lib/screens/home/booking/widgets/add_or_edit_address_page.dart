@@ -84,8 +84,7 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.9,
-        child: MapSelectionPage(
-          mode: MapSelectionMode.direct,
+        child: MapSelectionPage.direct(
           initialAddress: widget.mode == AddOrEditAddressMode.add
               ? widget.initialAddress
               : widget.initialSavedAddress?.address,
