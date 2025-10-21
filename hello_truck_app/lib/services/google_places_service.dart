@@ -1,3 +1,4 @@
+import 'package:hello_truck_app/utils/logger.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,54 +8,97 @@ import '../models/place_prediction.dart';
 
 class GooglePlacesService {
   static const String _googleApiKey = 'AIzaSyBqTOs9JWbrHqOIO10oGKpLhuvou37S6Aw';
+  static const String _baseUrl = 'https://places.googleapis.com/v1';
+  static String? _sessionToken;
 
-  // Google Places API search
-  static Future<List<PlacePrediction>> searchPlaces(String query) async {
+  static void clearSessionToken() {
+    _sessionToken = null;
+  }
+
+  // Google Places API search using new Autocomplete API
+  static Future<List<PlacePrediction>> searchPlaces(String query, {LatLng? location, double radius = 5000.0}) async {
     if (query.isEmpty) return [];
 
-    final String sessionToken = const Uuid().v4();
-    final String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?'
-        'input=${Uri.encodeComponent(query)}&'
-        'key=$_googleApiKey&'
-        'sessiontoken=$sessionToken&'
-        'components=country:in'; // Restrict to India
+    _sessionToken ??= const Uuid().v4();
+
+    final String url = '$_baseUrl/places:autocomplete';
+
+    final Map<String, dynamic> requestBody = {
+      'input': query,
+      'includedRegionCodes': ['in'], // Restrict to India
+      'sessionToken': _sessionToken,
+    };
+
+    if(location != null) {
+      requestBody['locationBias'] = {
+        'circle': {
+          'center': {
+            'latitude': location.latitude,
+            'longitude': location.longitude,
+          },
+          'radius': radius,
+        },
+      };
+    }
 
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': _googleApiKey,
+          'X-Goog-FieldMask': 'suggestions.placePrediction.text.text,suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat.mainText.text',
+        },
+        body: json.encode(requestBody),
+      );
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        if (data['status'] == 'OK') {
-          final List<dynamic> predictions = data['predictions'];
-          return predictions
-              .map((prediction) => PlacePrediction.fromJson(prediction))
+        if (data.containsKey('suggestions')) {
+          final List<dynamic> suggestions = data['suggestions'];
+          return suggestions
+              .where((suggestion) => suggestion.containsKey('placePrediction'))
+              .map((suggestion) => PlacePrediction.fromJson(suggestion))
               .toList();
         }
       }
     } catch (e) {
-      print('Error searching places: $e');
+      AppLogger.log('Error searching places: $e');
     }
     return [];
   }
 
-  // Get place details from place ID
+  // Get place details from place ID using new Places API
   static Future<LatLng?> getPlaceDetails(String placeId) async {
-    final String url = 'https://maps.googleapis.com/maps/api/place/details/json?'
-        'place_id=$placeId&'
-        'fields=geometry&'
-        'key=$_googleApiKey';
+    // Generate a session token if missing to ensure compliance
+    _sessionToken ??= const Uuid().v4();
+
+    final String url = '$_baseUrl/places/$placeId?sessionToken=$_sessionToken';
 
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': _googleApiKey,
+          'X-Goog-FieldMask': 'id,formattedAddress,location',
+        },
+      );
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        if (data['status'] == 'OK') {
-          final location = data['result']['geometry']['location'];
-          return LatLng(location['lat'], location['lng']);
+        if (data.containsKey('location')) {
+          final location = data['location'];
+          return LatLng(location['latitude'], location['longitude']);
         }
       }
     } catch (e) {
-      print('Error getting place details: $e');
+      AppLogger.log('Error getting place details: $e');
+    } finally {
+      // Clear session token after request is complete
+      clearSessionToken();
     }
+
     return null;
   }
 
@@ -125,7 +169,7 @@ class GooglePlacesService {
         }
       }
     } catch (e) {
-      print('Error getting route polyline: $e');
+      AppLogger.log('Error getting route polyline: $e');
     }
     return null;
   }

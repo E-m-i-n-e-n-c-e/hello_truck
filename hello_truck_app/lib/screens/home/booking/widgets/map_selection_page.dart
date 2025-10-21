@@ -136,8 +136,8 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
 
       if (mounted) {
         setState(() {
-          _selectedAddress = addressData['formattedAddress'] ?? 'Unknown location';
-          _addressName = addressData['formattedAddress'] ?? 'Unknown location';
+          _selectedAddress = addressData.formattedAddress;
+          _addressName = addressData.addressLine1;
           _isLoading = false;
         });
       }

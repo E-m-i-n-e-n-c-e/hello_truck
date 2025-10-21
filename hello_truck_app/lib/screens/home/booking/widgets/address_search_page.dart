@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/place_prediction.dart';
 import 'package:hello_truck_app/api/address_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/map_selection_page.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/add_or_edit_address_page.dart';
@@ -75,7 +77,14 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
     });
 
     try {
-      final predictions = await GooglePlacesService.searchPlaces(query);
+      final position = ref.read(currentPositionStreamProvider);
+      final currentPosition = position.value;
+      final predictions = await GooglePlacesService.searchPlaces(
+        query,
+        location: currentPosition != null
+            ? LatLng(currentPosition.latitude, currentPosition.longitude)
+            : null,
+      );
       setState(() {
         _predictions = predictions;
         _isLoading = false;
@@ -561,7 +570,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
 
           final initialSavedAddress = SavedAddress(
             id: '',
-            name: prediction.structuredFormat ?? prediction.description.split(',').first,
+            name: prediction.description.split(',').length > 3 ? prediction.description.split(',').sublist(0, 3).join(', ') : prediction.description,
             address: initialAddress,
             contactName: '',
             contactPhone: '',

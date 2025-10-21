@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:hello_truck_app/providers/location_providers.dart';
 import '../models/place_prediction.dart';
 import '../services/google_places_service.dart';
 
-class AddressSearchWidget extends StatefulWidget {
+class AddressSearchWidget extends ConsumerStatefulWidget {
   final String currentAddress;
   final Function(LatLng) onLocationSelected;
   final String? title;
@@ -18,10 +20,10 @@ class AddressSearchWidget extends StatefulWidget {
   });
 
   @override
-  State<AddressSearchWidget> createState() => _AddressSearchWidgetState();
+  ConsumerState<AddressSearchWidget> createState() => _AddressSearchWidgetState();
 }
 
-class _AddressSearchWidgetState extends State<AddressSearchWidget> {
+class _AddressSearchWidgetState extends ConsumerState<AddressSearchWidget> {
   final TextEditingController _controller = TextEditingController();
   List<PlacePrediction> _predictions = [];
   bool _isLoading = false;
@@ -31,6 +33,7 @@ class _AddressSearchWidgetState extends State<AddressSearchWidget> {
     super.initState();
     _controller.text = widget.currentAddress;
     _controller.addListener(_onSearchChanged);
+    GooglePlacesService.clearSessionToken();
   }
 
   @override
@@ -51,7 +54,7 @@ class _AddressSearchWidgetState extends State<AddressSearchWidget> {
   }
 
   Future<void> _searchPlaces(String query) async {
-    if (query.length < 3) {
+    if (query.length < 2) {
       setState(() {
         _predictions.clear();
       });
@@ -63,7 +66,14 @@ class _AddressSearchWidgetState extends State<AddressSearchWidget> {
     });
 
     try {
-      final predictions = await GooglePlacesService.searchPlaces(query);
+      final position = ref.read(currentPositionStreamProvider);
+      final currentPosition = position.value;
+      final predictions = await GooglePlacesService.searchPlaces(
+        query,
+        location: currentPosition != null
+            ? LatLng(currentPosition.latitude, currentPosition.longitude)
+            : null,
+      );
       setState(() {
         _predictions = predictions;
         _isLoading = false;

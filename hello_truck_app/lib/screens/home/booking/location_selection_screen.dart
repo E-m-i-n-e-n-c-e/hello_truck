@@ -116,13 +116,9 @@ class _AddressSelectionScreenState
       // Create a SavedAddress for current location
       final currentLocationAddress = SavedAddress(
         id: 'current_location',
-        name:
-            addressData['locality'] ??
-            addressData['sublocality'] ??
-            'Current Location',
+        name: addressData.addressLine1,
         address: Address(
-          formattedAddress:
-              addressData['formattedAddress'] ?? 'Current Location',
+          formattedAddress: addressData.formattedAddress,
           latitude: position.latitude,
           longitude: position.longitude,
         ),

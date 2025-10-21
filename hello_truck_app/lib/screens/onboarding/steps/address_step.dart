@@ -68,7 +68,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
     );
 
     // Update formatted address
-    final formattedAddress = addressData['formattedAddress'] ?? '';
+    final formattedAddress = addressData.formattedAddress;
     widget.controller.updateFormattedAddress(formattedAddress);
 
     // Move camera to location

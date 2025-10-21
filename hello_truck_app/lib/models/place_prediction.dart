@@ -11,10 +11,22 @@ class PlacePrediction {
   });
 
   factory PlacePrediction.fromJson(Map<String, dynamic> json) {
-    return PlacePrediction(
-      description: json['description'] ?? '',
-      placeId: json['place_id'] ?? '',
-      structuredFormat: json['structured_formatting']?['main_text'],
-    );
+    // Handle both old and new API response formats
+    if (json.containsKey('placePrediction')) {
+      // New API format
+      final placePrediction = json['placePrediction'];
+      return PlacePrediction(
+        description: placePrediction['text']?['text'] ?? '',
+        placeId: placePrediction['placeId'] ?? '',
+        structuredFormat: placePrediction['structuredFormat']?['mainText']?['text'],
+      );
+    } else {
+      // Legacy API format
+      return PlacePrediction(
+        description: json['description'] ?? '',
+        placeId: json['place_id'] ?? '',
+        structuredFormat: json['structured_formatting']?['main_text'],
+      );
+    }
   }
 }

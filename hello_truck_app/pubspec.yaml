@@ -61,6 +61,8 @@ dependencies:
   firebase_core: ^4.0.0
   firebase_messaging: ^16.0.0
   flutter_local_notifications: ^19.4.0
+  shared_preferences: ^2.5.3
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

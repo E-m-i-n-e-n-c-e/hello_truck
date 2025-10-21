@@ -8,6 +8,51 @@ enum LocationPermissionStatus {
   disabled,
 }
 
+class AddressDetails {
+  final String addressLine1;
+  final String landmark;
+  final String pincode;
+  final String city;
+  final String district;
+  final String state;
+  final String country;
+  final double latitude;
+  final double longitude;
+  final String formattedAddress;
+
+  AddressDetails({
+    required this.addressLine1,
+    required this.landmark,
+    required this.pincode,
+    required this.city,
+    required this.district,
+    required this.state,
+    required this.country,
+    required this.latitude,
+    required this.longitude,
+    required this.formattedAddress,
+  });
+
+  // Optional: A fallback factory constructor for unknown address
+  factory AddressDetails.unknown({
+    required double latitude,
+    required double longitude,
+  }) {
+    return AddressDetails(
+      addressLine1: 'Unknown Address',
+      landmark: '',
+      pincode: '',
+      city: '',
+      district: '',
+      state: '',
+      country: '',
+      latitude: latitude,
+      longitude: longitude,
+      formattedAddress: 'Unknown Address',
+    );
+  }
+}
+
 class LocationService {
   static const LocationSettings _locationSettings = LocationSettings(
     accuracy: LocationAccuracy.high,
@@ -49,43 +94,40 @@ class LocationService {
   }
 
   // Get address from LatLng
-  Future<Map<String, dynamic>> getAddressFromLatLng(double latitude, double longitude) async {
+  Future<AddressDetails> getAddressFromLatLng(double latitude, double longitude) async {
     try {
       final address = await GooglePlacesService.getAddressFromLatLng(latitude, longitude);
 
       if (address.isNotEmpty) {
-        final addressParts = (address['formattedAddress'] ?? '').split(',');
+        final addressParts = (address['formattedAddress'] ?? 'Unkown Address').split(',');
         final addressLine1 = addressParts.length > 3
             ? addressParts.take(addressParts.length - 3).join(',').trim()
-            : (address['formattedAddress'] ?? '').trim();
-        return {
-          'addressLine1': addressLine1,
-          'landmark': address['sublocality'] ?? address['sublocalityLevel1'] ?? address['sublocalityLevel2'] ?? address['sublocalityLevel3'] ?? '',
-          'pincode': address['postalCode'] ?? '',
-          'city': address['locality'] ?? '',
-          'district': address['administrativeAreaLevel2'] ?? address['administrativeAreaLevel3'] ?? '',
-          'state': address['administrativeAreaLevel1'] ?? '',
-          'country': address['country'] ?? '',
-          'latitude': latitude,
-          'longitude': longitude,
-          'formattedAddress': address['formattedAddress'] ?? '',
-        };
+            : (address['formattedAddress'] ?? 'Unknown Address').trim();
+        return AddressDetails(
+          addressLine1: addressLine1,
+          landmark: address['sublocality'] ??
+              address['sublocalityLevel1'] ??
+              address['sublocalityLevel2'] ??
+              address['sublocalityLevel3'] ??
+              '',
+          pincode: address['postalCode'] ?? '',
+          city: address['locality'] ?? '',
+          district: address['administrativeAreaLevel2'] ?? address['administrativeAreaLevel3'] ?? '',
+          state: address['administrativeAreaLevel1'] ?? '',
+          country: address['country'] ?? '',
+          latitude: latitude,
+          longitude: longitude,
+          formattedAddress: address['formattedAddress'] ?? 'Unknown Address',
+        );
       }
     } catch (e) {
       // Handle error silently
     }
 
     // Return default values if geocoding fails
-    return {
-      'addressLine1': 'Unknown Address',
-      'landmark': null,
-      'pincode': '',
-      'city': '',
-      'district': '',
-      'state': '',
-      'latitude': latitude,
-      'longitude': longitude,
-      'formattedAddress': 'Unknown Address',
-    };
+    return AddressDetails.unknown(
+      latitude: latitude,
+      longitude: longitude,
+    );
   }
 }
