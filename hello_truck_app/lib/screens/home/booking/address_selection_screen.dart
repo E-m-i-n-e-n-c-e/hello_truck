@@ -116,7 +116,9 @@ class _AddressSelectionScreenState
       // Create a SavedAddress for current location
       final currentLocationAddress = SavedAddress(
         id: 'current_location',
-        name: addressData.addressLine1,
+        name: addressData.formattedAddress.split(',').length > 3
+            ? addressData.formattedAddress.split(',').sublist(0, 3).join(',')
+            : addressData.formattedAddress,
         address: Address(
           formattedAddress: addressData.formattedAddress,
           latitude: position.latitude,

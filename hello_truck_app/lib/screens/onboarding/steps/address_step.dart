@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:hello_truck_app/models/place_prediction.dart';
 import 'package:hello_truck_app/screens/onboarding/controllers/onboarding_controller.dart';
 import 'package:hello_truck_app/screens/onboarding/widgets/onboarding_components.dart';
 import 'package:hello_truck_app/widgets/location_permission_handler.dart';
@@ -44,7 +45,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
     }
   }
 
-  Future<void> _updateLocationAndAddress(LatLng location,{double? zoom}) async {
+  Future<void> _updateLocationAndAddress(LatLng location, {PlacePrediction? prediction, double? zoom}) async {
     // Update marker
     _markers.clear();
     _markers.add(
@@ -61,14 +62,17 @@ class _AddressStepState extends ConsumerState<AddressStep> {
     widget.controller.updateSelectedLocation(location.latitude, location.longitude);
 
     // Get address details from coordinates
-    final locationService = ref.read(locationServiceProvider);
-    final addressData = await locationService.getAddressFromLatLng(
-      location.latitude,
-      location.longitude,
-    );
-
-    // Update formatted address
-    final formattedAddress = addressData.formattedAddress;
+    String formattedAddress;
+    if (prediction != null && prediction.description.isNotEmpty) {
+      formattedAddress = prediction.description;
+    } else {
+      final locationService = ref.read(locationServiceProvider);
+      final addressData = await locationService.getAddressFromLatLng(
+        location.latitude,
+        location.longitude,
+      );
+      formattedAddress = addressData.formattedAddress;
+    }
     widget.controller.updateFormattedAddress(formattedAddress);
 
     // Move camera to location
@@ -101,8 +105,8 @@ class _AddressStepState extends ConsumerState<AddressStep> {
       backgroundColor: Colors.transparent,
       builder: (context) => AddressSearchWidget(
         currentAddress: widget.controller.formattedAddressController.text,
-        onLocationSelected: (LatLng location) {
-          _updateLocationAndAddress(location);
+        onLocationSelected: (LatLng location, PlacePrediction prediction) {
+          _updateLocationAndAddress(location, prediction: prediction);
         },
         title: 'Search for Address',
       ),

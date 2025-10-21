@@ -570,7 +570,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> {
 
           final initialSavedAddress = SavedAddress(
             id: '',
-            name: prediction.description.split(',').length > 3 ? prediction.description.split(',').sublist(0, 3).join(', ') : prediction.description,
+            name: prediction.structuredFormat ?? prediction.description.split(',').first,
             address: initialAddress,
             contactName: '',
             contactPhone: '',

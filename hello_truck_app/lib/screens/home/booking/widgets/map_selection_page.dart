@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hello_truck_app/models/place_prediction.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/widgets/location_permission_handler.dart';
@@ -105,7 +106,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     );
   }
 
-  Future<void> _updateLocationAndAddress(LatLng location) async {
+  Future<void> _updateLocationAndAddress(LatLng location, {PlacePrediction? prediction}) async {
     // Update marker
     _markers.clear();
     _markers.add(
@@ -128,16 +129,27 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     _mapController?.animateCamera(CameraUpdate.newLatLngZoom(location, 18.0));
 
     try {
-      // Get address from coordinates
-      final addressData = await ref.read(locationServiceProvider).getAddressFromLatLng(
-        location.latitude,
-        location.longitude,
-      );
+      // Get address from coordinates, use prediction if provided
+      String formattedAddress;
+      String addressName;
+      if (prediction != null && prediction.description.isNotEmpty) {
+        formattedAddress = prediction.description;
+        addressName = prediction.structuredFormat ?? prediction.description.split(',').first;
+      } else {
+        final addressData = await ref.read(locationServiceProvider).getAddressFromLatLng(
+          location.latitude,
+          location.longitude,
+        );
+        formattedAddress = addressData.formattedAddress;
+        addressName = formattedAddress.split(',').length > 3
+            ? formattedAddress.split(',').sublist(0, 3).join(',')
+            : formattedAddress;
+      }
 
       if (mounted) {
         setState(() {
-          _selectedAddress = addressData.formattedAddress;
-          _addressName = addressData.addressLine1;
+          _selectedAddress = formattedAddress;
+          _addressName = addressName;
           _isLoading = false;
         });
       }
@@ -364,15 +376,15 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                 behavior: HitTestBehavior.opaque,
                                 onTap: _showSearchOverlay,
                                 child: Text(
-                                  _selectedAddress.isEmpty
+                                  _addressName.isEmpty
                                       ? widget.mode == MapSelectionMode.direct
                                           ? 'Pick up or drop item at?'
                                           : (widget.isPickup ? 'Pick up item at?' : 'Drop item at?')
                                       : (widget.initialSavedAddress != null && _isWithinAllowedRadius(_selectedLocation!))
                                           ? widget.initialSavedAddress!.name
-                                          : _selectedAddress,
+                                          : _addressName,
                                   style: textTheme.bodyMedium?.copyWith(
-                                    color: _selectedAddress.isEmpty
+                                    color: _addressName.isEmpty
                                         ? Colors.grey.shade600
                                         : Colors.black87,
                                     fontWeight: FontWeight.w500,
@@ -613,8 +625,8 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
       isScrollControlled: true,
       builder: (context) => AddressSearchWidget(
         currentAddress: _selectedAddress,
-        onLocationSelected: (location) {
-          _updateLocationAndAddress(location);
+        onLocationSelected: (location, prediction) {
+          _updateLocationAndAddress(location, prediction: prediction);
         },
         title: 'Search ${widget.title}',
       ),
