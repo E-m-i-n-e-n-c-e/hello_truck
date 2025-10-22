@@ -27,17 +27,6 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
   VehicleType? _selectedVehicleType;
   bool _acknowledged = false;
 
-  double? _selectedOptionCost(BookingEstimate estimate) {
-    if (_selectedVehicleType == null) return null;
-    try {
-      return estimate.vehicleOptions
-          .firstWhere((o) => o.vehicleType == _selectedVehicleType)
-          .estimatedCost;
-    } catch (_) {
-      return null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -156,11 +145,10 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                if (_selectedOptionCost(estimate) != null)
-                                  Text(
-                                    '₹${_selectedOptionCost(estimate)!.toStringAsFixed(2)}',
-                                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                                  ),
+                                Text(
+                                  '₹${estimate.vehicleOptions.firstWhere((o) => o.vehicleType == estimate.suggestedVehicleType).estimatedCost.toStringAsFixed(2)}',
+                                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                ),
                               ],
                             ),
                           ),
