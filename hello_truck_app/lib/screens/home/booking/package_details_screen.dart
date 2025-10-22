@@ -87,7 +87,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
 
     final media = MediaQuery.of(context);
     return MediaQuery(
-      data: media.copyWith(textScaler: TextScaler.linear(media.textScaler.scale(0.92).clamp(0.85, 1.0))),
+      data: media.copyWith(textScaler: TextScaler.linear(media.textScaler.scale(0.94).clamp(0.9, 1.0))),
       child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(

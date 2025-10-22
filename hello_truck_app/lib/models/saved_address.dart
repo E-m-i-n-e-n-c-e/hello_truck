@@ -51,12 +51,13 @@ class SavedAddress {
 }
 
 class Address {
-  final String? addressName;
   final String formattedAddress;
   final String? addressDetails;
   final double latitude;
   final double longitude;
 
+  // Metadata. This will only be there for addresses that were sent for a booking
+  final String? addressName;
   final String? contactName;
   final String? contactPhone;
   final String? noteToDriver;
@@ -93,6 +94,12 @@ class Address {
       'addressDetails': addressDetails,
       'latitude': latitude,
       'longitude': longitude,
+
+      // Metadata
+      'addressName': addressName,
+      'contactName': contactName,
+      'contactPhone': contactPhone,
+      'noteToDriver': noteToDriver,
     };
   }
 }

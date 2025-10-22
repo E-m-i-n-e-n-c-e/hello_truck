@@ -18,16 +18,16 @@ Future<SavedAddress> createSavedAddress(
   API api, {
   required String name,
   required Address address,
-  String? contactName,
-  String? contactPhone,
+  required String contactName,
+  required String contactPhone,
   String? noteToDriver,
   bool? isDefault,
 }) async {
   final response = await api.post('/customer/addresses', data: {
     'name': name,
     'address': address.toJson(),
-    if (contactName?.isNotEmpty ?? false) 'contactName': contactName,
-    if (contactPhone?.isNotEmpty ?? false) 'contactPhone': contactPhone,
+    'contactName': contactName,
+    'contactPhone': contactPhone,
     if (noteToDriver?.isNotEmpty ?? false) 'noteToDriver': noteToDriver,
     if (isDefault != null) 'isDefault': isDefault,
   });

@@ -60,7 +60,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     return MediaQuery(
       data: media.copyWith(
         textScaler: TextScaler.linear(
-          media.textScaler.scale(0.92).clamp(0.85, 1.0),
+          media.textScaler.scale(0.94).clamp(0.9, 1.0),
         ),
       ),
       child: Scaffold(
@@ -195,6 +195,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                 child: Text(
                                   'Edit',
                                   style: TextStyle(
+                                    fontSize: 15,
                                     color: colorScheme.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -245,6 +246,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                 child: Text(
                                   'Edit',
                                   style: TextStyle(
+                                    fontSize: 15,
                                     color: colorScheme.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -467,6 +469,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     required VoidCallback onEdit,
   }) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
       children: [
@@ -509,7 +512,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         ),
         TextButton(
           onPressed: onEdit,
-          child: const Text('Edit'),
+          child: Text(
+            'Edit',
+            style: TextStyle(
+              fontSize: 15,
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ],
     );
@@ -645,52 +655,55 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+          builder: (context) => PopScope(
+            canPop: false,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 48,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 48,
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Booking Confirmed!',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Booking Confirmed!',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Your order has been placed successfully. You will receive updates on your booking.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your order has been placed successfully. You will receive updates on your booking.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey,
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      },
+                      child: const Text('Go to Home'),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.popUntil(context, (route) => route.isFirst);
-                    },
-                    child: const Text('Go to Home'),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

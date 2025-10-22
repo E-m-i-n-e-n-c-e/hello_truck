@@ -142,12 +142,8 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
           api,
           name: _nameController.text.trim(),
           address: addressPayload,
-          contactName: _contactNameController.text.trim().isNotEmpty
-              ? _contactNameController.text.trim()
-              : null,
-          contactPhone: _contactPhoneController.text.trim().isNotEmpty
-              ? _contactPhoneController.text.trim()
-              : null,
+          contactName: _contactNameController.text.trim(),
+          contactPhone: _contactPhoneController.text.trim(),
           noteToDriver: _noteToDriverController.text.trim().isNotEmpty
               ? _noteToDriverController.text.trim()
               : null,

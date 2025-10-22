@@ -621,17 +621,8 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with Sing
                   );
 
                   if (saved != null && mounted) {
-                    // Remove from recents since it's now saved
-                    try {
-                      final service = ref.read(recentAddressesServiceProvider);
-                      await service.deleteByFormattedAddress(address.address.formattedAddress);
-                      if (!mounted) return;
-                      ref.invalidate(recentAddressesProvider);
-                      ref.invalidate(savedAddressesProvider);
-                    } catch (e) {
-                      if (!mounted) return;
-                      SnackBars.error(context, 'Failed to update recents: $e');
-                    }
+                    ref.invalidate(recentAddressesProvider);
+                    ref.invalidate(savedAddressesProvider);
                   }
                 } else if (value == 2) {
                   // Confirm delete
