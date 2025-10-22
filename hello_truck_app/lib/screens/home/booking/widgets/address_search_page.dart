@@ -582,9 +582,19 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with Sing
               ),
             ),
             PopupMenuButton<int>(
-              itemBuilder: (context) => const [
-                PopupMenuItem(
+              itemBuilder: (context) => [
+                const PopupMenuItem(
                   value: 1,
+                  child: Row(
+                    children: [
+                      Icon(Icons.favorite_border, size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Save as Favorite'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 2,
                   child: Row(
                     children: [
                       Icon(Icons.delete_outline, size: 18, color: Colors.red),
@@ -596,6 +606,56 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with Sing
               ],
               onSelected: (value) async {
                 if (value == 1) {
+                  // Save as favorite (prefill full details except name)
+                  final saved = await Navigator.push<SavedAddress>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddOrEditAddressPage.add(
+                        initialAddress: address.address,
+                        initialContactName: address.contactName,
+                        initialContactPhone: address.contactPhone,
+                        initialNoteToDriver: address.noteToDriver,
+                        initialAddressDetails: address.address.addressDetails,
+                      ),
+                    ),
+                  );
+
+                  if (saved != null && mounted) {
+                    // Remove from recents since it's now saved
+                    try {
+                      final service = ref.read(recentAddressesServiceProvider);
+                      await service.deleteByFormattedAddress(address.address.formattedAddress);
+                      if (!mounted) return;
+                      ref.invalidate(recentAddressesProvider);
+                      ref.invalidate(savedAddressesProvider);
+                    } catch (e) {
+                      if (!mounted) return;
+                      SnackBars.error(context, 'Failed to update recents: $e');
+                    }
+                  }
+                } else if (value == 2) {
+                  // Confirm delete
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Remove recent address?'),
+                      content: Text('"${address.name}" will be removed from your recent addresses.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: const Text('Remove'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm != true) return;
+
+                  // Delete
                   try {
                     final service = ref.read(recentAddressesServiceProvider);
                     await service.deleteByFormattedAddress(address.address.formattedAddress);

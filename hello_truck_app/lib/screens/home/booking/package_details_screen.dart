@@ -85,7 +85,10 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(textScaler: TextScaler.linear(media.textScaler.scale(0.92).clamp(0.85, 1.0))),
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -125,6 +128,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                         });
                       },
                       activeColor: colorScheme.primary,
+                      visualDensity: VisualDensity.compact,
                     ),
                     RadioListTile<bool>(
                       title: const Text('Commercial Use'),
@@ -136,6 +140,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                         });
                       },
                       activeColor: colorScheme.primary,
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
@@ -160,6 +165,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                         });
                       },
                       activeColor: colorScheme.primary,
+                      visualDensity: VisualDensity.compact,
                     ),
                     CheckboxListTile(
                       title: const Text('Non-Agricultural Products'),
@@ -173,6 +179,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                         });
                       },
                       activeColor: colorScheme.primary,
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
@@ -663,7 +670,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {

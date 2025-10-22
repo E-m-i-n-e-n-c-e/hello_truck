@@ -271,6 +271,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
           formattedAddress: _selectedAddress,
           latitude: _selectedLocation!.latitude,
           longitude: _selectedLocation!.longitude,
+          addressDetails: widget.initialAddress?.addressDetails,
         );
 
         Navigator.pop(context, address);
@@ -282,6 +283,8 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
         formattedAddress: _selectedAddress,
         latitude: _selectedLocation!.latitude,
         longitude: _selectedLocation!.longitude,
+        // Prefill address details from initial saved address when available
+        addressDetails: widget.initialSavedAddress?.address.addressDetails,
       );
         // If selected location is within allowed radius of prediction center, use prediction address and name
        if (_isWithinPredictionRadius(_selectedLocation!)) {

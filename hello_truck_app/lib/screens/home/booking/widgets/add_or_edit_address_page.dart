@@ -13,10 +13,19 @@ class AddOrEditAddressPage extends ConsumerStatefulWidget {
   final AddOrEditAddressMode mode;
   final Address? initialAddress; // for add
   final SavedAddress? initialSavedAddress; // for edit
+  // Optional prefill fields for add flow
+  final String? initialContactName;
+  final String? initialContactPhone;
+  final String? initialNoteToDriver;
+  final String? initialAddressDetails;
 
   const AddOrEditAddressPage.add({
     super.key,
     required Address this.initialAddress,
+    this.initialContactName,
+    this.initialContactPhone,
+    this.initialNoteToDriver,
+    this.initialAddressDetails,
   })  : mode = AddOrEditAddressMode.add,
         initialSavedAddress = null;
 
@@ -25,7 +34,11 @@ class AddOrEditAddressPage extends ConsumerStatefulWidget {
     required SavedAddress savedAddress,
   })  : mode = AddOrEditAddressMode.edit,
         initialSavedAddress = savedAddress,
-        initialAddress = null;
+        initialAddress = null,
+        initialContactName = null,
+        initialContactPhone = null,
+        initialNoteToDriver = null,
+        initialAddressDetails = null;
 
   @override
   ConsumerState<AddOrEditAddressPage> createState() => _AddOrEditAddressPageState();
@@ -51,6 +64,10 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
     if (widget.mode == AddOrEditAddressMode.add) {
       _selectedAddress = widget.initialAddress;
       _formattedAddressController.text = widget.initialAddress?.formattedAddress ?? '';
+      if (widget.initialContactName != null) _contactNameController.text = widget.initialContactName!;
+      if (widget.initialContactPhone != null) _contactPhoneController.text = widget.initialContactPhone!;
+      if (widget.initialNoteToDriver != null) _noteToDriverController.text = widget.initialNoteToDriver!;
+      if (widget.initialAddressDetails != null) _addressDetailsController.text = widget.initialAddressDetails!;
     } else {
       final saved = widget.initialSavedAddress!;
       _nameController.text = saved.name;
