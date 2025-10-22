@@ -138,6 +138,7 @@ class API {
   Stream<String> streamSseRaw(String absoluteUrl) {
     final controller = StreamController<String>();
     var cancelled = false;
+    StreamSubscription? currentSubscription;
 
     Future<void> connect([int attempt = 0]) async {
       if (cancelled) return;
@@ -158,7 +159,8 @@ class API {
         final buffer = StringBuffer();
         var dataAcc = '';
 
-        final sub = stream.listen((chunk) {
+        currentSubscription = stream.listen((chunk) {
+          if (cancelled || controller.isClosed) return;
           buffer.write(chunk);
           final parts = buffer.toString().split('\n');
           buffer
@@ -168,7 +170,9 @@ class API {
             final l = line.trimRight();
             if (l.isEmpty) {
               if (dataAcc.isNotEmpty) {
-                controller.add(dataAcc.trim());
+                if (!cancelled && !controller.isClosed) {
+                  controller.add(dataAcc.trim());
+                }
                 dataAcc = '';
               }
               continue;
@@ -180,13 +184,13 @@ class API {
           }
         });
 
-        sub.onDone(() {
+        currentSubscription!.onDone(() {
           if (cancelled) return;
           final backoff = Duration(seconds: (2 * (attempt + 1)).clamp(0, 15));
           Future.delayed(backoff, () => connect(attempt + 1));
         });
 
-        sub.onError((_) {
+        currentSubscription!.onError((_) {
           if (cancelled) return;
           final backoff = Duration(seconds: (2 * (attempt + 1)).clamp(0, 15));
           Future.delayed(backoff, () => connect(attempt + 1));
@@ -201,7 +205,10 @@ class API {
     controller.onListen = connect;
     controller.onCancel = () async {
       cancelled = true;
-      await controller.close();
+      await currentSubscription?.cancel();
+      if (!controller.isClosed) {
+        await controller.close();
+      }
     };
 
     return controller.stream;
