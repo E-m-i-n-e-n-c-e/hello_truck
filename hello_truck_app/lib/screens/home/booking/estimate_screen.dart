@@ -49,296 +49,300 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
       package: widget.package,
     )));
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(textScaler: TextScaler.linear(media.textScaler.scale(0.95).clamp(0.9, 1.0))),
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Select Vehicle',
-          style: textTheme.titleLarge?.copyWith(
-            color: Colors.black.withValues(alpha: 0.85),
-            fontWeight: FontWeight.w500,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
+            onPressed: () => Navigator.pop(context),
           ),
-        ),
-        centerTitle: false,
-      ),
-      body: estimateAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-                const SizedBox(height: 12),
-                Text('Failed to load estimate', style: textTheme.titleMedium),
-                const SizedBox(height: 6),
-                Text(error.toString(), textAlign: TextAlign.center, style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(bookingEstimateProvider((
-                    pickupAddress: widget.pickupAddress,
-                    dropAddress: widget.dropAddress,
-                    package: widget.package,
-                  ))),
-                  child: const Text('Retry'),
-                )
-              ],
+          title: Text(
+            'Select Vehicle',
+            style: textTheme.titleLarge?.copyWith(
+              color: Colors.black.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w500,
             ),
           ),
+          centerTitle: false,
         ),
-        data: (estimate) {
-          // Set selected vehicle type if not already set
-          if (_selectedVehicleType == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                _selectedVehicleType = estimate.suggestedVehicleType;
+        body: estimateAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
+                  const SizedBox(height: 12),
+                  Text('Failed to load estimate', style: textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  Text(error.toString(), textAlign: TextAlign.center, style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(bookingEstimateProvider((
+                      pickupAddress: widget.pickupAddress,
+                      dropAddress: widget.dropAddress,
+                      package: widget.package,
+                    ))),
+                    child: const Text('Retry'),
+                  )
+                ],
+              ),
+            ),
+          ),
+          data: (estimate) {
+            // Set selected vehicle type if not already set
+            if (_selectedVehicleType == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                setState(() {
+                  _selectedVehicleType = estimate.suggestedVehicleType;
+                });
               });
-            });
-          }
+            }
 
-          return Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      // Suggested vehicle banner
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15)),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
-                                  ],
+            return Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Suggested vehicle banner
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.recommend, color: Color(0xFF22AAAE)),
                                 ),
-                                child: const Icon(Icons.recommend, color: Color(0xFF22AAAE)),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Suggested vehicle', style: textTheme.bodySmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _vehicleLabel(estimate.suggestedVehicleType),
-                                      style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Suggested based on weight',
-                                      style: textTheme.bodySmall?.copyWith(color: Colors.black.withValues(alpha: 0.6)),
-                                    ),
-                                  ],
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Suggested vehicle', style: textTheme.bodySmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700)),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _vehicleLabel(estimate.suggestedVehicleType),
+                                        style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Suggested based on weight',
+                                        style: textTheme.bodySmall?.copyWith(color: Colors.black.withValues(alpha: 0.6)),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              if (_selectedOptionCost(estimate) != null)
-                                Text(
-                                  '₹${_selectedOptionCost(estimate)!.toStringAsFixed(2)}',
-                                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                                ),
-                            ],
+                                const SizedBox(width: 8),
+                                if (_selectedOptionCost(estimate) != null)
+                                  Text(
+                                    '₹${_selectedOptionCost(estimate)!.toStringAsFixed(2)}',
+                                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
+
+                        const SizedBox(height: 20),
+
+                        // Vehicle Options (from estimate)
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Choose a vehicle',
+                                  style: textTheme.titleLarge?.copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                ...estimate.vehicleOptions.map((opt) => _buildVehicleOptionTile(opt)),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                    const SizedBox(height: 12),
+
+                    // Disclaimer
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15)),
                       ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Terms and Conditions',
+                            style: textTheme.titleSmall?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '• Prices are estimates and may vary based on real-time factors.\n'
+                            '• Loading distance limit: up to 50 feet from vehicle (longer distances may incur additional charges).\n'
+                            '• Additional charges may apply for extended waiting time after pickup verification, change of destination, or change in package details.',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                      const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                      // Vehicle Options (from estimate)
-                      Container(
-                        width: double.infinity,
+                    // Acknowledge checkbox with better styling
+                    GestureDetector(
+                      onTap: () => setState(() => _acknowledged = !_acknowledged),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                          color: _acknowledged
+                            ? colorScheme.primary.withValues(alpha: 0.08)
+                            : Colors.grey.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _acknowledged
+                              ? colorScheme.primary.withValues(alpha: 0.3)
+                              : colorScheme.outline.withValues(alpha: 0.2),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            InkWell(
+                              onTap: () => setState(() => _acknowledged = !_acknowledged),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: _acknowledged ? colorScheme.primary : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: _acknowledged
+                                      ? colorScheme.primary
+                                      : colorScheme.outline.withValues(alpha: 0.5),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: _acknowledged
+                                  ? Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'I have read and acknowledge the terms and conditions for this booking.',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: _acknowledged
+                                    ? colorScheme.primary
+                                    : Colors.black.withValues(alpha: 0.85),
+                                  height: 1.4,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Choose a vehicle',
-                                style: textTheme.titleLarge?.copyWith(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ...estimate.vehicleOptions.map((opt) => _buildVehicleOptionTile(opt)),
-                            ],
-                          ),
-                        ),
                       ),
-
-                  const SizedBox(height: 12),
-
-                  // Disclaimer
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15)),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Terms and Conditions',
-                          style: textTheme.titleSmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w700,
+
+                    const SizedBox(height: 24),
+
+                        // Review button at the end (no sticky footer, no total)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: (_selectedVehicleType != null && _acknowledged)
+                                ? () => _proceedToReview(estimate)
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 8,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.bookmark_border),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Review Order',
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '• Prices are estimates and may vary based on real-time factors.\n'
-                          '• Loading distance limit: up to 50 feet from vehicle (longer distances may incur additional charges).\n'
-                          '• Additional charges may apply for extended waiting time after pickup verification, change of destination, or change in package details.',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: Colors.black.withValues(alpha: 0.75),
-                            height: 1.35,
-                          ),
-                        ),
+                        SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Acknowledge checkbox with better styling
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: _acknowledged
-                        ? colorScheme.primary.withValues(alpha: 0.08)
-                        : Colors.grey.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _acknowledged
-                          ? colorScheme.primary.withValues(alpha: 0.3)
-                          : colorScheme.outline.withValues(alpha: 0.2),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        InkWell(
-                          onTap: () => setState(() => _acknowledged = !_acknowledged),
-                          borderRadius: BorderRadius.circular(6),
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: _acknowledged ? colorScheme.primary : Colors.transparent,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: _acknowledged
-                                  ? colorScheme.primary
-                                  : colorScheme.outline.withValues(alpha: 0.5),
-                                width: 2,
-                              ),
-                            ),
-                            child: _acknowledged
-                              ? Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: Colors.white,
-                                )
-                              : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _acknowledged = !_acknowledged),
-                            behavior: HitTestBehavior.opaque,
-                            child: Text(
-                              'I have read and acknowledge the terms and conditions for this booking.',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: _acknowledged
-                                  ? colorScheme.primary
-                                  : Colors.black.withValues(alpha: 0.85),
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                      // Review button at the end (no sticky footer, no total)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: (_selectedVehicleType != null && _acknowledged)
-                              ? () => _proceedToReview(estimate)
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 8,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.bookmark_border),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Review Order',
-                                style: textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-                    ],
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

@@ -56,7 +56,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(
+        textScaler: TextScaler.linear(
+          media.textScaler.scale(0.92).clamp(0.85, 1.0),
+        ),
+      ),
+      child: Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: colorScheme.surface,
@@ -449,7 +456,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildLocationRow({

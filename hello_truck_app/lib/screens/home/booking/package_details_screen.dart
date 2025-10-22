@@ -63,6 +63,9 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   final List<String> _transportDocUrls = [];
   final List<bool> _isUploadingTransportDocs = [];
 
+  // UI state
+  bool _showDimensions = true; // Persist tab selection
+
   @override
   void dispose() {
     _productNameController.dispose();
@@ -266,12 +269,12 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                       const SizedBox(height: 12),
                       _buildFormField(
                         controller: _avgWeightController,
-                        label: 'Average Weight of Shipment (KG)',
+                        label: 'Approximate Total Weight of Shipment (KG)',
                         isRequired: true,
                         keyboardType: TextInputType.number,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Average weight is required';
+                            return 'Approximate weight is required';
                           }
                           final weight = double.tryParse(value.trim());
                           if (weight == null) {
@@ -287,31 +290,118 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                       _buildFormField(
                         controller: _bundleWeightController,
                         label: 'Weight of Each Bundle (KG)',
+                        isRequired: true,
                         keyboardType: TextInputType.number,
                         validator: (value) {
-                          if (value != null && value.trim().isNotEmpty) {
-                            final weight = double.tryParse(value.trim());
-                            if (weight == null) {
-                              return 'Invalid weight value';
-                            }
-                            if (weight <= 0) {
-                              return 'Weight must be greater than 0';
-                            }
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Bundle weight is required';
+                          }
+                          final weight = double.tryParse(value.trim());
+                          if (weight == null) {
+                            return 'Invalid weight value';
+                          }
+                          if (weight <= 0) {
+                            return 'Weight must be greater than 0';
                           }
                           return null;
                         },
                       ),
+                      const SizedBox(height: 24),
+
+                      // Tab Switch for Dimensions or Description
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _showDimensions = true;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _showDimensions ? Colors.white : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: _showDimensions
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.05),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    'Dimensions',
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: _showDimensions ? colorScheme.primary : Colors.grey.shade600,
+                                      fontWeight: _showDimensions ? FontWeight.w600 : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _showDimensions = false;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: !_showDimensions ? Colors.white : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: !_showDimensions
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.05),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    'Description',
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: !_showDimensions ? colorScheme.primary : Colors.grey.shade600,
+                                      fontWeight: !_showDimensions ? FontWeight.w600 : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 20),
 
-                      Row(
+                      if (_showDimensions) ...[
+                        Row(
                         children: [
                           Expanded(
                             child: _buildFormField(
                               controller: _lengthController,
                               label: 'Length',
+                              isRequired: true,
                               keyboardType: TextInputType.number,
                               validator: (value) {
-                                if (value != null && value.trim().isNotEmpty) {
+                                if (_showDimensions) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Length is required';
+                                  }
                                   final length = double.tryParse(value.trim());
                                   if (length == null) {
                                     return 'Invalid length value';
@@ -329,9 +419,13 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                             child: _buildFormField(
                               controller: _widthController,
                               label: 'Width',
+                              isRequired: true,
                               keyboardType: TextInputType.number,
                               validator: (value) {
-                                if (value != null && value.trim().isNotEmpty) {
+                                if (_showDimensions) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Width is required';
+                                  }
                                   final width = double.tryParse(value.trim());
                                   if (width == null) {
                                     return 'Invalid width value';
@@ -349,9 +443,13 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                             child: _buildFormField(
                               controller: _heightController,
                               label: 'Height',
+                              isRequired: true,
                               keyboardType: TextInputType.number,
                               validator: (value) {
-                                if (value != null && value.trim().isNotEmpty) {
+                                if (_showDimensions) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Height is required';
+                                  }
                                   final height = double.tryParse(value.trim());
                                   if (height == null) {
                                     return 'Invalid height value';
@@ -370,40 +468,56 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _dimensionUnit,
-                              decoration: InputDecoration(
-                                labelText: 'Unit',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Unit',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: Colors.black.withValues(alpha: 0.68),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              items: ['cm', 'inches'].map((unit) {
-                                return DropdownMenuItem(
-                                  value: unit,
-                                  child: Text(unit),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _dimensionUnit = value!;
-                                });
-                              },
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>(
+                                  initialValue: _dimensionUnit,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                  ),
+                                  items: ['cm', 'inches'].map((unit) {
+                                    return DropdownMenuItem(
+                                      value: unit,
+                                      child: Text(unit),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _dimensionUnit = value!;
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: TextFormField(
+                            child: _buildFormField(
                               controller: _numberOfProductsController,
-                              decoration: InputDecoration(
-                                labelText: 'Number of Products',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              label: 'Number of Products',
+                              isRequired: true,
                               keyboardType: TextInputType.number,
                               validator: (value) {
-                                if (value != null && value.trim().isNotEmpty) {
+                                if (_showDimensions) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Number of products is required';
+                                  }
                                   final numberOfProducts = int.tryParse(value.trim());
                                   if (numberOfProducts == null) {
                                     return 'Invalid integer value';
@@ -418,34 +532,60 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                           ),
                         ],
                       ),
+                      ]
+                      else ...[
+                        _buildFormField(
+                          controller: _descriptionController,
+                          label: 'Package Description',
+                          isRequired: true,
+                          maxLines: 5,
+                          validator: (value) {
+                            if (!_showDimensions) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Package description is required';
+                              }
+                              if (value.trim().length < 10) {
+                                return 'Description must be at least 10 characters';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                       const SizedBox(height: 16),
-
-                      // Description
-                      _buildFormField(
-                        controller: _descriptionController,
-                        label: 'Package Description',
-                        isRequired: false,
-                        // hint removed to match consistent style
-                        // use maxLines for larger input area
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Package Image Upload
-                      DocumentUploadCard(
-                        title: 'Package Image',
-                        subtitle: 'Upload a photo of your package',
-                        icon: Icons.camera_alt_rounded,
-                        selectedFile: _packageImage,
-                        uploadedUrl: _packageImageUrl,
-                        isUploading: _isUploadingPackageImage,
-                        onUpload: () => _handleDocumentUpload('packageImage'),
-                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
               ],
+
+              // Package Image Section (optional)
+              _buildSectionCard(
+                title: 'Package Image (Optional)',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Upload a photo of your package to help drivers identify it',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.68),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DocumentUploadCard(
+                      title: 'Package Image',
+                      subtitle: 'Add package photo (optional)',
+                      icon: Icons.camera_alt_rounded,
+                      selectedFile: _packageImage,
+                      uploadedUrl: _packageImageUrl,
+                      isUploading: _isUploadingPackageImage,
+                      onUpload: () => _handleDocumentUpload('packageImage'),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               // GST Bill Upload Section (for commercial use)
               if (_isCommercialUse) ...[
@@ -573,7 +713,18 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
       hasRequiredFields = _productNameController.text.trim().isNotEmpty &&
                          _weightController.text.trim().isNotEmpty;
     } else if (_isNonAgriculturalProduct) {
-      hasRequiredFields = _avgWeightController.text.trim().isNotEmpty;
+      // Check required weights
+      final hasWeights = _avgWeightController.text.trim().isNotEmpty &&
+                        _bundleWeightController.text.trim().isNotEmpty;
+
+      // Check if either dimensions or description is provided
+      final hasDimensions = _lengthController.text.trim().isNotEmpty &&
+                          _widthController.text.trim().isNotEmpty &&
+                          _heightController.text.trim().isNotEmpty &&
+                          _numberOfProductsController.text.trim().isNotEmpty;
+      final hasDescription = _descriptionController.text.trim().isNotEmpty;
+
+      hasRequiredFields = hasWeights && (hasDimensions || hasDescription);
     }
 
     // Check if GST bill is required and uploaded for commercial use
