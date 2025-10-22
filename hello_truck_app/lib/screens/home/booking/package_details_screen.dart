@@ -545,6 +545,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                           controller: _descriptionController,
                           label: 'Package Description',
                           isRequired: true,
+                          hint: 'Provide a detailed description of your package (at least 10 characters)',
                           maxLines: 5,
                           validator: (value) {
                             if (!_showDimensions) {
@@ -909,6 +910,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     bool isRequired = false,
     TextInputType? keyboardType,
     int maxLines = 1,
+    String? hint,
     String? Function(String?)? validator,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -946,6 +948,10 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             filled: true,
             fillColor: Colors.white,
+            hintText: hint,
+            hintStyle: textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade500,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
