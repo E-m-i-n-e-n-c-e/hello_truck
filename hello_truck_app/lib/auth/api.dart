@@ -136,7 +136,7 @@ class API {
   // SSE streaming helpers
   // ==========================
   Stream<String> streamSseRaw(String absoluteUrl) {
-    final controller = StreamController<String>();
+    final controller = StreamController<String>.broadcast();
     var cancelled = false;
     StreamSubscription? currentSubscription;
 
