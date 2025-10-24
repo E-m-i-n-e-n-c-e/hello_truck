@@ -11,6 +11,7 @@ import 'package:hello_truck_app/screens/home/booking/widgets/map_selection_page.
 import 'package:hello_truck_app/screens/home/booking/widgets/add_or_edit_address_page.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:hello_truck_app/providers/addresse_providers.dart';
+import 'package:hello_truck_app/utils/logger.dart';
 
 enum _SavedAddressMenuAction { edit, delete }
 
@@ -91,7 +92,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with Sing
         _isLoading = false;
         _predictions.clear();
       });
-      print('Error searching places: $e');
+      AppLogger.log('Error searching places: $e');
     }
   }
 
@@ -711,7 +712,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with Sing
           );
       }
     } catch (e) {
-      print('Error selecting prediction: $e');
+      AppLogger.log('Error selecting prediction: $e');
       if (mounted) {
         SnackBars.error(context, 'Error selecting location: $e');
       }

@@ -86,21 +86,42 @@ Future<void> cancelBooking(API api, String bookingId) async {
   await api.delete('/bookings/customer/$bookingId');
 }
 
-/// Update a booking
-Future<Booking> updateBooking(
+/// Update only the pickup address for a booking (new endpoint)
+Future<void> updateBookingAddress(
   API api,
   String bookingId, {
-  Address? dropAddress,
-  Package? package,
+  required AddressType addressType,
+  String? addressName,
+  String? contactName,
+  String? contactPhone,
+  String? noteToDriver,
+  String? formattedAddress,
+  String? addressDetails,
+  double? latitude,
+  double? longitude,
 }) async {
-  final body = <String, dynamic>{};
-  if (dropAddress != null) {
-    body['dropAddress'] = dropAddress.toJson();
-  }
-  if (package != null) {
-    body['package'] = package.toJson();
-  }
+  final body = <String, dynamic>{
+    if (addressName?.isNotEmpty ?? false) 'addressName': addressName,
+    if (contactName?.isNotEmpty ?? false) 'contactName': contactName,
+    if (contactPhone?.isNotEmpty ?? false) 'contactPhone': contactPhone,
+    if (noteToDriver?.isNotEmpty ?? false) 'noteToDriver': noteToDriver,
+    if (formattedAddress?.isNotEmpty ?? false) 'formattedAddress': formattedAddress,
+    if (addressDetails?.isNotEmpty ?? false) 'addressDetails': addressDetails,
+    if (latitude != null) 'latitude': latitude,
+    if (longitude != null) 'longitude': longitude,
+  };
+  final response = await api.put('/bookings/customer/${addressType.name}/$bookingId', data: body);
+  print(response.data);
+}
 
-  final response = await api.put('/bookings/customer/$bookingId', data: body);
-  return Booking.fromJson(response.data);
+/// Update only the package details for a booking (new endpoint)
+/// We dont support partial update of package details as  payload is complex
+Future<void> updateBookingPackage(API api, String bookingId, Package package) async {
+  final response = await api.put('/bookings/customer/package/$bookingId', data: package.toJson());
+  print(response.data);
+}
+
+enum AddressType {
+  pickup,
+  drop,
 }

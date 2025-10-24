@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
+import 'package:hello_truck_app/utils/logger.dart';
 import 'package:http_cache_hive_store/http_cache_hive_store.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -119,7 +120,7 @@ class API {
 
       return publicUrl;
     } catch (e) {
-      print('Error uploading file: $e');
+      AppLogger.log('Error uploading file: $e');
       rethrow;
     }
   }

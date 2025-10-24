@@ -56,50 +56,29 @@ class Address {
   final double latitude;
   final double longitude;
 
-  // Metadata. This will only be there for addresses that were sent for a booking
-  final String? addressName;
-  final String? contactName;
-  final String? contactPhone;
-  final String? noteToDriver;
-
   Address({
-    this.addressName,
     required this.formattedAddress,
     this.addressDetails,
     required this.latitude,
     required this.longitude,
-    this.contactName,
-    this.contactPhone,
-    this.noteToDriver,
   });
 
   // Get full address details along with metadata
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
-      addressName: json['addressName'],
       formattedAddress: json['formattedAddress'],
       addressDetails: json['addressDetails'],
-      latitude: json['latitude'] != null ? double.parse(json['latitude'].toString()) : 0.0,
-      longitude: json['longitude'] != null ? double.parse(json['longitude'].toString()) : 0.0,
-      contactName: json['contactName'],
-      contactPhone: json['contactPhone'],
-      noteToDriver: json['noteToDriver'],
+      latitude: json['latitude'].toDouble(),
+      longitude: json['longitude'].toDouble(),
     );
   }
 
-  // Only send necessary details
   Map<String, dynamic> toJson() {
     return {
       'formattedAddress': formattedAddress,
       'addressDetails': addressDetails,
       'latitude': latitude,
       'longitude': longitude,
-
-      // Metadata
-      'addressName': addressName,
-      'contactName': contactName,
-      'contactPhone': contactPhone,
-      'noteToDriver': noteToDriver,
     };
   }
 }

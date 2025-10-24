@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/hello_truck.dart';
@@ -14,6 +15,12 @@ void main() async {
   // Preserve splash screen until app is fully loaded
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  // Lock orientation to portrait up or down
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // Initialize Firebase
   await Firebase.initializeApp(

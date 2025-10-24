@@ -101,7 +101,11 @@ class FCMService {
       AppLogger.log('FCM event received: ${message.data['event']}');
       AppLogger.log('FCM foreground messagessssss: ${message.notification?.title} - ${message.notification?.body}');
       if(message.data['event'] != null) {
-        _eventController.add(FcmEventType.fromString(message.data['event']!));
+        final eventType = FcmEventType.fromString(message.data['event']!);
+        _eventController.add(eventType);
+        if (FcmEventType.isLocalNotificationEnabled(eventType)) {
+          _showNotification(message, _localNotifications);
+        }
       }
       else {
         // Show local notification for foreground messages

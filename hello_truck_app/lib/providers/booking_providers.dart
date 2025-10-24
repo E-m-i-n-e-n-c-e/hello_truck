@@ -41,7 +41,7 @@ final bookingEstimateProvider = FutureProvider.autoDispose.family<BookingEstimat
 });
 
 /// SSE stream provider for driver navigation (live updates)
-final driverNavigationStreamProvider = StreamProvider.autoDispose.family<Map<String, dynamic>, String>((ref, bookingId) async* {
+final driverNavigationStreamProvider = StreamProvider.family<DriverNavigationUpdate, String>((ref, bookingId) async* {
   final api = await ref.watch(apiProvider.future);
 
   AppLogger.log('🎯 Subscribing to driver navigation for booking: $bookingId');
@@ -52,5 +52,5 @@ final driverNavigationStreamProvider = StreamProvider.autoDispose.family<Map<Str
     AppLogger.log('🧹 Disposing driver navigation stream for $bookingId');
   });
 
-  yield* stream;
+  yield* stream.map((json) => DriverNavigationUpdate.fromJson(json, bookingId: bookingId));
 });
