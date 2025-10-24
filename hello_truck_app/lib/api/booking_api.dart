@@ -2,7 +2,6 @@ import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/package.dart';
-import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/utils/constants.dart';
 import 'package:hello_truck_app/utils/logger.dart';
@@ -10,8 +9,8 @@ import 'package:hello_truck_app/utils/logger.dart';
 /// Get booking estimate with all vehicle options
 Future<BookingEstimate> getBookingEstimate(
   API api, {
-  required Address pickupAddress,
-  required Address dropAddress,
+  required BookingAddress pickupAddress,
+  required BookingAddress dropAddress,
   required Package package,
 }) async {
   final response = await api.post('/bookings/customer/estimate', data: {
@@ -26,31 +25,31 @@ Future<BookingEstimate> getBookingEstimate(
 /// Create a new booking
 Future<Booking> createBooking(
   API api, {
-  required SavedAddress pickupAddress,
-  required SavedAddress dropAddress,
+  required BookingAddress pickupAddress,
+  required BookingAddress dropAddress,
   required Package package,
   required VehicleType selectedVehicleType,
 }) async {
   final response = await api.post('/bookings/customer', data: {
     'pickupAddress': {
-      'addressName': pickupAddress.name,
+      'addressName': pickupAddress.addressName,
       'contactName': pickupAddress.contactName,
       'contactPhone': pickupAddress.contactPhone,
       'noteToDriver': pickupAddress.noteToDriver,
-      'formattedAddress': pickupAddress.address.formattedAddress,
-      'addressDetails': pickupAddress.address.addressDetails,
-      'latitude': pickupAddress.address.latitude,
-      'longitude': pickupAddress.address.longitude,
+      'formattedAddress': pickupAddress.formattedAddress,
+      'addressDetails': pickupAddress.addressDetails,
+      'latitude': pickupAddress.latitude,
+      'longitude': pickupAddress.longitude,
     },
     'dropAddress': {
-      'addressName': dropAddress.name,
+      'addressName': dropAddress.addressName,
       'contactName': dropAddress.contactName,
       'contactPhone': dropAddress.contactPhone,
       'noteToDriver': dropAddress.noteToDriver,
-      'formattedAddress': dropAddress.address.formattedAddress,
-      'addressDetails': dropAddress.address.addressDetails,
-      'latitude': dropAddress.address.latitude,
-      'longitude': dropAddress.address.longitude,
+      'formattedAddress': dropAddress.formattedAddress,
+      'addressDetails': dropAddress.addressDetails,
+      'latitude': dropAddress.latitude,
+      'longitude': dropAddress.longitude,
     },
     'package': package.toJson(),
     'selectedVehicleType': selectedVehicleType.value,

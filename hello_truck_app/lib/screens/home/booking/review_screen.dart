@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/enums/package_enums.dart';
-import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
@@ -11,8 +11,8 @@ import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
-  final SavedAddress pickupAddress;
-  final SavedAddress dropAddress;
+  final BookingAddress pickupAddress;
+  final BookingAddress dropAddress;
   final Package package;
   final BookingEstimate estimate;
   final VehicleType selectedVehicleType;
@@ -32,8 +32,8 @@ class ReviewScreen extends ConsumerStatefulWidget {
 
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   bool _isBooking = false;
-  late SavedAddress _pickupAddress;
-  late SavedAddress _dropAddress;
+  late BookingAddress _pickupAddress;
+  late BookingAddress _dropAddress;
   VehicleOption? get _selectedOption {
     try {
       return widget.estimate.vehicleOptions.firstWhere(
@@ -465,7 +465,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     required IconData icon,
     required Color iconColor,
     required String title,
-    required SavedAddress address,
+    required BookingAddress address,
     required VoidCallback onEdit,
   }) {
     final textTheme = Theme.of(context).textTheme;
@@ -493,7 +493,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                address.name,
+                address.addressName ?? '',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -610,9 +610,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         onAddressSelected: (address) {
           setState(() {
             if (isPickup) {
-              _pickupAddress = address;
+              _pickupAddress = BookingAddress.fromSavedAddress(address);
             } else {
-              _dropAddress = address;
+              _dropAddress = BookingAddress.fromSavedAddress(address);
             }
           });
         },

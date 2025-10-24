@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
+import 'package:hello_truck_app/models/navigation_update.dart';
 import 'package:hello_truck_app/models/package.dart';
-import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/utils/logger.dart';
 
@@ -27,15 +27,15 @@ final bookingDetailsProvider = FutureProvider.autoDispose.family<Booking, String
 
 // Provider for booking estimate (already exists in estimate_screen.dart, but keeping it here for consistency)
 final bookingEstimateProvider = FutureProvider.autoDispose.family<BookingEstimate, ({
-  SavedAddress pickupAddress,
-  SavedAddress dropAddress,
+  BookingAddress pickupAddress,
+  BookingAddress dropAddress,
   Package package,
 })>((ref, params) async {
   final api = await ref.read(apiProvider.future);
   return getBookingEstimate(
     api,
-    pickupAddress: params.pickupAddress.address,
-    dropAddress: params.dropAddress.address,
+    pickupAddress: params.pickupAddress,
+    dropAddress: params.dropAddress,
     package: params.package,
   );
 });

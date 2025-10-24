@@ -1,7 +1,7 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
+import 'package:hello_truck_app/models/navigation_update.dart';
 
 /// Decode an encoded polyline string using flutter_polyline_points
 /// into a list of Google Maps `LatLng`.

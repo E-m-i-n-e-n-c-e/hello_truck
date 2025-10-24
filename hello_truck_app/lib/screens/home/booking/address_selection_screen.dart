@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/providers/addresse_providers.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
@@ -86,8 +87,8 @@ class _AddressSelectionScreenState
       context,
       MaterialPageRoute(
         builder: (context) => PackageDetailsScreen(
-          pickupAddress: _pickupAddress!,
-          dropAddress: _dropAddress!,
+          pickupAddress: BookingAddress.fromSavedAddress(_pickupAddress!),
+          dropAddress: BookingAddress.fromSavedAddress(_dropAddress!),
         ),
       ),
     );

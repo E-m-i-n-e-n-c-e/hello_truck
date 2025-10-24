@@ -1,18 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/enums/package_enums.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/screens/home/booking/estimate_screen.dart';
 import 'package:hello_truck_app/widgets/document_upload_card.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 
 class PackageDetailsScreen extends ConsumerStatefulWidget {
-  final SavedAddress pickupAddress;
-  final SavedAddress dropAddress;
+  final BookingAddress pickupAddress;
+  final BookingAddress dropAddress;
 
   const PackageDetailsScreen({
     super.key,

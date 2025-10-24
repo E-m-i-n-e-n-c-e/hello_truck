@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
-import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/screens/home/booking/review_screen.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 
 class EstimateScreen extends ConsumerStatefulWidget {
-  final SavedAddress pickupAddress;
-  final SavedAddress dropAddress;
+  final BookingAddress pickupAddress;
+  final BookingAddress dropAddress;
   final Package package;
 
   const EstimateScreen({
