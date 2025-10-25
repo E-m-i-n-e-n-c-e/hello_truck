@@ -7,7 +7,7 @@ import 'dart:convert';
 import '../models/place_prediction.dart';
 
 class GooglePlacesService {
-  static const String _googleApiKey = 'AIzaSyBqTOs9JWbrHqOIO10oGKpLhuvou37S6Aw';
+  static const String _googleApiKey = 'AIzaSyBS1YvHqfQSiiBb5d6FgrXtPRi_3VGiSMM';
   static const String _baseUrl = 'https://places.googleapis.com/v1';
   static String? _sessionToken;
 
