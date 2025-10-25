@@ -1,3 +1,5 @@
+import 'package:equatable/equatable.dart';
+
 import 'enums/booking_enums.dart';
 import 'package.dart';
 import 'saved_address.dart';
@@ -97,7 +99,7 @@ class Booking {
   }
 }
 
-class BookingAddress {
+class BookingAddress extends Equatable {
   final String? addressName;
   final String contactName;
   final String contactPhone;
@@ -107,7 +109,7 @@ class BookingAddress {
   final double latitude;
   final double longitude;
 
-  BookingAddress({
+  const BookingAddress({
     this.addressName,
     required this.contactName,
     required this.contactPhone,
@@ -117,6 +119,19 @@ class BookingAddress {
     required this.latitude,
     required this.longitude,
   });
+
+  @override
+  List<Object?> get props => [
+    addressName,
+    contactName,
+    contactPhone,
+    noteToDriver,
+    formattedAddress,
+    addressDetails,
+    latitude,
+    longitude,
+  ];
+
 
   factory BookingAddress.fromJson(Map<String, dynamic> json) {
     return BookingAddress(

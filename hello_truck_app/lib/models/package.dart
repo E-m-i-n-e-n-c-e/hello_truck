@@ -1,6 +1,8 @@
+import 'package:equatable/equatable.dart';
+
 import 'enums/package_enums.dart';
 
-class Package {
+class Package extends Equatable {
   final PackageType packageType;
   final ProductType productType;
 
@@ -42,6 +44,26 @@ class Package {
     this.gstBillUrl,
     this.transportDocUrls = const [],
   });
+
+  @override
+  List<Object?> get props => [
+    packageType,
+    productType,
+    productName,
+    approximateWeight,
+    weightUnit,
+    averageWeight,
+    bundleWeight,
+    length,
+    width,
+    height,
+    dimensionUnit,
+    numberOfProducts,
+    description,
+    packageImageUrl,
+    gstBillUrl,
+    transportDocUrls,
+  ];
 
   // Factory constructor for Agricultural Products
   factory Package.agricultural({
