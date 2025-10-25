@@ -23,13 +23,29 @@ const statusOrder = [
   BookingStatus.completed,
 ];
 
+const inactiveStatuses = [
+  BookingStatus.completed,
+  BookingStatus.cancelled,
+  BookingStatus.expired,
+];
+
+bool isActive(BookingStatus s) {
+  return !inactiveStatuses.contains(s);
+}
+
 bool isBeforeDropArrived(BookingStatus s) {
-  return statusOrder.indexOf(s) < statusOrder.indexOf(BookingStatus.dropVerified);
+  return isActive(s) && statusOrder.indexOf(s) < statusOrder.indexOf(BookingStatus.dropArrived);
 }
 
 bool isBeforePickupVerified(BookingStatus s) {
-  return statusOrder.indexOf(s) < statusOrder.indexOf(BookingStatus.pickupVerified);
+  return isActive(s) && statusOrder.indexOf(s) < statusOrder.indexOf(BookingStatus.pickupVerified);
 }
+
+bool isBeforePickupArrived(BookingStatus s) {
+  return isActive(s) && statusOrder.indexOf(s) < statusOrder.indexOf(BookingStatus.pickupArrived);
+}
+
+
 
 String getBookingTitle(BookingStatus status) {
   switch (status) {
@@ -120,4 +136,23 @@ String formatDistance(int d) {
     return '${km == km.toInt() ? km.toInt() : km.toStringAsFixed(1)} km';
   }
   return '$d m';
+}
+
+enum EditButtonType {
+  pickup,
+  drop,
+  package,
+}
+
+bool showEditButton(BookingStatus status, EditButtonType type) {
+  if(!isActive(status)) return false;
+  if(type == EditButtonType.pickup) return isBeforePickupArrived(status);
+  if(type == EditButtonType.drop) return isBeforeDropArrived(status);
+  if(type == EditButtonType.package) return isBeforePickupArrived(status);
+
+  return false;
+}
+
+bool showPolyline(BookingStatus status) {
+  return status == BookingStatus.confirmed || status == BookingStatus.inTransit;
 }

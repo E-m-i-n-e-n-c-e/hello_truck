@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
-import 'package:hello_truck_app/models/enums/booking_enums.dart';
+import 'package:hello_truck_app/screens/bookings/booking_details_screen.dart';
+import 'package:hello_truck_app/utils/nav_utils.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
   const BookingsScreen({super.key});
@@ -174,110 +175,119 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    Color statusColor;
-    switch (b.status) {
-      case BookingStatus.pending:
-      case BookingStatus.driverAssigned:
-      case BookingStatus.confirmed:
-      case BookingStatus.pickupArrived:
-      case BookingStatus.pickupVerified:
-      case BookingStatus.inTransit:
-      case BookingStatus.dropArrived:
-      case BookingStatus.dropVerified:
-        statusColor = Colors.orange;
-        break;
-      case BookingStatus.completed:
-        statusColor = Colors.green;
-        break;
-      case BookingStatus.cancelled:
-      case BookingStatus.expired:
-        statusColor = Colors.red;
-        break;
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '#${b.id.substring(0, 6).toUpperCase()}',
-                  style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-                  child: Text(
-                    b.status.value.replaceAll('_', ' '),
-                    style: textTheme.bodySmall?.copyWith(color: statusColor, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  children: [
-                    Icon(Icons.my_location, color: colorScheme.primary, size: 16),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: 2,
-                      height: 24,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(color: colorScheme.outline.withValues(alpha: 0.3)),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Icon(Icons.location_on, color: Colors.red, size: 16),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: b)));
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Booking number and price
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(b.pickupAddress.formattedAddress, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.bodyMedium),
-                      const SizedBox(height: 8),
-                      Text(b.dropAddress.formattedAddress, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.bodyMedium),
+                      Text(
+                        'Booking #${b.bookingNumber.toString().padLeft(6, '0')}',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.local_shipping_outlined, size: 16, color: Colors.grey.shade600),
+                          const SizedBox(width: 6),
+                          Text(
+                            b.suggestedVehicleType.value.replaceAll('_', ' '),
+                            style: textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+                  Text(
+                    '₹${(b.finalCost ?? b.estimatedCost).toStringAsFixed(0)}',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Live ETA row powered by SSE
+              Consumer(builder: (context, ref, _) {
+
+                final stream = isActive(b.status) ? ref.watch(driverNavigationStreamProvider(b.id)) : AsyncValue.data(null);
+
+                final label = tileLabel(b.status, stream.value);
+                final hint = isBeforeDropArrived(b.status)
+                    ? 'Time to drop: ${formatTime(stream.value?.timeToDrop ?? 0)}\nDistance to drop: ${formatDistance(stream.value?.distanceToDrop ?? 0)}'
+                    : null;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.local_shipping_outlined, size: 16, color: Colors.grey),
-                    const SizedBox(width: 6),
-                    Text(b.suggestedVehicleType.value.replaceAll('_', ' '), style: textTheme.bodySmall),
+                    // Main ETA status
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.schedule, size: 20, color: colorScheme.primary),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              label,
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios, size: 16, color: colorScheme.primary),
+                        ],
+                      ),
+                    ),
+                    // Hint text below if available
+                    if (hint != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          hint,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
                   ],
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.payments_outlined, size: 16, color: Colors.grey),
-                    const SizedBox(width: 6),
-                    Text('₹${(b.finalCost ?? b.estimatedCost).toStringAsFixed(2)}', style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );

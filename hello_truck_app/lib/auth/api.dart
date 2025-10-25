@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:hello_truck_app/utils/logger.dart';
 import 'package:http_cache_hive_store/http_cache_hive_store.dart';
 import 'package:path_provider/path_provider.dart';
@@ -277,6 +278,7 @@ class API {
         await Future.wait([
           storage.delete(key: 'refreshToken'),
           storage.delete(key: 'accessToken'),
+          FirebaseMessaging.instance.deleteToken(),
         ]);
         ref.read(authClientProvider).emitSignOut();
       }
