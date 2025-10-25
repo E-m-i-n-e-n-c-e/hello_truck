@@ -50,21 +50,22 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCBVE5QsZ7IAN5GlElnpJazFenBJPcp6-w',
-    appId: '1:691159300275:android:3b88e9aa7dadf5e36d58c6',
-    messagingSenderId: '691159300275',
-    projectId: 'elite-protocol-467015-c0',
-    storageBucket: 'elite-protocol-467015-c0.firebasestorage.app',
+    apiKey: 'AIzaSyDYoKlxxs974kEFQGCDgctMXb4HBMHYE_c',
+    appId: '1:893334775463:android:76c40739020afb69f89d82',
+    messagingSenderId: '893334775463',
+    projectId: 'civicsense-473112',
+    storageBucket: 'civicsense-473112.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAiYIdkUkPLYqMeBUvuNGiYKJ6VepIxOCo',
-    appId: '1:691159300275:ios:711aeda320f275056d58c6',
-    messagingSenderId: '691159300275',
-    projectId: 'elite-protocol-467015-c0',
-    storageBucket: 'elite-protocol-467015-c0.firebasestorage.app',
-    androidClientId: '691159300275-1urjml7fs3lvsks1rpocbhmrtuf40c9u.apps.googleusercontent.com',
-    iosClientId: '691159300275-6ekgfjoamobldtttb5qun858e3gk8828.apps.googleusercontent.com',
+    apiKey: 'AIzaSyC_yaaZ3LIZAcIkHDWS7Y4fmR_U5B8EZBs',
+    appId: '1:893334775463:ios:c77575e608c43887f89d82',
+    messagingSenderId: '893334775463',
+    projectId: 'civicsense-473112',
+    storageBucket: 'civicsense-473112.firebasestorage.app',
+    androidClientId: '893334775463-e5ufve4imaf126vlkblaphefollsq8p8.apps.googleusercontent.com',
+    iosClientId: '893334775463-hfr4dl2qjd29ef5li5f3k54cc6l8jbc3.apps.googleusercontent.com',
     iosBundleId: 'com.example.helloTruckApp',
   );
+
 }
