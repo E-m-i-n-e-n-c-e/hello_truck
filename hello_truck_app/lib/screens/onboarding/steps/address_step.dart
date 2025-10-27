@@ -323,12 +323,12 @@ class _AddressStepState extends ConsumerState<AddressStep> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
                 color: widget.controller.isAddressSkipped
-                    ? const Color(0xFF22AAAE).withValues(alpha: 0.1)
+                    ? colorScheme.primary.withValues(alpha: 0.1)
                     : Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: widget.controller.isAddressSkipped
-                      ? const Color(0xFF22AAAE).withValues(alpha: 0.5)
+                      ? colorScheme.primary.withValues(alpha: 0.5)
                       : Colors.grey.shade300,
                   width: 1,
                 ),
@@ -359,11 +359,11 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       ),
                       side: BorderSide(
                         color: widget.controller.isAddressSkipped
-                            ? const Color(0xFF22AAAE)
+                            ? colorScheme.primary
                             : Colors.grey.shade400,
                         width: 1.5,
                       ),
-                      activeColor: const Color(0xFF22AAAE),
+                      activeColor: colorScheme.primary,
                     ),
                   ),
                 ],

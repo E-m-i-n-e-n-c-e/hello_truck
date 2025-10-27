@@ -67,7 +67,7 @@ class MyApp extends ConsumerWidget {
 
     if (isLoading || !isAnimationComplete) {
       return AnimatedSplashScreen(
-        backgroundColor: teal,
+        backgroundColor: MediaQuery.of(context).platformBrightness == Brightness.dark ? teal : lightTeal,
       );
     }
 

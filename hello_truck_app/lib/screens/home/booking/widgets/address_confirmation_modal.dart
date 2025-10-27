@@ -287,7 +287,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
                           child: ElevatedButton(
                             onPressed: _isSaving ? null : _saveAddress,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF22AAAE),
+                              backgroundColor: colorScheme.primary,
                               foregroundColor: colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(

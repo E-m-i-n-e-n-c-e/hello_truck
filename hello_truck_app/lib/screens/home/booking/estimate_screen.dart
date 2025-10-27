@@ -123,7 +123,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                                       BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
                                     ],
                                   ),
-                                  child: const Icon(Icons.recommend, color: Color(0xFF22AAAE)),
+                                  child: Icon(Icons.recommend, color: colorScheme.primary),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(

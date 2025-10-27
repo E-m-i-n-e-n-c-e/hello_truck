@@ -432,7 +432,7 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF22AAAE), width: 1.5),
+              borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),

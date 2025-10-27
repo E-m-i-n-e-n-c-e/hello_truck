@@ -234,7 +234,7 @@ class _AddressSelectionScreenState
             Polyline(
               polylineId: const PolylineId('route'),
               points: polylineCoordinates,
-              color: const Color(0xFF22AAAE),
+              color: Theme.of(context).colorScheme.primary,
               width: 5,
               patterns: [PatternItem.dash(20), PatternItem.gap(10)],
             ),

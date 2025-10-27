@@ -947,7 +947,6 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
           maxLines: maxLines,
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            filled: true,
             hintText: hint,
             hintStyle: textTheme.bodyMedium?.copyWith(
               color: Colors.grey.shade500,

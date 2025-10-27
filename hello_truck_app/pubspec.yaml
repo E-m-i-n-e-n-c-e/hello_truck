@@ -133,7 +133,7 @@ flutter_launcher_icons:
 
 
 flutter_native_splash:
-  color: "#22AAAE"
+  color: "#009999"
   image: assets/images/invisible.png
   branding: assets/images/invisible.png
   color_dark: "#007f82"
@@ -142,6 +142,6 @@ flutter_native_splash:
 
   android_12:
     image: assets/images/invisible.png
-    icon_background_color: "#22AAAE"
+    icon_background_color: "#008080"
     image_dark: assets/images/invisible.png
     icon_background_color_dark: "#007f82"
