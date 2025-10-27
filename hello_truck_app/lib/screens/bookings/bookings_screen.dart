@@ -185,7 +185,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
           color: colorScheme.surfaceBright,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
           ],
         ),
         child: Padding(

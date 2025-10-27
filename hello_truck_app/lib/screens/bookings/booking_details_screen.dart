@@ -228,7 +228,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
             decoration: BoxDecoration(
               color: colorScheme.primary,
               boxShadow: [
-                BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3)),
+                BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3)),
               ],
             ),
             child: SafeArea(
@@ -382,7 +382,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                          decoration: BoxDecoration(
                            color: colorScheme.surface,
                            borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                           boxShadow: [BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.08), blurRadius: 12, offset: Offset(0, -2))],
+                           boxShadow: [BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.15), blurRadius: 12, offset: Offset(0, -2))],
                          ),
                          child: ListView(
                            controller: controller,
@@ -450,7 +450,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
     final colorScheme = Theme.of(context).colorScheme;
     final d = _booking.assignedDriver;
     return Container(
-      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -477,7 +477,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
