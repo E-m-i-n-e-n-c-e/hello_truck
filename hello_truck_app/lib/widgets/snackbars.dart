@@ -15,9 +15,10 @@ class SnackBars {
   }) {
     // Hide any existing snackbar before showing new one
     _hideCurrentSnackBar(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     final snackBar = SnackBar(
-      content: Text(message, style: const TextStyle(color: Colors.white)),
+      content: Text(message, style: TextStyle(color: colorScheme.surfaceBright)),
       backgroundColor: backgroundColor,
       duration: duration,
       behavior: SnackBarBehavior.floating,
@@ -28,7 +29,7 @@ class SnackBars {
           action ??
           SnackBarAction(
             label: 'Dismiss',
-            textColor: Colors.white,
+            textColor: colorScheme.surfaceBright,
             onPressed: () => _hideCurrentSnackBar(context),
           ),
     );
@@ -78,13 +79,14 @@ class SnackBars {
     String message,
     VoidCallback onRetry,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     _showSnackBar(
       context,
       message: message,
       backgroundColor: Colors.red.shade900,
       action: SnackBarAction(
         label: 'Retry',
-        textColor: Colors.white,
+        textColor: colorScheme.surfaceBright,
         onPressed: () {
           _hideCurrentSnackBar(context);
           onRetry();

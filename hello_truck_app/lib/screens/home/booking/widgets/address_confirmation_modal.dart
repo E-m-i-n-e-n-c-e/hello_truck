@@ -56,6 +56,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
 
   Widget _buildReactiveConfirmButton(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: Listenable.merge([
         _contactNameController,
@@ -68,8 +69,8 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
           child: ElevatedButton(
             onPressed: enabled ? _confirmAddress : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: enabled ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
-              foregroundColor: enabled ? Colors.white : Colors.grey.shade500,
+              backgroundColor: enabled ? colorScheme.primary : Colors.grey.shade200,
+              foregroundColor: enabled ? colorScheme.onPrimary : Colors.grey.shade500,
               padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -79,7 +80,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
             child: Text(
               'Confirm',
               style: textTheme.titleMedium?.copyWith(
-                color: enabled ? Colors.white : Colors.grey.shade500,
+                color: enabled ? colorScheme.onPrimary : Colors.grey.shade500,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -92,6 +93,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     // If in save mode, show the save location modal
     if (_isSaveMode) {
@@ -100,8 +102,8 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
 
     // Normal recipient details modal
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceBright,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -174,10 +176,11 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
 
   Widget _buildSaveMode(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceBright,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -285,7 +288,7 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
                             onPressed: _isSaving ? null : _saveAddress,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF22AAAE),
-                              foregroundColor: Colors.white,
+                              foregroundColor: colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -293,18 +296,18 @@ class _AddressConfirmationModalState extends ConsumerState<AddressConfirmationMo
                               elevation: 0,
                             ),
                             child: _isSaving
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                                     ),
                                   )
                                 : Text(
                                     'Save',
                                     style: textTheme.titleMedium?.copyWith(
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),

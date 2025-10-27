@@ -220,7 +220,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: Column(
         children: [
           // Top overlay banner acting as app bar + status
@@ -228,7 +228,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
             decoration: BoxDecoration(
               color: colorScheme.primary,
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3)),
+                BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3)),
               ],
             ),
             child: SafeArea(
@@ -240,7 +240,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded, color: colorScheme.onPrimary),
                       ),
                       const SizedBox(width: 2),
                       Expanded(
@@ -248,7 +248,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                           title,
                           textAlign: TextAlign.center,
                           style: textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -260,13 +260,13 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: colorScheme.surface.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(color: colorScheme.surface.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       etaLabel.isEmpty ? 'On the way' : etaLabel,
-                      style: textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                      style: textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.w700),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -304,7 +304,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                    child: Material(
                      elevation: 4,
                      borderRadius: BorderRadius.circular(12),
-                     color: Colors.white,
+                     color: colorScheme.surface,
                      child: InkWell(
                        borderRadius: BorderRadius.circular(12),
                        onTap: () => _recenterMap(_booking, navStream.value, isPickupPhase),
@@ -325,7 +325,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                    child: Material(
                      elevation: 4,
                      borderRadius: BorderRadius.circular(12),
-                     color: Colors.white,
+                     color: colorScheme.surface,
                      child: Column(
                        mainAxisSize: MainAxisSize.min,
                        children: [
@@ -379,10 +379,10 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                      maxChildSize: 1,
                      builder: (context, controller) {
                        return Container(
-                         decoration: const BoxDecoration(
-                           color: Colors.white,
+                         decoration: BoxDecoration(
+                           color: colorScheme.surface,
                            borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                           boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, -2))],
+                           boxShadow: [BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.08), blurRadius: 12, offset: Offset(0, -2))],
                          ),
                          child: ListView(
                            controller: controller,
@@ -426,7 +426,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Payment of ₹${_booking.finalCost?.toStringAsFixed(2) ?? _booking.estimatedCost.toStringAsFixed(2)} pending', style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 2),
-              Text('Tap Pay now to complete payment', style: textTheme.bodySmall?.copyWith(color: Colors.black.withValues(alpha: 0.6))),
+              Text('Tap Pay now to complete payment', style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
             ]),
           ),
           const SizedBox(width: 8),
@@ -437,7 +437,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                 if (context.mounted) SnackBars.error(context, 'Could not open payment link');
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onPrimary, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             child: const Text('Pay now'),
           ),
         ],
@@ -447,9 +447,10 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
 
   Widget _driverCard(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final d = _booking.assignedDriver;
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -476,12 +477,12 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Order details', style: textTheme.titleLarge?.copyWith(color: Colors.black, fontWeight: FontWeight.w500)),
+            Text('Order details', style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
           ]),
           const SizedBox(height: 16),
 

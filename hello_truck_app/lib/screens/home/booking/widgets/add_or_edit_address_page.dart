@@ -187,12 +187,13 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final isEdit = widget.mode == AddOrEditAddressMode.edit;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surfaceBright,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surfaceBright,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
@@ -339,8 +340,8 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF22AAAE),
-                      foregroundColor: Colors.white,
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -348,18 +349,18 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
                       elevation: 0,
                     ),
                     child: _isSaving
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                             ),
                           )
                         : Text(
                             isEdit ? 'Update Address' : 'Save Address',
                             style: textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -425,7 +426,6 @@ class _AddOrEditAddressPageState extends ConsumerState<AddOrEditAddressPage> {
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             filled: true,
-            fillColor: Colors.white,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),

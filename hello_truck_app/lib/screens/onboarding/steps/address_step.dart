@@ -217,7 +217,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       child: Material(
                         elevation: 4,
                         borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         child: InkWell(
                           onTap: _showAddressSearchModal,
                           borderRadius: BorderRadius.circular(12),
@@ -238,7 +238,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       child: Material(
                         elevation: 4,
                         borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () async {
@@ -261,7 +261,7 @@ class _AddressStepState extends ConsumerState<AddressStep> {
                       child: Material(
                         elevation: 4,
                         borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [

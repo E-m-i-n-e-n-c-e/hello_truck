@@ -59,7 +59,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         isScrollControlled: true,
         useSafeArea: true,
         enableDrag: false,
-        backgroundColor: Colors.white,
         builder: (context) => OtpVerificationPage(phoneNumber: phoneNumber),
       );
     } catch (e) {
@@ -87,7 +86,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       child: GestureDetector(
         onTap: () => _phoneFocusNode.unfocus(),
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colorScheme.surface,
           body: Stack(
             children: [
               _buildMainContent(textTheme, colorScheme, api),
@@ -237,7 +236,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Widget _buildSendOtpButton(TextTheme textTheme, ColorScheme colorScheme, API? api) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 40.0),
+      padding: const EdgeInsets.only(bottom: 20.0),
       child: ValueListenableBuilder<bool>(
         valueListenable: _loadingState,
         builder: (context, isLoading, child) {
@@ -245,7 +244,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             onPressed: isLoading ? null : () => _sendOtp(api!),
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.secondary,
-              foregroundColor: Colors.white,
+              foregroundColor: colorScheme.onSecondary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -256,7 +255,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             child: Text(
               'Send OTP',
               style: textTheme.titleMedium?.copyWith(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),

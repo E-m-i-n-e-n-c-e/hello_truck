@@ -182,10 +182,10 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceBright,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(color: colorScheme.onSurface.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
           ],
         ),
         child: Padding(
@@ -204,7 +204,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
                         'Booking #${b.bookingNumber.toString().padLeft(6, '0')}',
                         style: textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),

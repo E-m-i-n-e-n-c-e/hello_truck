@@ -102,7 +102,7 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with Sing
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -131,9 +131,6 @@ class _AddressSearchPageState extends ConsumerState<AddressSearchPage> with Sing
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: colorScheme.outline.withValues(alpha: 0.3),
-              ),
             ),
             child: TextField(
               controller: _searchController,

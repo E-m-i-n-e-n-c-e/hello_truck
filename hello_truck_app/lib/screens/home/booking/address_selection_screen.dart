@@ -65,7 +65,6 @@ class _AddressSelectionScreenState
       isScrollControlled: true,
       useSafeArea: true,
       enableDrag: false,
-      backgroundColor: Colors.white,
       builder: (context) => AddressSearchPage(
         isPickup: isPickup,
         onAddressSelected: (address) {
@@ -322,7 +321,7 @@ class _AddressSelectionScreenState
     final currentPositionAsync = ref.watch(currentPositionStreamProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -384,7 +383,7 @@ class _AddressSelectionScreenState
                                  // Pickup Location Card
                                  Container(
                                    decoration: BoxDecoration(
-                                     color: Colors.white,
+                                     color: colorScheme.surfaceBright,
                                      borderRadius: BorderRadius.circular(12),
                                      boxShadow: [
                                        BoxShadow(
@@ -490,7 +489,7 @@ class _AddressSelectionScreenState
                                  // Drop Location Card
                                  Container(
                                    decoration: BoxDecoration(
-                                     color: Colors.white,
+                                     color: colorScheme.surfaceBright,
                                      borderRadius: BorderRadius.circular(12),
                                      boxShadow: [
                                        BoxShadow(
@@ -605,7 +604,7 @@ class _AddressSelectionScreenState
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: colorScheme.surface,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -645,7 +644,7 @@ class _AddressSelectionScreenState
                             child: Material(
                               elevation: 4,
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white,
+                              color: colorScheme.surface,
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(12),
                                 onTap: _centerMapToMarkers,
@@ -670,7 +669,7 @@ class _AddressSelectionScreenState
                             child: Material(
                               elevation: 4,
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white,
+                              color: colorScheme.surface,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -745,7 +744,7 @@ class _AddressSelectionScreenState
                       _pickupAddress != null && _dropAddress != null
                       ? colorScheme.primary
                       : colorScheme.onSurface.withValues(alpha: 0.3),
-                  foregroundColor: Colors.white,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -757,7 +756,7 @@ class _AddressSelectionScreenState
                 child: Text(
                   'Continue',
                   style: textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

@@ -13,7 +13,7 @@ class HomeScreen extends ConsumerWidget {
     final api = ref.watch(apiProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -68,10 +68,10 @@ class HomeScreen extends ConsumerWidget {
                               color: colorScheme.primary,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.local_shipping,
                               size: 40,
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -130,7 +130,7 @@ class HomeScreen extends ConsumerWidget {
                                       Text(
                                         'Book Parcel Transportation',
                                         style: textTheme.titleLarge?.copyWith(
-                                          color: Colors.white,
+                                          color: colorScheme.onPrimary,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -138,15 +138,15 @@ class HomeScreen extends ConsumerWidget {
                                       Text(
                                         'Quick & easy booking process',
                                         style: textTheme.bodyMedium?.copyWith(
-                                          color: Colors.white.withValues(alpha: 0.9),
+                                          color: colorScheme.onPrimary.withValues(alpha: 0.9),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const Icon(
+                                Icon(
                                   Icons.arrow_forward,
-                                  color: Colors.white,
+                                  color: colorScheme.onPrimary,
                                   size: 24,
                                 ),
                               ],
@@ -212,7 +212,7 @@ class HomeScreen extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: colorScheme.surfaceDim,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -299,11 +299,12 @@ class HomeScreen extends ConsumerWidget {
     required Color color,
   }) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.grey.shade200,

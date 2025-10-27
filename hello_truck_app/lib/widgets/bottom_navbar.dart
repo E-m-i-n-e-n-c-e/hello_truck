@@ -18,7 +18,16 @@ class CustomBottomNavigationBar extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 350),
         // Shut up i want grey
-        color: Colors.grey.shade200,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

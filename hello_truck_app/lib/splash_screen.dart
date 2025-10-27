@@ -53,6 +53,7 @@ class AnimatedSplashScreenState extends ConsumerState<AnimatedSplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
@@ -67,12 +68,12 @@ class AnimatedSplashScreenState extends ConsumerState<AnimatedSplashScreen>
                   // Animated Hello Truck text
                   Transform.scale(
                     scale: 1.1,
-                    child: const Text(
+                    child: Text(
                       "Hello Truck",
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: colorScheme.surfaceBright,
                         letterSpacing: 2.0,
                       ),
                     ),
@@ -84,15 +85,15 @@ class AnimatedSplashScreenState extends ConsumerState<AnimatedSplashScreen>
                       'Your Logistics Partner',
                       style: TextStyle(
                         fontSize: 18,
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: colorScheme.surfaceBright.withValues(alpha: 0.8),
                         letterSpacing: 1.0,
                       ),
                     ),
                   ),
                   const SizedBox(height: 40),
                   if(ref.watch(isAnimationComplete))
-                    const CircularProgressIndicator(
-                      color: Colors.white,
+                    CircularProgressIndicator(
+                      color: colorScheme.surfaceBright,
                     )
                 ],
               );

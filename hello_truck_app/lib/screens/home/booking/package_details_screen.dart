@@ -89,9 +89,9 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     return MediaQuery(
       data: media.copyWith(textScaler: TextScaler.linear(media.textScaler.scale(0.94).clamp(0.9, 1.0))),
       child: Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surfaceBright,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surfaceBright,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
@@ -334,12 +334,12 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: _showDimensions ? Colors.white : Colors.transparent,
+                                    color: _showDimensions ? colorScheme.surfaceBright : Colors.transparent,
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: _showDimensions
                                         ? [
                                             BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.05),
+                                              color: colorScheme.onSurface.withValues(alpha: 0.05),
                                               blurRadius: 4,
                                               offset: const Offset(0, 2),
                                             ),
@@ -367,7 +367,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: !_showDimensions ? Colors.white : Colors.transparent,
+                                    color: !_showDimensions ? colorScheme.surfaceBright : Colors.transparent,
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: !_showDimensions
                                         ? [
@@ -676,11 +676,12 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
 
   Widget _buildSectionCard({required String title, required Widget child}) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceBright,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -947,7 +948,6 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             filled: true,
-            fillColor: Colors.white,
             hintText: hint,
             hintStyle: textTheme.bodyMedium?.copyWith(
               color: Colors.grey.shade500,
@@ -996,7 +996,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             onPressed: enabled ? _proceedToEstimate : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: enabled ? colorScheme.primary : Colors.grey.shade200,
-              foregroundColor: enabled ? Colors.white : Colors.grey.shade500,
+              foregroundColor: enabled ? colorScheme.onPrimary : Colors.grey.shade500,
               padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1006,7 +1006,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             child: Text(
               'Proceed to Estimate',
               style: textTheme.titleMedium?.copyWith(
-                color: enabled ? Colors.white : Colors.grey.shade500,
+                color: enabled ? colorScheme.onPrimary : Colors.grey.shade500,
                 fontWeight: FontWeight.bold,
               ),
             ),

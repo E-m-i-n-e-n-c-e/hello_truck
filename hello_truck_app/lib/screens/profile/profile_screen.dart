@@ -27,7 +27,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final gstDetails = ref.watch(gstDetailsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
           'Profile',
@@ -36,14 +36,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showGstDetailsDialog(),
         backgroundColor: colorScheme.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: colorScheme.onPrimary),
       ),
       body: customer.when(
         data: (customer) {
@@ -67,7 +67,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   '${customer.lastName.isNotEmpty ? customer.lastName[0] : ''}')
                               .toUpperCase(),
                           style: textTheme.headlineLarge?.copyWith(
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -159,12 +159,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 gstDetails.when(
                   data: (details) {
-                                         if (details.isEmpty) {
+                    if (details.isEmpty) {
                        return Container(
                          width: double.infinity,
                          padding: const EdgeInsets.all(32),
                          decoration: BoxDecoration(
-                           color: Colors.grey.shade50,
+                           color: colorScheme.surfaceDim,
                            borderRadius: BorderRadius.circular(12),
                          ),
                          child: Column(
@@ -498,7 +498,7 @@ class _EditableInfoTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.grey.shade200,
@@ -579,11 +579,12 @@ class _GstDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.grey.shade200,

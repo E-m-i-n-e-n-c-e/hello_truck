@@ -344,7 +344,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     final currentPositionAsync = ref.watch(currentPositionStreamProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: LocationPermissionHandler(
         onPermissionGranted: _initializeLocation,
         child: Stack(
@@ -390,7 +390,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
               right: 16,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -472,7 +472,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                 child: Material(
                                   elevation: 4,
                                   borderRadius: BorderRadius.circular(12),
-                                  color: Colors.white,
+                                  color: colorScheme.surface,
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(12),
                                     onTap: _recenterMap,
@@ -493,7 +493,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                 child: Material(
                                   elevation: 4,
                                   borderRadius: BorderRadius.circular(12),
-                                  color: Colors.white,
+                                  color: colorScheme.surface,
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -539,8 +539,8 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
               left: 0,
               right: 0,
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceBright,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
@@ -655,7 +655,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                     _isWithinConstraintRadius(_selectedLocation!)
                                 ? colorScheme.primary
                                 : colorScheme.onSurface.withValues(alpha: 0.3),
-                            foregroundColor: Colors.white,
+                            foregroundColor: colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -663,13 +663,13 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                             elevation: 2,
                           ),
                           child: _isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
+                                      colorScheme.onPrimary,
                                     ),
                                   ),
                                 )
@@ -678,7 +678,7 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
                                       ? 'Confirm Location'
                                       : 'Confirm ${widget.isPickup ? 'Pickup' : 'Drop'} Location',
                                   style: textTheme.titleMedium?.copyWith(
-                                    color: Colors.white,
+                                    color: colorScheme.onPrimary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),

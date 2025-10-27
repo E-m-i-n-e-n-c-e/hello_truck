@@ -39,16 +39,24 @@ class MyApp extends ConsumerWidget {
     // Remove splash screen once the app is built
     FlutterNativeSplash.remove();
 
+    final teal = HSLColor.fromAHSL(1.0, 180, 1.0, 0.25).toColor(); // 0, 128, 128 teal
+    final lightTeal = HSLColor.fromAHSL(1.0, 180, 1.0, 0.30).toColor(); // 0, 153, 153 light teal
+    const offWhite = Color.fromRGBO(253, 253, 253, 1);
+    const dimWhite = Color.fromRGBO(248, 248, 248, 1);
+    const brightWhite = Color.fromRGBO(254, 254, 254, 1);
+
     // Professional color scheme based on the teal logo
     final colorScheme = ColorScheme(
       brightness: Brightness.light,
-      primary: const Color(0xFF22AAAE), // Teal from logo
-      onPrimary: Colors.white,
-      secondary: const Color(0xFF007f82), // Darker teal for accents
-      onSecondary: Colors.white,
+      primary: lightTeal,
+      onPrimary: brightWhite,
+      secondary: teal,
+      onSecondary: brightWhite,
       error: const Color(0xFFE53935),
-      onError: Colors.white,
-      surface: Colors.white,
+      onError: brightWhite,
+      surface: offWhite,
+      surfaceDim: dimWhite,
+      surfaceBright: brightWhite,
       onSurface: const Color(0xFF212121),
     );
 
@@ -59,9 +67,7 @@ class MyApp extends ConsumerWidget {
 
     if (isLoading || !isAnimationComplete) {
       return AnimatedSplashScreen(
-        backgroundColor: MediaQuery.of(context).platformBrightness == Brightness.dark
-            ? const Color(0xFF007F82)
-            : const Color(0xFF22AAAE),
+        backgroundColor: teal,
       );
     }
 
@@ -69,7 +75,6 @@ class MyApp extends ConsumerWidget {
       title: 'Hello Truck',
       theme: ThemeData(
         colorScheme: colorScheme,
-        useMaterial3: true,
         appBarTheme: AppBarTheme(
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
@@ -100,6 +105,9 @@ class MyApp extends ConsumerWidget {
             borderSide: BorderSide(color: colorScheme.primary, width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: colorScheme.surfaceDim,
         ),
       ),
       themeMode: ThemeMode.light,

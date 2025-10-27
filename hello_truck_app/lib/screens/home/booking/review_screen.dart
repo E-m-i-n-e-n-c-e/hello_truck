@@ -93,7 +93,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surfaceBright,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -165,7 +165,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surfaceBright,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -216,7 +216,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surfaceBright,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -307,7 +307,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surfaceBright,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -397,7 +397,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surfaceBright,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -429,7 +429,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       onPressed: _isBooking || _selectedOption == null ? null : _confirmBooking,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colorScheme.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -437,18 +437,18 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         elevation: 8,
                       ),
                       child: _isBooking
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                               ),
                             )
                           : Text(
                               'Confirm Booking',
                               style: textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
+                                color: colorScheme.onPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -606,7 +606,6 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       enableDrag: false,
-      backgroundColor: Colors.white,
       builder: (context) => AddressSearchPage(
         isPickup: isPickup,
         onAddressSelected: (address) {

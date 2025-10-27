@@ -87,9 +87,9 @@ class EmailStep extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.check_rounded,
-                        color: Colors.white,
+                        color: colorScheme.onSecondary,
                         size: 28,
                       ),
                     ),

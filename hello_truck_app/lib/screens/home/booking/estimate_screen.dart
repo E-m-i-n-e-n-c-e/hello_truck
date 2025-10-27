@@ -42,9 +42,9 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
     return MediaQuery(
       data: media.copyWith(textScaler: TextScaler.linear(media.textScaler.scale(0.95).clamp(0.9, 1.0))),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surfaceBright,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: colorScheme.surfaceBright,
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
@@ -117,7 +117,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: colorScheme.surfaceBright,
                                     borderRadius: BorderRadius.circular(12),
                                     boxShadow: [
                                       BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
@@ -160,7 +160,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colorScheme.surfaceBright,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -266,7 +266,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                                   ? Icon(
                                       Icons.check,
                                       size: 16,
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                     )
                                   : null,
                               ),
@@ -299,7 +299,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                                 : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: colorScheme.primary,
-                              foregroundColor: Colors.white,
+                              foregroundColor: colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -314,7 +314,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                                 Text(
                                   'Review Order',
                                   style: textTheme.titleMedium?.copyWith(
-                                    color: Colors.white,
+                                    color: colorScheme.onPrimary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
