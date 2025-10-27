@@ -125,23 +125,27 @@ flutter_launcher_icons:
   min_sdk_android: 21
 
   adaptive_icon_foreground: "assets/images/hello_truck.png"
-  adaptive_icon_background: "assets/images/logo_bg.png"
+  adaptive_icon_background: "#009999"
 
   # Fallback icon for iOS and older Android versions
   image_path_ios: "assets/images/logo_icon.png"
   image_path_android: "assets/images/logo_icon.png"
+
+# Run flutter pub run flutter_launcher_icons:main
 
 
 flutter_native_splash:
   color: "#009999"
   image: assets/images/invisible.png
   branding: assets/images/invisible.png
-  color_dark: "#007f82"
+  color_dark: "#008080"
   image_dark: assets/images/invisible.png
   branding_dark: assets/images/invisible.png
 
   android_12:
     image: assets/images/invisible.png
-    icon_background_color: "#008080"
+    icon_background_color: "#009999"
     image_dark: assets/images/invisible.png
-    icon_background_color_dark: "#007f82"
+    icon_background_color_dark: "#008080"
+
+# Run `flutter pub run flutter_native_splash:create`
