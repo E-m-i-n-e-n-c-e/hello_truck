@@ -20,6 +20,22 @@ import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
+double calculateBearing(LatLng from, LatLng to) {
+  final lat1 = from.latitude * pi / 180.0;
+  final lon1 = from.longitude * pi / 180.0;
+  final lat2 = to.latitude * pi / 180.0;
+  final lon2 = to.longitude * pi / 180.0;
+
+  final dLon = lon2 - lon1;
+
+  final y = sin(dLon) * cos(lat2);
+  final x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+  var brng = atan2(y, x);
+
+  brng = brng * 180.0 / pi;
+  return (brng + 360.0) % 360.0;
+}
+
 const double _initialSheetSize = 0.4;
 const double _minSheetSize = 0.25;
 
@@ -36,7 +52,8 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
-  BitmapDescriptor? _driverIcon;
+  BitmapDescriptor? _truckIcon;
+  BitmapDescriptor? _truckIconFlipped;
   late Booking _booking;
   bool _handledFirstUpdate = false;
   double _sheetSize = _initialSheetSize; // Track current sheet size
@@ -46,7 +63,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
     super.initState();
     _booking = widget.initialBooking;
     _setupStaticMarkers(_booking);
-    _loadDriverIcon();
+    _loadTruckIcons();
   }
 
   @override
@@ -87,33 +104,54 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
     );
   }
 
-  Future<void> _loadDriverIcon() async {
-    final icon = await BitmapDescriptor.asset(
-      const ImageConfiguration(size: Size(48, 48)),
+  Future<void> _loadTruckIcons() async {
+    final baseIcon = await BitmapDescriptor.asset(
+      const ImageConfiguration(size: Size(36, 36)),
       'assets/images/truck_marker.png',
+    );
+    final flippedIcon = await BitmapDescriptor.asset(
+      const ImageConfiguration(size: Size(36, 36)),
+      'assets/images/truck_marker_flipped.png',
     );
     if (mounted) {
       setState(() {
-        _driverIcon = icon;
+        _truckIcon = baseIcon;
+        _truckIconFlipped = flippedIcon;
       });
     }
   }
 
   void _updateRouteAndDriver(DriverNavigationUpdate? update) async {
     if(update == null || update.isStale || !isActive(_booking.status) ) return;
+    final points = decodePolyline(update.routePolyline);
+
     // driver marker
     if (update.location != null) {
       final latLng = LatLng(update.location!.latitude, update.location!.longitude);
-      if(_driverIcon == null) {
-        await _loadDriverIcon();
+      if(_truckIcon == null || _truckIconFlipped == null) {
+        await _loadTruckIcons();
       }
+      final nextPoint = points.length > 1 ? points[1] : null;
+      final rotation = nextPoint != null
+          ? ((calculateBearing(latLng, nextPoint) - 90) % 360)
+          : 0.0;
+      final shouldFlip = rotation > 90 && rotation < 270;
+      final selectedIcon = shouldFlip ? _truckIconFlipped! : _truckIcon!;
+      final adjustedRotation = shouldFlip ? (rotation + 180) % 360 : rotation;
       _markers.removeWhere((m) => m.markerId.value == 'driver');
-      _markers.add(Marker(markerId: const MarkerId('driver'), position: latLng, icon: _driverIcon!));
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('driver'),
+          position: latLng,
+          icon: selectedIcon,
+          rotation: adjustedRotation,
+          anchor: const Offset(0.5, 0.5),
+          flat: true,
+        ),
+      );
     }
+
     if(!mounted) return;
-    // polyline
-    final points = decodePolyline(update.routePolyline);
-    // Only update polyline if the points are not empty and the update is not stale
     if(points.isNotEmpty) {
     _polylines
       ..clear()
