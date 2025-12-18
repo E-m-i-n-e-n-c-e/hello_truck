@@ -13,11 +13,13 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 class PackageDetailsScreen extends ConsumerStatefulWidget {
   final BookingAddress pickupAddress;
   final BookingAddress dropAddress;
+  final bool isCommercial;
 
   const PackageDetailsScreen({
     super.key,
     required this.pickupAddress,
     required this.dropAddress,
+    required this.isCommercial,
   });
 
   @override
@@ -67,6 +69,13 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   bool _showDimensions = true; // Persist tab selection
 
   @override
+  void initState() {
+    super.initState();
+    _isCommercialUse = widget.isCommercial;
+    _isAgriculturalProduct = true;
+  }
+
+  @override
   void dispose() {
     _productNameController.dispose();
     _weightController.dispose();
@@ -86,135 +95,104 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     final media = MediaQuery.of(context);
-    return MediaQuery(
-      data: media.copyWith(textScaler: TextScaler.linear(media.textScaler.scale(0.94).clamp(0.9, 1.0))),
-      child: Scaffold(
+    return Scaffold(
+    backgroundColor: colorScheme.surfaceBright,
+    appBar: AppBar(
       backgroundColor: colorScheme.surfaceBright,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surfaceBright,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Package Details',
-          style: textTheme.titleLarge?.copyWith(
-            color: Colors.black.withValues(alpha: 0.85),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        centerTitle: false,
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
+        onPressed: () => Navigator.pop(context),
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Package Type Section
+      title: Text(
+        'Package Details',
+        style: textTheme.titleLarge?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      centerTitle: false,
+    ),
+    body: Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+          // Product Type Section - Only show for Commercial Use
+          if (widget.isCommercial) ...[
+            _buildSectionCard(
+              title: 'Select Product Type',
+              child: Column(
+                children: [
+                  CheckboxListTile(
+                    title: const Text('Agricultural Products'),
+                    value: _isAgriculturalProduct,
+                    onChanged: (value) {
+                      if (_isAgriculturalProduct) return;
+
+                      setState(() {
+                        _isNonAgriculturalProduct = false;
+                        _isAgriculturalProduct = true;
+                      });
+                    },
+                    activeColor: colorScheme.primary,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  CheckboxListTile(
+                    title: const Text('Non-Agricultural Products'),
+                    value: _isNonAgriculturalProduct,
+                    onChanged: (value) {
+                      if (_isNonAgriculturalProduct) return;
+
+                      setState(() {
+                        _isNonAgriculturalProduct = true;
+                        _isAgriculturalProduct = false;
+                      });
+                    },
+                    activeColor: colorScheme.primary,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+            // Personal Use OR (Commercial + Agricultural) - Show product name + weight fields
+            if (!_isCommercialUse || _isAgriculturalProduct) ...[
               _buildSectionCard(
-                title: 'Select Package Type',
+                title: 'Enter Product Details',
                 child: Column(
                   children: [
-                    RadioListTile<bool>(
-                      title: const Text('Personal Use'),
-                      value: false,
-                      groupValue: _isCommercialUse,
-                      onChanged: (value) {
-                        setState(() {
-                          _isCommercialUse = value!;
-                        });
-                      },
-                      activeColor: colorScheme.primary,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    RadioListTile<bool>(
-                      title: const Text('Commercial Use'),
-                      value: true,
-                      groupValue: _isCommercialUse,
-                      onChanged: (value) {
-                        setState(() {
-                          _isCommercialUse = value!;
-                        });
-                      },
-                      activeColor: colorScheme.primary,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Product Type Section
-              _buildSectionCard(
-                title: 'Select Product Type',
-                child: Column(
-                  children: [
-                    CheckboxListTile(
-                      title: const Text('Agricultural Products'),
-                      value: _isAgriculturalProduct,
-                      onChanged: (value) {
-                        setState(() {
-                          _isAgriculturalProduct = value!;
-                          if (value) {
-                            _isNonAgriculturalProduct = false;
-                          }
-                        });
-                      },
-                      activeColor: colorScheme.primary,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    CheckboxListTile(
-                      title: const Text('Non-Agricultural Products'),
-                      value: _isNonAgriculturalProduct,
-                      onChanged: (value) {
-                        setState(() {
-                          _isNonAgriculturalProduct = value!;
-                          if (value) {
-                            _isAgriculturalProduct = false;
-                          }
-                        });
-                      },
-                      activeColor: colorScheme.primary,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Agricultural Products Details
-              if (_isAgriculturalProduct) ...[
-                _buildSectionCard(
-                  title: 'Enter Product Details',
-                  child: Column(
-                    children: [
-                      _buildFormField(
-                        controller: _productNameController,
-                        label: 'Product Name',
-                        isRequired: true,
-                        validator: (value) {
+                    _buildFormField(
+                      controller: _productNameController,
+                      label: 'Product Name',
+                      isRequired: true,
+                      validator: (value) {
+                        // Only validate if this section is visible
+                        if (!_isCommercialUse || _isAgriculturalProduct) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Product name is required';
                           }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: _buildFormField(
-                              controller: _weightController,
-                              label: 'Approximate Weight',
-                              isRequired: true,
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: _buildFormField(
+                            controller: _weightController,
+                            label: 'Approximate Weight',
+                            isRequired: true,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              // Only validate if this section is visible
+                              if (!_isCommercialUse || _isAgriculturalProduct) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Weight is required';
                                 }
@@ -225,61 +203,64 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                 if (weight <= 0) {
                                   return 'Weight must be greater than 0';
                                 }
-                                return null;
-                              },
-                            ),
+                              }
+                              return null;
+                            },
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 16),
-                                DropdownButtonFormField<String>(
-                                  initialValue: _weightUnit,
-                                  decoration: InputDecoration(
-                                    labelText: 'Unit',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                initialValue: _weightUnit,
+                                decoration: InputDecoration(
+                                  labelText: 'Unit',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  items: ['kg', 'quintal'].map((unit) {
-                                    return DropdownMenuItem(
-                                      value: unit,
-                                      child: Text(unit),
-                                    );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _weightUnit = value!;
-                                    });
-                                  },
                                 ),
-                              ],
-                            ),
+                                items: ['kg', 'quintal'].map((unit) {
+                                  return DropdownMenuItem(
+                                    value: unit,
+                                    child: Text(unit),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _weightUnit = value!;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-              ],
+              ),
+              const SizedBox(height: 20),
+            ],
 
-              // Non-Agricultural Products Details
-              if (_isNonAgriculturalProduct) ...[
-                _buildSectionCard(
-                  title: 'Enter Product Details',
-                  child: Column(
-                    children: [
-                      // Weight Section
-                      const SizedBox(height: 12),
-                      _buildFormField(
-                        controller: _avgWeightController,
-                        label: 'Approximate Total Weight of Shipment (KG)',
-                        isRequired: true,
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
+            // Non-Agricultural Products Details
+            if (_isNonAgriculturalProduct) ...[
+              _buildSectionCard(
+                title: 'Enter Product Details',
+                child: Column(
+                  children: [
+                    // Weight Section
+                    const SizedBox(height: 12),
+                    _buildFormField(
+                      controller: _avgWeightController,
+                      label: 'Approximate Total Weight of Shipment (KG)',
+                      isRequired: true,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        // Only validate if non-agricultural is selected
+                        if (_isNonAgriculturalProduct && _isCommercialUse) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Approximate weight is required';
                           }
@@ -290,16 +271,19 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                           if (weight <= 0) {
                             return 'Weight must be greater than 0';
                           }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFormField(
-                        controller: _bundleWeightController,
-                        label: 'Weight of Each Bundle (KG)',
-                        isRequired: true,
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _bundleWeightController,
+                      label: 'Weight of Each Bundle (KG)',
+                      isRequired: true,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        // Only validate if non-agricultural is selected
+                        if (_isNonAgriculturalProduct) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Bundle weight is required';
                           }
@@ -310,368 +294,359 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                           if (weight <= 0) {
                             return 'Weight must be greater than 0';
                           }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Tab Switch for Dimensions or Description
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _showDimensions = true;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _showDimensions ? colorScheme.surfaceBright : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: _showDimensions
+                                      ? [
+                                          BoxShadow(
+                                            color: colorScheme.onSurface.withValues(alpha: 0.05),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Text(
+                                  'Dimensions',
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: _showDimensions ? colorScheme.primary : Colors.grey.shade600,
+                                    fontWeight: _showDimensions ? FontWeight.w600 : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _showDimensions = false;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: !_showDimensions ? colorScheme.surfaceBright : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: !_showDimensions
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.05),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Text(
+                                  'Description',
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: !_showDimensions ? colorScheme.primary : Colors.grey.shade600,
+                                    fontWeight: !_showDimensions ? FontWeight.w600 : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    if (_showDimensions) ...[
+                      Row(
+                      children: [
+                        Expanded(
+                          child: _buildFormField(
+                            controller: _lengthController,
+                            label: 'Length',
+                            isRequired: true,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              // Only validate if non-agricultural AND showing dimensions
+                              if (_isNonAgriculturalProduct && _showDimensions && _isCommercialUse) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Length is required';
+                                }
+                                final length = double.tryParse(value.trim());
+                                if (length == null) {
+                                  return 'Invalid length value';
+                                }
+                                if (length <= 0) {
+                                  return 'Length must be greater than 0';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildFormField(
+                            controller: _widthController,
+                            label: 'Width',
+                            isRequired: true,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              // Only validate if non-agricultural AND showing dimensions
+                              if (_isNonAgriculturalProduct && _showDimensions && _isCommercialUse) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Width is required';
+                                }
+                                final width = double.tryParse(value.trim());
+                                if (width == null) {
+                                  return 'Invalid width value';
+                                }
+                                if (width <= 0) {
+                                  return 'Width must be greater than 0';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildFormField(
+                            controller: _heightController,
+                            label: 'Height',
+                            isRequired: true,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              // Only validate if non-agricultural AND showing dimensions
+                              if (_isNonAgriculturalProduct && _showDimensions && _isCommercialUse) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Height is required';
+                                }
+                                final height = double.tryParse(value.trim());
+                                if (height == null) {
+                                  return 'Invalid height value';
+                                }
+                                if (height <= 0) {
+                                  return 'Height must be greater than 0';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Unit',
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: Colors.black.withValues(alpha: 0.68),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String>(
+                                initialValue: _dimensionUnit,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                ),
+                                items: ['cm', 'inches'].map((unit) {
+                                  return DropdownMenuItem(
+                                    value: unit,
+                                    child: Text(unit),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _dimensionUnit = value!;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildFormField(
+                            controller: _numberOfProductsController,
+                            label: 'Number of Products',
+                            isRequired: true,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              // Only validate if non-agricultural AND showing dimensions
+                              if (_isNonAgriculturalProduct && _showDimensions && _isCommercialUse) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Number of products is required';
+                                }
+                                final numberOfProducts = int.tryParse(value.trim());
+                                if (numberOfProducts == null) {
+                                  return 'Invalid integer value';
+                                }
+                                if (numberOfProducts <= 0) {
+                                  return 'Number of products must be greater than 0';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    ]
+                    else ...[
+                      _buildFormField(
+                        controller: _descriptionController,
+                        label: 'Package Description',
+                        isRequired: true,
+                        hint: 'Provide a detailed description of your package (at least 10 characters)',
+                        maxLines: 5,
+                        validator: (value) {
+                          // Only validate if non-agricultural AND showing description
+                          if (_isNonAgriculturalProduct && !_showDimensions && _isCommercialUse) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Package description is required';
+                            }
+                            if (value.trim().length < 10) {
+                              return 'Description must be at least 10 characters';
+                            }
+                          }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 24),
-
-                      // Tab Switch for Dimensions or Description
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _showDimensions = true;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _showDimensions ? colorScheme.surfaceBright : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: _showDimensions
-                                        ? [
-                                            BoxShadow(
-                                              color: colorScheme.onSurface.withValues(alpha: 0.05),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    'Dimensions',
-                                    textAlign: TextAlign.center,
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: _showDimensions ? colorScheme.primary : Colors.grey.shade600,
-                                      fontWeight: _showDimensions ? FontWeight.w600 : FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _showDimensions = false;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: !_showDimensions ? colorScheme.surfaceBright : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: !_showDimensions
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.05),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    'Description',
-                                    textAlign: TextAlign.center,
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: !_showDimensions ? colorScheme.primary : Colors.grey.shade600,
-                                      fontWeight: !_showDimensions ? FontWeight.w600 : FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      if (_showDimensions) ...[
-                        Row(
-                        children: [
-                          Expanded(
-                            child: _buildFormField(
-                              controller: _lengthController,
-                              label: 'Length',
-                              isRequired: true,
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (_showDimensions) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Length is required';
-                                  }
-                                  final length = double.tryParse(value.trim());
-                                  if (length == null) {
-                                    return 'Invalid length value';
-                                  }
-                                  if (length <= 0) {
-                                    return 'Length must be greater than 0';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildFormField(
-                              controller: _widthController,
-                              label: 'Width',
-                              isRequired: true,
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (_showDimensions) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Width is required';
-                                  }
-                                  final width = double.tryParse(value.trim());
-                                  if (width == null) {
-                                    return 'Invalid width value';
-                                  }
-                                  if (width <= 0) {
-                                    return 'Width must be greater than 0';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildFormField(
-                              controller: _heightController,
-                              label: 'Height',
-                              isRequired: true,
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (_showDimensions) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Height is required';
-                                  }
-                                  final height = double.tryParse(value.trim());
-                                  if (height == null) {
-                                    return 'Invalid height value';
-                                  }
-                                  if (height <= 0) {
-                                    return 'Height must be greater than 0';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Unit',
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: Colors.black.withValues(alpha: 0.68),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                DropdownButtonFormField<String>(
-                                  initialValue: _dimensionUnit,
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                                  ),
-                                  items: ['cm', 'inches'].map((unit) {
-                                    return DropdownMenuItem(
-                                      value: unit,
-                                      child: Text(unit),
-                                    );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _dimensionUnit = value!;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildFormField(
-                              controller: _numberOfProductsController,
-                              label: 'Number of Products',
-                              isRequired: true,
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (_showDimensions) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Number of products is required';
-                                  }
-                                  final numberOfProducts = int.tryParse(value.trim());
-                                  if (numberOfProducts == null) {
-                                    return 'Invalid integer value';
-                                  }
-                                  if (numberOfProducts <= 0) {
-                                    return 'Number of products must be greater than 0';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      ]
-                      else ...[
-                        _buildFormField(
-                          controller: _descriptionController,
-                          label: 'Package Description',
-                          isRequired: true,
-                          hint: 'Provide a detailed description of your package (at least 10 characters)',
-                          maxLines: 5,
-                          validator: (value) {
-                            if (!_showDimensions) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Package description is required';
-                              }
-                              if (value.trim().length < 10) {
-                                return 'Description must be at least 10 characters';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 16),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // Package Image Section (optional)
-              _buildSectionCard(
-                title: 'Package Image (Optional)',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Upload a photo of your package to help drivers identify it',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.68),
-                      ),
-                    ),
                     const SizedBox(height: 16),
-                    DocumentUploadCard(
-                      title: 'Package Image',
-                      subtitle: 'Add package photo (optional)',
-                      icon: Icons.camera_alt_rounded,
-                      selectedFile: _packageImage,
-                      uploadedUrl: _packageImageUrl,
-                      isUploading: _isUploadingPackageImage,
-                      onUpload: () => _handleDocumentUpload('packageImage'),
-                    ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // GST Bill Upload Section (for commercial use)
-              if (_isCommercialUse) ...[
-                DocumentUploadCard(
-                  title: 'GST Bill',
-                  subtitle: 'Upload your GST bill',
-                  icon: Icons.receipt_long_rounded,
-                  selectedFile: _gstBillImage,
-                  uploadedUrl: _gstBillUrl,
-                  isUploading: _isUploadingGstBill,
-                  onUpload: () => _handleDocumentUpload('gstBill'),
-                  isRequired: true,
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // Additional Documents Section
-              _buildSectionCard(
-                title: 'Additional Documents',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Upload other documents like images, receipts, or any supporting files',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.68),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Existing transportation documents
-                    ..._transportDocs.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final file = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: DocumentUploadCard(
-                          title: 'Document ${index + 1}',
-                          subtitle: 'Upload additional document',
-                          icon: Icons.attach_file_rounded,
-                          selectedFile: file,
-                          uploadedUrl: _transportDocUrls[index],
-                          isUploading: _isUploadingTransportDocs[index],
-                          onUpload: () => _handleDocumentUpload('transportDoc', index: index),
-                        ),
-                      );
-                    }),
-
-                    // Add new document button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _addNewTransportDocument(),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Another Document'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Continue Button (reactive)
-              _buildReactiveProceedButton(colorScheme, textTheme),
-
               const SizedBox(height: 20),
             ],
-          ),
+
+            // GST Bill Upload Section (for commercial use)
+            if (_isCommercialUse) ...[
+              DocumentUploadCard(
+                title: 'GST Bill',
+                subtitle: 'Upload your GST bill',
+                icon: Icons.receipt_long_rounded,
+                selectedFile: _gstBillImage,
+                uploadedUrl: _gstBillUrl,
+                isUploading: _isUploadingGstBill,
+                onUpload: () => _handleDocumentUpload('gstBill'),
+                isRequired: true,
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // Package Image Section (optional)
+            DocumentUploadCard(
+              title: 'Package Image (Optional)',
+              subtitle: 'Add package photo',
+              icon: Icons.camera_alt_rounded,
+              selectedFile: _packageImage,
+              uploadedUrl: _packageImageUrl,
+              isUploading: _isUploadingPackageImage,
+              onUpload: () => _handleDocumentUpload('packageImage'),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Additional Documents Section
+            _buildSectionCard(
+              title: 'Additional Documents',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Upload other documents like images, receipts, or any supporting files',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.68),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Existing transportation documents
+                  ..._transportDocs.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final file = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: DocumentUploadCard(
+                        title: 'Document ${index + 1}',
+                        subtitle: 'Upload additional document',
+                        icon: Icons.attach_file_rounded,
+                        selectedFile: file,
+                        uploadedUrl: _transportDocUrls[index],
+                        isUploading: _isUploadingTransportDocs[index],
+                        onUpload: () => _handleDocumentUpload('transportDoc', index: index),
+                      ),
+                    );
+                  }),
+
+                  // Add new document button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _addNewTransportDocument(),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Another Document'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Continue Button (reactive)
+            _buildReactiveProceedButton(colorScheme, textTheme),
+
+            const SizedBox(height: 20),
+          ],
         ),
       ),
-    ));
+    ),
+        );
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {
@@ -698,9 +673,9 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
           children: [
             Text(
               title,
-              style: textTheme.titleLarge?.copyWith(
-                color: Colors.black.withValues(alpha: 0.85),
-                fontWeight: FontWeight.w500,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -712,6 +687,13 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   }
 
   bool _canProceed() {
+    // For personal use, just need product name and weight
+    if (!_isCommercialUse) {
+      return _productNameController.text.trim().isNotEmpty &&
+             _weightController.text.trim().isNotEmpty;
+    }
+
+    // For commercial use, need to select product type
     if (!_isAgriculturalProduct && !_isNonAgriculturalProduct) {
       return false;
     }
@@ -737,7 +719,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     }
 
     // Check if GST bill is required and uploaded for commercial use
-    if (_isCommercialUse && (_gstBillUrl == null || _gstBillUrl!.isEmpty)) {
+    if (widget.isCommercial && (_gstBillUrl == null || _gstBillUrl!.isEmpty)) {
       return false;
     }
 
@@ -843,23 +825,34 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   }
 
   Package _buildPackage() {
-    final packageType = _isCommercialUse ? PackageType.commercial : PackageType.personal;
-
-    if (_isAgriculturalProduct) {
-      return Package.agricultural(
-        packageType: packageType,
+    // Personal Use - always use Package.personal()
+    if (!widget.isCommercial) {
+      return Package.personal(
         productName: _productNameController.text.trim(),
         approximateWeight: double.tryParse(_weightController.text.trim()) ?? 0.0,
         weightUnit: WeightUnit.fromString(_weightUnit.toUpperCase()),
-        gstBillUrl: _isCommercialUse ? _gstBillUrl : null,
+        packageImageUrl: _packageImageUrl,
+        transportDocUrls: _transportDocUrls.where((url) => url.isNotEmpty).toList(),
+      );
+    }
+
+    // Commercial Use - check product type
+    if (_isAgriculturalProduct) {
+      return Package.agricultural(
+        productName: _productNameController.text.trim(),
+        approximateWeight: double.tryParse(_weightController.text.trim()) ?? 0.0,
+        weightUnit: WeightUnit.fromString(_weightUnit.toUpperCase()),
+        gstBillUrl: _gstBillUrl ?? '',
+        packageImageUrl: _packageImageUrl,
         transportDocUrls: _transportDocUrls.where((url) => url.isNotEmpty).toList(),
       );
     } else if (_isNonAgriculturalProduct) {
       return Package.nonAgricultural(
-        packageType: packageType,
-        averageWeight: double.tryParse(_avgWeightController.text.trim()) ?? 0.0,
-        bundleWeight: _bundleWeightController.text.trim().isNotEmpty
-            ? double.tryParse(_bundleWeightController.text.trim())
+        approximateWeight: double.tryParse(_avgWeightController.text.trim()) ?? 0.0,
+        bundleWeight: double.tryParse(_bundleWeightController.text.trim()) ?? 0.0,
+        gstBillUrl: _gstBillUrl ?? '',
+        numberOfProducts: _numberOfProductsController.text.trim().isNotEmpty
+            ? int.tryParse(_numberOfProductsController.text.trim())
             : null,
         length: _lengthController.text.trim().isNotEmpty
             ? double.tryParse(_lengthController.text.trim())
@@ -871,21 +864,22 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             ? double.tryParse(_heightController.text.trim())
             : null,
         dimensionUnit: DimensionUnit.fromString(_dimensionUnit.toUpperCase()),
-        numberOfProducts: _numberOfProductsController.text.trim().isNotEmpty
-            ? int.tryParse(_numberOfProductsController.text.trim())
+        description: _descriptionController.text.trim().isNotEmpty
+            ? _descriptionController.text.trim()
             : null,
-        description: _descriptionController.text.trim(),
         packageImageUrl: _packageImageUrl,
-        gstBillUrl: _isCommercialUse ? _gstBillUrl : null,
         transportDocUrls: _transportDocUrls.where((url) => url.isNotEmpty).toList(),
       );
-    } else {
-      // Default case - should not happen if validation is working
-      return Package(
-        packageType: packageType,
-        productType: ProductType.agricultural,
-      );
     }
+
+    // Fallback (should never reach here if validation works)
+    return Package.personal(
+      productName: _productNameController.text.trim(),
+      approximateWeight: double.tryParse(_weightController.text.trim()) ?? 0.0,
+      weightUnit: WeightUnit.kg,
+      packageImageUrl: _packageImageUrl,
+      transportDocUrls: _transportDocUrls.where((url) => url.isNotEmpty).toList(),
+    );
   }
 
   void _proceedToEstimate() {

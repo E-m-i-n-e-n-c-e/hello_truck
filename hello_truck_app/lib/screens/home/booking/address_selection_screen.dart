@@ -7,6 +7,7 @@ import 'package:hello_truck_app/models/saved_address.dart';
 import 'package:hello_truck_app/providers/addresse_providers.dart';
 import 'package:hello_truck_app/providers/location_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
+import 'package:hello_truck_app/screens/home/booking/widgets/package_type_selection_modal.dart';
 import 'package:hello_truck_app/services/google_places_service.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
 import 'package:hello_truck_app/screens/home/booking/package_details_screen.dart';
@@ -82,13 +83,22 @@ class _AddressSelectionScreenState
   }
 
   void _proceedToPackageDetails() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PackageDetailsScreen(
-          pickupAddress: BookingAddress.fromSavedAddress(_pickupAddress!),
-          dropAddress: BookingAddress.fromSavedAddress(_dropAddress!),
-        ),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PackageTypeSelectionModal(
+        onSelect: (isCommercial) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PackageDetailsScreen(
+                pickupAddress: BookingAddress.fromSavedAddress(_pickupAddress!),
+                dropAddress: BookingAddress.fromSavedAddress(_dropAddress!),
+                isCommercial: isCommercial,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

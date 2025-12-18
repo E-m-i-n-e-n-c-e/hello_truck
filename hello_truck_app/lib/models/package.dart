@@ -208,4 +208,7 @@ class Package extends Equatable {
 
   /// Check if this is commercial (requires GST)
   bool get isCommercial => productType != ProductType.personal;
+
+  /// Get the package type (personal or commercial) - derived from productType
+  PackageType get packageType => isCommercial ? PackageType.commercial : PackageType.personal;
 }
