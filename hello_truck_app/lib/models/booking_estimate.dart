@@ -1,14 +1,12 @@
-import 'package:hello_truck_app/models/enums/booking_enums.dart';
-
 class BookingEstimate {
   final double distanceKm;
-  final VehicleType suggestedVehicleType;
-  final List<VehicleOption> vehicleOptions;
+  final String idealVehicleModel;
+  final List<VehicleOption> topVehicles;
 
   const BookingEstimate({
     required this.distanceKm,
-    required this.suggestedVehicleType,
-    required this.vehicleOptions,
+    required this.idealVehicleModel,
+    required this.topVehicles,
   });
 
   factory BookingEstimate.fromJson(Map<String, dynamic> json) {
@@ -16,8 +14,8 @@ class BookingEstimate {
       distanceKm: json['distanceKm'] != null
           ? double.parse(json['distanceKm'].toString())
           : 0.0,
-      suggestedVehicleType: VehicleType.fromString(json['suggestedVehicleType'] ?? 'FOUR_WHEELER'),
-      vehicleOptions: (json['vehicleOptions'] as List<dynamic>)
+      idealVehicleModel: json['idealVehicleModel'] ?? '',
+      topVehicles: (json['topVehicles'] as List<dynamic>)
           .map((option) => VehicleOption.fromJson(option))
           .toList(),
     );
@@ -25,29 +23,26 @@ class BookingEstimate {
 }
 
 class VehicleOption {
-  final VehicleType vehicleType;
+  final String vehicleModelName;
   final double estimatedCost;
-  final bool isAvailable;
-  final double weightLimit;
+  final double maxWeightTons;
   final PricingBreakdown breakdown;
 
   const VehicleOption({
-    required this.vehicleType,
+    required this.vehicleModelName,
     required this.estimatedCost,
-    required this.isAvailable,
-    required this.weightLimit,
+    required this.maxWeightTons,
     required this.breakdown,
   });
 
   factory VehicleOption.fromJson(Map<String, dynamic> json) {
     return VehicleOption(
-      vehicleType: VehicleType.fromString(json['vehicleType'] ?? 'FOUR_WHEELER'),
+      vehicleModelName: json['vehicleModelName'] ?? '',
       estimatedCost: json['estimatedCost'] != null
           ? double.parse(json['estimatedCost'].toString())
           : 0.0,
-      isAvailable: json['isAvailable'] ?? false,
-      weightLimit: json['weightLimit'] != null
-          ? double.parse(json['weightLimit'].toString())
+      maxWeightTons: json['maxWeightTons'] != null
+          ? double.parse(json['maxWeightTons'].toString())
           : 0.0,
       breakdown: PricingBreakdown.fromJson(json['breakdown'] ?? {}),
     );
@@ -56,17 +51,19 @@ class VehicleOption {
 
 class PricingBreakdown {
   final double baseFare;
-  final double distanceCharge;
-  final double weightMultiplier;
-  final double vehicleMultiplier;
-  final double totalMultiplier;
+  final int baseKm;
+  final double perKm;
+  final double distanceKm;
+  final double weightInTons;
+  final double effectiveBasePrice;
 
   const PricingBreakdown({
     required this.baseFare,
-    required this.distanceCharge,
-    required this.weightMultiplier,
-    required this.vehicleMultiplier,
-    required this.totalMultiplier,
+    required this.baseKm,
+    required this.perKm,
+    required this.distanceKm,
+    required this.weightInTons,
+    required this.effectiveBasePrice,
   });
 
   factory PricingBreakdown.fromJson(Map<String, dynamic> json) {
@@ -74,18 +71,19 @@ class PricingBreakdown {
       baseFare: json['baseFare'] != null
           ? double.parse(json['baseFare'].toString())
           : 0.0,
-      distanceCharge: json['distanceCharge'] != null
-          ? double.parse(json['distanceCharge'].toString())
+      baseKm: json['baseKm'] ?? 0,
+      perKm: json['perKm'] != null
+          ? double.parse(json['perKm'].toString())
           : 0.0,
-      weightMultiplier: json['weightMultiplier'] != null
-          ? double.parse(json['weightMultiplier'].toString())
-          : 1.0,
-      vehicleMultiplier: json['vehicleMultiplier'] != null
-          ? double.parse(json['vehicleMultiplier'].toString())
-          : 1.0,
-      totalMultiplier: json['totalMultiplier'] != null
-          ? double.parse(json['totalMultiplier'].toString())
-          : 1.0,
+      distanceKm: json['distanceKm'] != null
+          ? double.parse(json['distanceKm'].toString())
+          : 0.0,
+      weightInTons: json['weightInTons'] != null
+          ? double.parse(json['weightInTons'].toString())
+          : 0.0,
+      effectiveBasePrice: json['effectiveBasePrice'] != null
+          ? double.parse(json['effectiveBasePrice'].toString())
+          : 0.0,
     );
   }
 }

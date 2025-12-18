@@ -1,18 +1,5 @@
-enum PackageType {
-  personal('PERSONAL'),
-  commercial('COMMERCIAL');
-
-  const PackageType(this.value);
-  final String value;
-
-  static PackageType fromString(String value) {
-    return PackageType.values.firstWhere(
-      (type) => type.value == value,
-    );
-  }
-}
-
 enum ProductType {
+  personal('PERSONAL'),
   agricultural('AGRICULTURAL'),
   nonAgricultural('NON_AGRICULTURAL');
 

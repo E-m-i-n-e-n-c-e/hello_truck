@@ -1,9 +1,13 @@
 enum FcmEventType {
-  driverAssignmentOffered('DRIVER_ASSIGNMENT_OFFERED'),
-  driverAssignmentTimeout('DRIVER_ASSIGNMENT_TIMEOUT'),
-  assignmentEscalated('ASSIGNMENT_ESCALATED'),
-  noDriverAvailable('NO_DRIVER_AVAILABLE'),
-  bookingStatusChange('BOOKING_STATUS_CHANGE');
+  bookingStatusChange('BOOKING_STATUS_CHANGE'),
+  // driverAssignmentOffered('DRIVER_ASSIGNMENT_OFFERED'),
+  // driverAssignmentTimeout('DRIVER_ASSIGNMENT_TIMEOUT'), // Data only
+  // driverVerificationUpdate('DRIVER_VERIFICATION_UPDATE'), // Data only
+  paymentSuccess('PAYMENT_SUCCESS'),
+  // payoutProcessed('PAYOUT_PROCESSED'),
+  refundProcessed('REFUND_PROCESSED'),
+  // rideCancelled('RIDE_CANCELLED'),
+  walletChange('WALLET_CHANGE');
 
   const FcmEventType(this.value);
   final String value;
@@ -14,10 +18,14 @@ enum FcmEventType {
     );
   }
 
-  static const localNotificationEnabledEvents = [bookingStatusChange];
+  static const localNotificationEnabledEvents = [
+    bookingStatusChange,
+    paymentSuccess,
+    refundProcessed,
+    walletChange,
+  ];
 
   static bool isLocalNotificationEnabled(FcmEventType eventType) {
-    return localNotificationEnabledEvents.contains(eventType) || eventType == bookingStatusChange;
+    return localNotificationEnabledEvents.contains(eventType);
   }
 }
-

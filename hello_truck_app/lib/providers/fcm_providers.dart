@@ -18,6 +18,17 @@ final fcmEventsHandlerProvider = Provider<void>((ref) {
       if(event == FcmEventType.bookingStatusChange) {
         ref.invalidate(activeBookingsProvider);
         ref.invalidate(bookingDetailsProvider);
+        ref.invalidate(bookingHistoryProvider);
+      }
+      if(event == FcmEventType.paymentSuccess) {
+        ref.invalidate(activeBookingsProvider);
+        ref.invalidate(bookingDetailsProvider);
+      }
+      if(event == FcmEventType.refundProcessed) {
+        // TODO: Invalidate refunds, transactions, wallet, customer
+      }
+      if(event == FcmEventType.walletChange) {
+        // TODO: Invalidate wallet, customer
       }
     });
   });

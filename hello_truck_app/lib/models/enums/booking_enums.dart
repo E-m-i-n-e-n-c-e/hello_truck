@@ -1,5 +1,4 @@
 enum VehicleType {
-  twoWheeler('TWO_WHEELER'),
   threeWheeler('THREE_WHEELER'),
   fourWheeler('FOUR_WHEELER');
 
