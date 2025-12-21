@@ -266,22 +266,19 @@ class API {
 
   Future<void> signOut() async {
     final refreshToken = await storage.read(key: 'refreshToken');
+    await Future.wait([
+      storage.delete(key: 'refreshToken'),
+      storage.delete(key: 'accessToken'),
+      FirebaseMessaging.instance.deleteToken(),
+    ]);
+    ref.read(authClientProvider).emitSignOut();
 
     if (refreshToken != null) {
-      try {
-        await post('/auth/customer/logout', data: {'refreshToken': refreshToken});
-      } catch (e) {
-        // If logout failed, save the refresh token to the storage
-        await storage.write(key: 'staleRefreshToken', value: refreshToken);
-      } finally {
-        // Clear both tokens regardless of success or failure
-        await Future.wait([
-          storage.delete(key: 'refreshToken'),
-          storage.delete(key: 'accessToken'),
-          FirebaseMessaging.instance.deleteToken(),
-        ]);
-        ref.read(authClientProvider).emitSignOut();
-      }
+      post('/auth/customer/logout', data: {'refreshToken': refreshToken}).catchError((e) {
+        // If the logout fails, save the refresh token to the storage
+        storage.write(key: 'staleRefreshToken', value: refreshToken);
+        AppLogger.log('Error logging out: $e');
+      });
     }
   }
 }
