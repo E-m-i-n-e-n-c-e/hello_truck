@@ -7,6 +7,7 @@ import 'package:hello_truck_app/models/enums/package_enums.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 
@@ -403,6 +404,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     try {
       final api = await ref.read(apiProvider.future);
       await createBooking(api, pickupAddress: _pickupAddress, dropAddress: _dropAddress, package: widget.package);
+      ref.invalidate(activeBookingsProvider);
       if (mounted) _showSuccessDialog();
     } catch (e) {
       if (mounted) SnackBars.error(context, 'Booking failed: $e');
