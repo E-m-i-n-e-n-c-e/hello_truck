@@ -27,16 +27,27 @@ class AuthClient with WidgetsBindingObserver {
   int _retryDelay = 0;
   bool _isRefreshing = false;
 
+  DateTime? _lastPausedAt;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _appLifecycleController.add(state);
-    if (state == AppLifecycleState.resumed) {
-      AppLogger.log('App resumed, Reinitializing');
-      initialize();
+
+    if (state == AppLifecycleState.paused) {
+      _lastPausedAt = DateTime.now();
+      // Don't cancel the timer - let it keep refreshing in background
     }
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      AppLogger.log('App is inactive, stopping refresh loop');
-      _refreshTimer?.cancel();
+
+    if (state == AppLifecycleState.resumed) {
+      // Only do immediate refresh if app was paused for more than 15 seconds
+      final wasPausedLongEnough = _lastPausedAt != null &&
+          DateTime.now().difference(_lastPausedAt!).inSeconds > 15;
+
+      if (wasPausedLongEnough) {
+        AppLogger.log('App resumed after long pause, Reinitializing');
+        initialize();
+      }
+      _lastPausedAt = null;
     }
   }
 
