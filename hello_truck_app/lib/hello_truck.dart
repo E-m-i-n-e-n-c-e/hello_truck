@@ -4,7 +4,6 @@ import 'package:hello_truck_app/models/auth_state.dart';
 import 'package:hello_truck_app/providers/app_initializer_provider.dart.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
-import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/providers/fcm_providers.dart';
 import 'package:hello_truck_app/screens/home/home_screen.dart';
 import 'package:hello_truck_app/screens/profile/profile_screen.dart';

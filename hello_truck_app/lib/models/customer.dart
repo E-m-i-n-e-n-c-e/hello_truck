@@ -29,7 +29,9 @@ class Customer {
       phoneNumber: json['phoneNumber'] ?? '',
       referralCode: json['referralCode'] ?? '',
       isBusiness: json['isBusiness'] ?? false,
-      walletBalance: (json['walletBalance'] ?? 0).toDouble(),
+      walletBalance: json['walletBalance'] != null
+          ? double.parse(json['walletBalance'].toString())
+          : 0.0,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
     );
