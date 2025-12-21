@@ -221,7 +221,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vehicle', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+            Text('Best Vehicle', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -235,19 +235,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(_idealVehicle.vehicleModelName.replaceAll('_', ' '), style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                            child: Text('Best Match', style: textTheme.labelSmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w600)),
-                          ),
-                        ],
-                      ),
+                      Text(_idealVehicle.vehicleModelName.replaceAll('_', ' '), style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
                       const SizedBox(height: 4),
-                      Text('Auto-assigned based on your package', style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
+                      Text('Will be auto-assigned', style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
                     ],
                   ),
                 ),
@@ -337,7 +327,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total Amount', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              Text('Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
               Text('₹${_idealVehicle.estimatedCost.toStringAsFixed(0)}', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
             ],
           ),
