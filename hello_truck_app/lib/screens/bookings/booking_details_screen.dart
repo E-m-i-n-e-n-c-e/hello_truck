@@ -678,8 +678,12 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
           _buildInfoRow(context, 'Per Km Rate', '₹${invoice.perKmPrice.toStringAsFixed(0)}/km'),
           Divider(height: 16, color: cs.outline.withValues(alpha: 0.1)),
           _buildInfoRow(context, 'Total', '₹${invoice.totalPrice.toStringAsFixed(0)}'),
-          if (invoice.walletApplied > 0)
-            _buildInfoRow(context, 'Wallet Applied', '-₹${invoice.walletApplied.toStringAsFixed(0)}', valueColor: Colors.green),
+          if (invoice.walletApplied != 0) ...[
+            if (invoice.walletApplied > 0)
+              _buildInfoRow(context, 'Wallet Applied', '-₹${invoice.walletApplied.toStringAsFixed(0)}', valueColor: Colors.green)
+            else
+              _buildInfoRow(context, 'Debt Cleared', '+₹${invoice.walletApplied.abs().toStringAsFixed(0)}', valueColor: Colors.orange),
+          ],
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
