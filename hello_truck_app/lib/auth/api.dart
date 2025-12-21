@@ -278,6 +278,7 @@ class API {
         // If the logout fails, save the refresh token to the storage
         storage.write(key: 'staleRefreshToken', value: refreshToken);
         AppLogger.log('Error logging out: $e');
+        return Response(requestOptions: RequestOptions(path: ''));
       });
     }
   }

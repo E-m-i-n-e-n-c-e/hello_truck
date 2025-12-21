@@ -999,6 +999,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
       cancellationCharge = 0;
     }
 
+    if(!context.mounted) return;
     final shouldCancel = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
