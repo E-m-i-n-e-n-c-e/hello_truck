@@ -5,6 +5,7 @@ class Customer {
   final String email;
   final String referralCode;
   final bool isBusiness;
+  final double walletBalance;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -15,6 +16,7 @@ class Customer {
     required this.phoneNumber,
     required this.referralCode,
     required this.isBusiness,
+    required this.walletBalance,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -27,8 +29,12 @@ class Customer {
       phoneNumber: json['phoneNumber'] ?? '',
       referralCode: json['referralCode'] ?? '',
       isBusiness: json['isBusiness'] ?? false,
+      walletBalance: (json['walletBalance'] ?? 0).toDouble(),
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
     );
   }
+
+  String get fullName => '$firstName $lastName'.trim();
+  String get initials => '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'.toUpperCase();
 }
