@@ -4,7 +4,6 @@ import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
-import 'package:hello_truck_app/screens/bookings/booking_details_screen.dart';
 import 'package:hello_truck_app/screens/home/booking/address_selection_screen.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
 
@@ -248,8 +247,28 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildRecentBookingCard(BuildContext context, Booking booking) {
+    return _ExpandableBookingCard(booking: booking);
+  }
+}
+
+/// Expandable booking card widget with its own state
+class _ExpandableBookingCard extends StatefulWidget {
+  final Booking booking;
+
+  const _ExpandableBookingCard({required this.booking});
+
+  @override
+  State<_ExpandableBookingCard> createState() => _ExpandableBookingCardState();
+}
+
+class _ExpandableBookingCardState extends State<_ExpandableBookingCard> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final booking = widget.booking;
 
     return Container(
       decoration: BoxDecoration(
@@ -266,68 +285,238 @@ class HomeScreen extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: booking)),
-            );
-          },
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
           borderRadius: BorderRadius.circular(14),
           child: Padding(
             padding: const EdgeInsets.all(14),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.check_circle_rounded, color: Colors.green, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                // Compact header - always visible
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
                         '#${booking.bookingNumber.toString().padLeft(6, '0')}',
                         style: tt.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: cs.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        booking.dropAddress.formattedAddress,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodySmall?.copyWith(
-                          color: cs.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '₹${(booking.finalCost ?? booking.estimatedCost).toStringAsFixed(0)}',
-                      style: tt.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: cs.primary,
-                      ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      DateTimeUtils.formatShortDateIST(booking.completedAt ?? booking.createdAt),
-                      style: tt.labelSmall?.copyWith(
-                        color: cs.onSurface.withValues(alpha: 0.5),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '₹${(booking.finalCost ?? booking.estimatedCost).toStringAsFixed(0)}',
+                          style: tt.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: cs.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          DateTimeUtils.formatShortDateIST(booking.completedAt ?? booking.createdAt),
+                          style: tt.labelSmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 4),
+                    AnimatedRotation(
+                      turns: _isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: cs.onSurface.withValues(alpha: 0.4),
+                        size: 20,
                       ),
                     ),
                   ],
+                ),
+
+                // Expandable details section
+                AnimatedCrossFade(
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Pickup and Drop addresses
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            children: [
+                              // Pickup Address
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(Icons.radio_button_checked, color: Colors.green, size: 12),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Pickup',
+                                          style: tt.labelSmall?.copyWith(
+                                            color: cs.onSurface.withValues(alpha: 0.5),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          booking.pickupAddress.formattedAddress,
+                                          style: tt.bodySmall?.copyWith(
+                                            color: cs.onSurface.withValues(alpha: 0.8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Dotted line connector
+                              Padding(
+                                padding: const EdgeInsets.only(left: 9),
+                                child: Row(
+                                  children: [
+                                    Column(
+                                      children: List.generate(3, (index) =>
+                                        Container(
+                                          width: 2,
+                                          height: 4,
+                                          margin: const EdgeInsets.symmetric(vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: cs.onSurface.withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(1),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Drop Address
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: cs.primary.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(Icons.location_on, color: cs.primary, size: 12),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Drop',
+                                          style: tt.labelSmall?.copyWith(
+                                            color: cs.onSurface.withValues(alpha: 0.5),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          booking.dropAddress.formattedAddress,
+                                          style: tt.bodySmall?.copyWith(
+                                            color: cs.onSurface.withValues(alpha: 0.8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Package, Vehicle, and Distance info row
+                        Row(
+                          children: [
+                            // Vehicle info
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.local_shipping_outlined,
+                                    size: 16,
+                                    color: cs.onSurface.withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      booking.assignedVehicle ?? booking.idealVehicle,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: tt.bodySmall?.copyWith(
+                                        color: cs.onSurface.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Distance info
+                            if (booking.distanceKm > 0) ...[
+                              const SizedBox(width: 12),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.straighten_rounded,
+                                    size: 16,
+                                    color: cs.onSurface.withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${booking.distanceKm.toStringAsFixed(1)} km',
+                                    style: tt.bodySmall?.copyWith(
+                                      color: cs.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 200),
                 ),
               ],
             ),

@@ -40,35 +40,77 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen>
 
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(
-        title: Text(
-          'My Bookings',
-          style: tt.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: cs.onSurface,
+      body: SafeArea(
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Center(
+                        child: Text(
+                          'My Bookings',
+                          style: tt.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Styled Tabs
+                      Container(
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cs.secondary.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: TabBar(
+                          controller: _tabController,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          dividerColor: Colors.transparent,
+                          indicator: BoxDecoration(
+                            color: cs.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          labelColor: cs.onPrimary,
+                          unselectedLabelColor: cs.onSurface.withValues(alpha: 0.7),
+                          labelStyle: tt.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          unselectedLabelStyle: tt.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overlayColor: WidgetStateProperty.all(Colors.transparent),
+                          splashFactory: NoSplash.splashFactory,
+                          tabs: const [
+                            Tab(text: 'Active'),
+                            Tab(text: 'History'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _ActiveBookingsTab(),
+              _HistoryBookingsTab(),
+            ],
           ),
         ),
-        backgroundColor: cs.surface,
-        elevation: 0,
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Active'),
-            Tab(text: 'History'),
-          ],
-          labelColor: cs.primary,
-          unselectedLabelColor: cs.onSurface.withValues(alpha: 0.6),
-          indicatorColor: cs.primary,
-          labelStyle: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _ActiveBookingsTab(),
-          _HistoryBookingsTab(),
-        ],
       ),
     );
   }

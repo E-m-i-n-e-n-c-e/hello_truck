@@ -395,6 +395,11 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
                             ),
                           ),
                         ),
+                        // OTP Banner - prominent display at top
+                        if (_shouldShowOtpBanner()) ...[
+                          _buildOtpBanner(context),
+                          const SizedBox(height: 12),
+                        ],
                         // Payment banner - only show if final invoice exists with payment link and not paid
                         if (_shouldShowPaymentBanner()) ...[
                           _buildPaymentBanner(context),
@@ -563,6 +568,86 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
   }
 
 
+  bool _shouldShowOtpBanner() {
+    final isPickupPhase = _booking.status == BookingStatus.confirmed ||
+        _booking.status == BookingStatus.pickupArrived;
+    final isDropPhase = _booking.status == BookingStatus.pickupVerified ||
+        _booking.status == BookingStatus.inTransit ||
+        _booking.status == BookingStatus.dropArrived;
+
+    return (isPickupPhase && _booking.pickupOtp != null) ||
+           (isDropPhase && _booking.dropOtp != null);
+  }
+
+  Widget _buildOtpBanner(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final isPickupPhase = _booking.status == BookingStatus.confirmed ||
+        _booking.status == BookingStatus.pickupArrived;
+
+    final otp = isPickupPhase ? _booking.pickupOtp! : _booking.dropOtp!;
+    final label = isPickupPhase ? 'Pickup OTP' : 'Drop OTP';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.verified_user_rounded, color: cs.primary, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Share with driver',
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: cs.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              otp,
+              style: tt.titleMedium?.copyWith(
+                color: cs.onPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAddressesCard(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
@@ -597,6 +682,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
       ),
     );
   }
+
 
   Widget _buildPackageCard(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
