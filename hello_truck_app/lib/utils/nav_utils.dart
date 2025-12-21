@@ -45,6 +45,16 @@ bool isBeforePickupArrived(BookingStatus s) {
   return isActive(s) && statusOrder.indexOf(s) < statusOrder.indexOf(BookingStatus.pickupArrived);
 }
 
+/// Check if booking can be cancelled (before pickup verified)
+bool canCancelBooking(BookingStatus s) {
+  return isActive(s) && statusOrder.indexOf(s) < statusOrder.indexOf(BookingStatus.pickupVerified);
+}
+
+/// Check if cancel button should show on booking card (before driver confirms)
+bool showCancelOnCard(BookingStatus s) {
+  return s == BookingStatus.pending || s == BookingStatus.driverAssigned;
+}
+
 
 
 String getBookingTitle(BookingStatus status) {

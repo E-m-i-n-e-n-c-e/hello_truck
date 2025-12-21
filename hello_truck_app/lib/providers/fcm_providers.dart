@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/enums/fcm_enums.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
+import 'package:hello_truck_app/providers/customer_providers.dart';
 import '../services/fcm_service.dart';
 
 final fcmServiceProvider = Provider<FCMService>((ref) {
@@ -25,10 +26,14 @@ final fcmEventsHandlerProvider = Provider<void>((ref) {
         ref.invalidate(bookingDetailsProvider);
       }
       if(event == FcmEventType.refundProcessed) {
-        // TODO: Invalidate refunds, transactions, wallet, customer
+        ref.invalidate(pendingRefundsProvider);
+        ref.invalidate(transactionLogsProvider);
+        ref.invalidate(walletLogsProvider);
+        ref.invalidate(customerProvider);
       }
       if(event == FcmEventType.walletChange) {
-        // TODO: Invalidate wallet, customer
+        ref.invalidate(walletLogsProvider);
+        ref.invalidate(customerProvider);
       }
     });
   });

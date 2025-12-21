@@ -102,10 +102,6 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
         onItemSelected: (index) {
           if (index == 1) {
             ref.invalidate(activeBookingsProvider);
-            ref.invalidate(bookingHistoryProvider);
-          } else if (index == 2) {
-            ref.invalidate(customerProvider);
-            ref.invalidate(gstDetailsProvider);
           }
           setState(() {
             _selectedIndex = index;

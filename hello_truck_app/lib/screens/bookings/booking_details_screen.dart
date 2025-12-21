@@ -5,33 +5,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:hello_truck_app/models/navigation_update.dart';
-import 'package:hello_truck_app/models/saved_address.dart';
-import 'package:hello_truck_app/utils/logger.dart';
-import 'package:url_launcher/url_launcher.dart';
-
+import 'package:hello_truck_app/api/booking_api.dart' as booking_api;
 import 'package:hello_truck_app/models/booking.dart';
-import 'package:hello_truck_app/models/package.dart';
-import 'package:hello_truck_app/models/enums/package_enums.dart';
-import 'package:hello_truck_app/providers/booking_providers.dart';
-import 'package:hello_truck_app/utils/nav_utils.dart';
-import 'package:hello_truck_app/screens/home/booking/widgets/map_selection_page.dart';
-import 'package:hello_truck_app/api/booking_api.dart';
+import 'package:hello_truck_app/models/cancellation_config.dart';
+import 'package:hello_truck_app/models/enums/booking_enums.dart';
+import 'package:hello_truck_app/models/navigation_update.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/providers/booking_providers.dart';
+import 'package:hello_truck_app/utils/logger.dart';
+import 'package:hello_truck_app/utils/nav_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 double calculateBearing(LatLng from, LatLng to) {
   final lat1 = from.latitude * pi / 180.0;
   final lon1 = from.longitude * pi / 180.0;
   final lat2 = to.latitude * pi / 180.0;
   final lon2 = to.longitude * pi / 180.0;
-
   final dLon = lon2 - lon1;
-
   final y = sin(dLon) * cos(lat2);
   final x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
   var brng = atan2(y, x);
-
   brng = brng * 180.0 / pi;
   return (brng + 360.0) % 360.0;
 }
@@ -48,7 +42,7 @@ class BookingDetailsScreen extends ConsumerStatefulWidget {
   ConsumerState<BookingDetailsScreen> createState() => _BookingDetailsScreenState();
 }
 
-class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> with TickerProviderStateMixin {
+class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
@@ -56,7 +50,8 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
   BitmapDescriptor? _truckIconFlipped;
   late Booking _booking;
   bool _handledFirstUpdate = false;
-  double _sheetSize = _initialSheetSize; // Track current sheet size
+  double _sheetSize = _initialSheetSize;
+  bool _helpExpanded = false;
 
   @override
   void initState() {
@@ -79,7 +74,6 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
 
   Future<void> _setupStaticMarkers(Booking booking) async {
     _markers.clear();
-    // show pickup marker if pickup is not yet verified or booking is inactive/completed
     final shouldShowPickup = !isActive(booking.status) || isBeforePickupVerified(booking.status);
 
     if (shouldShowPickup) {
@@ -93,7 +87,6 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
       );
     }
 
-    // Always show drop marker
     _markers.add(
       Marker(
         markerId: const MarkerId('drop'),
@@ -122,19 +115,16 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
   }
 
   void _updateRouteAndDriver(DriverNavigationUpdate? update) async {
-    if(update == null || update.isStale || !isActive(_booking.status) ) return;
+    if (update == null || update.isStale || !isActive(_booking.status)) return;
     final points = decodePolyline(update.routePolyline);
 
-    // driver marker
     if (update.location != null) {
       final latLng = LatLng(update.location!.latitude, update.location!.longitude);
-      if(_truckIcon == null || _truckIconFlipped == null) {
+      if (_truckIcon == null || _truckIconFlipped == null) {
         await _loadTruckIcons();
       }
       final nextPoint = points.length > 1 ? points[1] : null;
-      final rotation = nextPoint != null
-          ? ((calculateBearing(latLng, nextPoint) - 90) % 360)
-          : 0.0;
+      final rotation = nextPoint != null ? ((calculateBearing(latLng, nextPoint) - 90) % 360) : 0.0;
       final shouldFlip = rotation > 90 && rotation < 270;
       final selectedIcon = shouldFlip ? _truckIconFlipped! : _truckIcon!;
       final adjustedRotation = shouldFlip ? (rotation + 180) % 360 : rotation;
@@ -151,123 +141,97 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
       );
     }
 
-    if(!mounted) return;
-    if(points.isNotEmpty) {
-    _polylines
-      ..clear()
-      ..add(
-        Polyline(
-          polylineId: const PolylineId('route'),
-          points: points,
-          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
-          width: 5,
-        ),
-      );
+    if (!mounted) return;
+    if (points.isNotEmpty) {
+      _polylines
+        ..clear()
+        ..add(
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: points,
+            color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
+            width: 5,
+          ),
+        );
     }
     if (mounted) setState(() {});
   }
 
 
   void _recenterMap(Booking booking, DriverNavigationUpdate? navUpdate, bool isPickupPhase) {
-    if (_mapController != null) {
-      final pickupLatLng = LatLng(booking.pickupAddress.latitude, booking.pickupAddress.longitude);
-      final dropLatLng = LatLng(booking.dropAddress.latitude, booking.dropAddress.longitude);
-      LatLngBounds bounds;
-      if (navUpdate == null || navUpdate.isStale || navUpdate.location == null || !isActive(booking.status)) {
-        bounds = LatLngBounds(
-          southwest: LatLng(
-            booking.pickupAddress.latitude < booking.dropAddress.latitude
-                ? booking.pickupAddress.latitude
-                : booking.dropAddress.latitude,
-            booking.pickupAddress.longitude < booking.dropAddress.longitude
-                ? booking.pickupAddress.longitude
-                : booking.dropAddress.longitude,
-          ),
-          northeast: LatLng(
-            booking.pickupAddress.latitude > booking.dropAddress.latitude
-                ? booking.pickupAddress.latitude
-                : booking.dropAddress.latitude,
-            booking.pickupAddress.longitude > booking.dropAddress.longitude
-                ? booking.pickupAddress.longitude
-                : booking.dropAddress.longitude,
-          ),
-        );
-      } else {
-        final targetLatLng = isPickupPhase ? pickupLatLng : dropLatLng;
-        bounds = LatLngBounds(
-          southwest: LatLng(
-            navUpdate.location!.latitude < targetLatLng.latitude
-                ? navUpdate.location!.latitude
-                : targetLatLng.latitude,
-            navUpdate.location!.longitude < targetLatLng.longitude
-                ? navUpdate.location!.longitude
-                : targetLatLng.longitude,
-          ),
-          northeast: LatLng(
-            navUpdate.location!.latitude > targetLatLng.latitude
-                ? navUpdate.location!.latitude
-                : targetLatLng.latitude,
-            navUpdate.location!.longitude > targetLatLng.longitude
-                ? navUpdate.location!.longitude
-                : targetLatLng.longitude,
-          ),
-        );
-      }
-      _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+    if (_mapController == null) return;
+    final pickupLatLng = LatLng(booking.pickupAddress.latitude, booking.pickupAddress.longitude);
+    final dropLatLng = LatLng(booking.dropAddress.latitude, booking.dropAddress.longitude);
+    LatLngBounds bounds;
+
+    if (navUpdate == null || navUpdate.isStale || navUpdate.location == null || !isActive(booking.status)) {
+      bounds = LatLngBounds(
+        southwest: LatLng(
+          min(booking.pickupAddress.latitude, booking.dropAddress.latitude),
+          min(booking.pickupAddress.longitude, booking.dropAddress.longitude),
+        ),
+        northeast: LatLng(
+          max(booking.pickupAddress.latitude, booking.dropAddress.latitude),
+          max(booking.pickupAddress.longitude, booking.dropAddress.longitude),
+        ),
+      );
+    } else {
+      final targetLatLng = isPickupPhase ? pickupLatLng : dropLatLng;
+      bounds = LatLngBounds(
+        southwest: LatLng(
+          min(navUpdate.location!.latitude, targetLatLng.latitude),
+          min(navUpdate.location!.longitude, targetLatLng.longitude),
+        ),
+        northeast: LatLng(
+          max(navUpdate.location!.latitude, targetLatLng.latitude),
+          max(navUpdate.location!.longitude, targetLatLng.longitude),
+        ),
+      );
     }
+    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
   }
 
   void _handleBookingUpdate(Booking booking) {
     AppLogger.log('Booking updated: ${booking.id}');
-
-     _setupStaticMarkers(booking);
-
-    setState(() {
-      _booking = booking;
-    });
+    _setupStaticMarkers(booking);
+    setState(() => _booking = booking);
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final bookingProvider = bookingDetailsProvider(widget.initialBooking.id);
     final bookingAsync = ref.watch(bookingProvider);
     final navStream = isActive(_booking.status)
         ? ref.watch(driverNavigationStreamProvider(_booking.id))
         : const AsyncValue.data(null);
 
-    // Handle first update
-    if(bookingAsync.value != null && !_handledFirstUpdate) {
+    if (bookingAsync.value != null && !_handledFirstUpdate) {
       _handledFirstUpdate = true;
       _handleBookingUpdate(bookingAsync.value!);
     }
 
-    // Handle subsequent updates
     ref.listen(bookingProvider, (previous, next) {
-      _handleBookingUpdate(next.value!);
+      if (next.value != null) _handleBookingUpdate(next.value!);
     });
 
-    // Handle navigation updates
-    navStream.whenData((update) {
-      _updateRouteAndDriver(update);
-    });
+    navStream.whenData((update) => _updateRouteAndDriver(update));
 
     final etaLabel = arrivalLabel(_booking.status, navStream.value);
     final isPickupPhase = isBeforePickupVerified(_booking.status);
     final title = getBookingTitle(_booking.status);
-    final colorScheme = Theme.of(context).colorScheme;
+    final canCancel = canCancelBooking(_booking.status);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: cs.surface,
       body: Column(
         children: [
-          // Top overlay banner acting as app bar + status
+          // Header
           Container(
             decoration: BoxDecoration(
-              color: colorScheme.primary,
-              boxShadow: [
-                BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3)),
-              ],
+              color: cs.primary,
+              boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 3))],
             ),
             child: SafeArea(
               child: Column(
@@ -278,33 +242,30 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.arrow_back_ios_new_rounded, color: colorScheme.onPrimary),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onPrimary),
                       ),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
                           title,
                           textAlign: TextAlign.center,
-                          style: textTheme.titleLarge?.copyWith(
-                            color: colorScheme.onPrimary,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: tt.titleLarge?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w800),
                         ),
                       ),
-                      const SizedBox(width: 48), // balance back button space
+                      const SizedBox(width: 48),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.2),
+                      color: cs.surface.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: colorScheme.surface.withValues(alpha: 0.3)),
+                      border: Border.all(color: cs.surface.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       etaLabel.isEmpty ? 'On the way' : etaLabel,
-                      style: textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.w700),
+                      style: tt.titleMedium?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w700),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -312,170 +273,211 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
               ),
             ),
           ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Stack(
-                  children: [
-                    // Map
-                GoogleMap(
-                  onMapCreated: (c) {
-                    _mapController = c;
-                    _recenterMap(_booking, navStream.value, isPickupPhase);
-                  },
-                  initialCameraPosition: CameraPosition(
-                        target: isPickupPhase
-                            ? LatLng(_booking.pickupAddress.latitude,_booking.pickupAddress.longitude)
-                            : LatLng(_booking.dropAddress.latitude,_booking.dropAddress.longitude),
-                    zoom: 13,
-                  ),
-                  markers: _markers,
-                  polylines: showPolyline(_booking.status) ? _polylines : {},
-                  myLocationEnabled: true,
-                  zoomControlsEnabled: false,
-                ),
-
-                 // Recenter button (bottom left) - positioned relative to draggable sheet
-                 Positioned(
-                   left: 16,
-                   bottom: constraints.maxHeight * min(_sheetSize, _initialSheetSize) + 16, // 16px above the current sheet size
-                   child: Material(
-                     elevation: 4,
-                     borderRadius: BorderRadius.circular(12),
-                     color: colorScheme.surface,
-                     child: InkWell(
-                       borderRadius: BorderRadius.circular(12),
-                       onTap: () => _recenterMap(_booking, navStream.value, isPickupPhase),
-                       child: Container(
-                         width: 40,
-                         height: 36,
-                         alignment: Alignment.center,
-                         child: Icon(Icons.my_location_rounded, size: 20, color: colorScheme.primary),
-                       ),
-                     ),
-                   ),
-                 ),
-
-                 // Zoom controls (bottom right) - positioned relative to draggable sheet
-                 Positioned(
-                   right: 16,
-                   bottom: constraints.maxHeight * min(_sheetSize, _initialSheetSize) + 16, // 16px above the current sheet size
-                   child: Material(
-                     elevation: 4,
-                     borderRadius: BorderRadius.circular(12),
-                     color: colorScheme.surface,
-                     child: Column(
-                       mainAxisSize: MainAxisSize.min,
-                       children: [
-                         InkWell(
-                           onTap: () {
-                             _mapController?.moveCamera(CameraUpdate.zoomIn());
-                           },
-                           borderRadius: const BorderRadius.only(
-                             topLeft: Radius.circular(12),
-                             topRight: Radius.circular(12),
-                           ),
-                           child: Container(
-                             width: 40,
-                             height: 36,
-                             alignment: Alignment.center,
-                             child: Icon(Icons.add, size: 20, color: colorScheme.primary),
-                           ),
-                         ),
-                         const Divider(height: 1, thickness: 1, color: Color(0xFFDDDDDD)),
-                         InkWell(
-                           onTap: () {
-                             _mapController?.moveCamera(CameraUpdate.zoomOut());
-                           },
-                           borderRadius: const BorderRadius.only(
-                             bottomLeft: Radius.circular(12),
-                             bottomRight: Radius.circular(12),
-                           ),
-                           child: Container(
-                             width: 40,
-                             height: 36,
-                             alignment: Alignment.center,
-                             child: Icon(Icons.remove, size: 20, color: colorScheme.primary),
-                           ),
-                         ),
-                       ],
-                     ),
-                   ),
-                 ),
-
-                 // Draggable sheet
-                 NotificationListener<DraggableScrollableNotification>(
-                   onNotification: (notification) {
-                     setState(() {
-                       _sheetSize = notification.extent;
-                     });
-                     return true;
-                   },
-                   child: DraggableScrollableSheet(
-                     initialChildSize: _initialSheetSize,
-                     minChildSize: _minSheetSize,
-                     maxChildSize: 1,
-                     builder: (context, controller) {
-                       return Container(
-                         decoration: BoxDecoration(
-                           color: colorScheme.surface,
-                           borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                           boxShadow: [BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.15), blurRadius: 12, offset: Offset(0, -2))],
-                         ),
-                         child: ListView(
-                           controller: controller,
-                           padding: const EdgeInsets.all(16),
-                           children: [
-                             // Payment banner (placeholder link)
-                             _paymentBanner(context),
-                             const SizedBox(height: 12),
-                             if(_booking.assignedDriver != null) ...[
-                              _driverCard(context),
-                              const SizedBox(height: 12),
-                             ],
-                             _orderDetailsCard(context),
-                             const SizedBox(height: 24),
-                           ],
-                         ),
-                       );
-                     },
-                   ),
-                 ),
-                  ],
-                );
-              },
-            ),
-          ),
+          Expanded(child: _buildMapAndSheet(context, navStream, isPickupPhase, canCancel)),
         ],
       ),
     );
   }
 
-  Widget _paymentBanner(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+
+  Widget _buildMapAndSheet(BuildContext context, AsyncValue<DriverNavigationUpdate?> navStream, bool isPickupPhase, bool canCancel) {
+    final cs = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            GoogleMap(
+              onMapCreated: (c) {
+                _mapController = c;
+                _recenterMap(_booking, navStream.value, isPickupPhase);
+              },
+              initialCameraPosition: CameraPosition(
+                target: isPickupPhase
+                    ? LatLng(_booking.pickupAddress.latitude, _booking.pickupAddress.longitude)
+                    : LatLng(_booking.dropAddress.latitude, _booking.dropAddress.longitude),
+                zoom: 13,
+              ),
+              markers: _markers,
+              polylines: showPolyline(_booking.status) ? _polylines : {},
+              myLocationEnabled: true,
+              zoomControlsEnabled: false,
+            ),
+
+            // Recenter button
+            Positioned(
+              left: 16,
+              bottom: constraints.maxHeight * min(_sheetSize, _initialSheetSize) + 16,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(12),
+                color: cs.surfaceBright,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _recenterMap(_booking, navStream.value, isPickupPhase),
+                  child: Container(
+                    width: 40,
+                    height: 36,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.my_location_rounded, size: 20, color: cs.primary),
+                  ),
+                ),
+              ),
+            ),
+
+            // Zoom controls
+            Positioned(
+              right: 16,
+              bottom: constraints.maxHeight * min(_sheetSize, _initialSheetSize) + 16,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(12),
+                color: cs.surfaceBright,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () => _mapController?.moveCamera(CameraUpdate.zoomIn()),
+                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                      child: Container(
+                        width: 40,
+                        height: 36,
+                        alignment: Alignment.center,
+                        child: Icon(Icons.add, size: 20, color: cs.primary),
+                      ),
+                    ),
+                    Divider(height: 1, thickness: 1, color: cs.outline.withValues(alpha: 0.15)),
+                    InkWell(
+                      onTap: () => _mapController?.moveCamera(CameraUpdate.zoomOut()),
+                      borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
+                      child: Container(
+                        width: 40,
+                        height: 36,
+                        alignment: Alignment.center,
+                        child: Icon(Icons.remove, size: 20, color: cs.primary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Draggable sheet
+            NotificationListener<DraggableScrollableNotification>(
+              onNotification: (notification) {
+                setState(() => _sheetSize = notification.extent);
+                return true;
+              },
+              child: DraggableScrollableSheet(
+                initialChildSize: _initialSheetSize,
+                minChildSize: _minSheetSize,
+                maxChildSize: 1,
+                builder: (context, controller) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, -2))],
+                    ),
+                    child: ListView(
+                      controller: controller,
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        // Handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: cs.onSurface.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        // Payment banner - only show if final invoice exists with payment link and not paid
+                        if (_shouldShowPaymentBanner()) ...[
+                          _buildPaymentBanner(context),
+                          const SizedBox(height: 12),
+                        ],
+                        if (_booking.assignedDriver != null) ...[
+                          _buildDriverCard(context),
+                          const SizedBox(height: 12),
+                        ],
+                        _buildAddressesCard(context),
+                        const SizedBox(height: 12),
+                        _buildPackageCard(context),
+                        const SizedBox(height: 12),
+                        _buildInvoiceCard(context),
+                        const SizedBox(height: 12),
+                        _buildHelpSection(context, canCancel),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  Widget _buildPaymentBanner(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final invoice = _booking.finalInvoice!;
+    final amount = invoice.finalAmount;
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(16), border: Border.all(color: colorScheme.primary.withValues(alpha: 0.15))),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        border: Border.all(color: cs.primary.withValues(alpha: 0.15)),
+      ),
       child: Row(
         children: [
-          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.payment_rounded, color: cs.primary, size: 22),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Payment of ₹${_booking.finalCost?.toStringAsFixed(2) ?? _booking.estimatedCost.toStringAsFixed(2)} pending', style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Text('Tap Pay now to complete payment', style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Payment of ₹${amount.toStringAsFixed(0)} pending',
+                  style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Tap Pay now to complete payment',
+                  style: tt.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(
+          FilledButton(
             onPressed: () async {
-              final url = Uri.parse('https://rzp.io/rzp/3E0KVp8');
+              final url = Uri.parse(invoice.paymentLinkUrl!);
               if (!await launchUrl(url, mode: LaunchMode.inAppWebView)) {
                 if (context.mounted) SnackBars.error(context, 'Could not open payment link');
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onPrimary, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             child: const Text('Pay now'),
           ),
         ],
@@ -483,213 +485,578 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> wit
     );
   }
 
-  Widget _driverCard(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+  bool _shouldShowPaymentBanner() {
+    final invoice = _booking.finalInvoice;
+    return invoice != null &&
+           invoice.paymentLinkUrl != null &&
+           invoice.paymentLinkUrl!.isNotEmpty &&
+           !invoice.isPaid;
+  }
+
+  Widget _buildDriverCard(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final d = _booking.assignedDriver;
+
     return Container(
-      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(radius: 22, backgroundImage: (d?.photo != null && d!.photo!.isNotEmpty) ? NetworkImage(d.photo!) : null, child: (d?.photo == null || d!.photo!.isEmpty) ? const Icon(Icons.person) : null),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(d?.firstName != null ? '${d!.firstName} ${d.lastName ?? ''}'.trim() : 'Assigned driver', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: cs.primary.withValues(alpha: 0.15),
+            backgroundImage: (d?.photo != null && d!.photo!.isNotEmpty) ? NetworkImage(d.photo!) : null,
+            child: (d?.photo == null || d!.photo!.isEmpty)
+                ? Icon(Icons.person_rounded, color: cs.primary, size: 24)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  d?.firstName != null ? '${d!.firstName} ${d.lastName ?? ''}'.trim() : 'Assigned driver',
+                  style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface),
+                ),
                 const SizedBox(height: 2),
-                Text('Score: ${d?.score ?? '-'}', style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade700)),
-              ]),
+                Row(
+                  children: [
+                    Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Score: ${d?.score ?? '-'}',
+                      style: tt.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            IconButton(onPressed: () async {
-              // Optional: tel: link if phone available
-            }, icon: const Icon(Icons.call, color: Colors.green)),
-          ],
-        ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              onPressed: () async {
+                if (d?.phoneNumber != null) {
+                  final url = Uri.parse('tel:${d!.phoneNumber}');
+                  if (!await launchUrl(url)) {
+                    if (context.mounted) SnackBars.error(context, 'Could not make call');
+                  }
+                }
+              },
+              icon: const Icon(Icons.call_rounded, color: Colors.green),
+              iconSize: 22,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _orderDetailsCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+
+  Widget _buildAddressesCard(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     return Container(
-      decoration: BoxDecoration(color: colorScheme.surfaceBright, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 2))]),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Order details', style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
-          ]),
-          const SizedBox(height: 16),
-
-          // Addresses
-          _addressRow(context, 'Pickup', _booking.pickupAddress.formattedAddress, isPickup: true),
-          const SizedBox(height: 10),
-          _addressRow(context, 'Drop', _booking.dropAddress.formattedAddress, isPickup: false),
-          const SizedBox(height: 16),
-
-          // Package summary
-          Row(children: [
-            const Icon(Icons.inventory_2_outlined, size: 18, color: Colors.grey),
-            const SizedBox(width: 8),
-            Expanded(child: Text('Package: ${_booking.package.productType.value.replaceAll('_', ' ')}', style: textTheme.bodyMedium)),
-            if(showEditButton(_booking.status, EditButtonType.package))
-            TextButton(onPressed: () => _editPackage(context), child: Text('Edit', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600))),
-          ]),
-          const SizedBox(height: 8),
-
-          Row(children: [
-            const Icon(Icons.local_shipping_outlined, size: 18, color: Colors.grey),
-            const SizedBox(width: 8),
-            Expanded(child: Text('Vehicle: ${_booking.suggestedVehicleType.value.replaceAll('_', ' ')}', style: textTheme.bodyMedium)),
-            Text('₹${(_booking.finalCost ?? _booking.estimatedCost).toStringAsFixed(2)}', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          ]),
-        ]),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.route_rounded, size: 18, color: cs.primary),
+              const SizedBox(width: 8),
+              Text('Addresses', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              const Spacer(),
+              Text(
+                '#${_booking.bookingNumber.toString().padLeft(6, '0')}',
+                style: tt.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildAddressRow(context, 'Pickup', _booking.pickupAddress.formattedAddress, isPickup: true),
+          const SizedBox(height: 12),
+          _buildAddressRow(context, 'Drop', _booking.dropAddress.formattedAddress, isPickup: false),
+        ],
       ),
     );
   }
 
-  Widget _addressRow(BuildContext context, String label, String value, {required bool isPickup}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+  Widget _buildPackageCard(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final pkg = _booking.package;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.inventory_2_outlined, size: 18, color: cs.primary),
+              const SizedBox(width: 8),
+              Text('Package', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildInfoRow(context, 'Type', pkg.productType.value.replaceAll('_', ' ')),
+          if (pkg.productName != null && pkg.productName!.isNotEmpty)
+            _buildInfoRow(context, 'Name', pkg.productName!),
+          if (pkg.description != null && pkg.description!.isNotEmpty)
+            _buildInfoRow(context, 'Description', pkg.description!),
+          _buildInfoRow(context, 'Weight', '${pkg.approximateWeight.toStringAsFixed(pkg.approximateWeight.truncateToDouble() == pkg.approximateWeight ? 0 : 1)} ${pkg.weightUnit.value}'),
+          if (pkg.numberOfProducts != null)
+            _buildInfoRow(context, 'Quantity', '${pkg.numberOfProducts} items'),
+          if (pkg.length != null && pkg.width != null && pkg.height != null)
+            _buildInfoRow(context, 'Dimensions', '${pkg.length} x ${pkg.width} x ${pkg.height} ${pkg.dimensionUnit?.value ?? ''}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvoiceCard(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final invoice = _booking.finalInvoice ?? _booking.estimateInvoice;
+    final isFinal = _booking.finalInvoice != null;
+
+    if (invoice == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, size: 18, color: cs.primary),
+              const SizedBox(width: 8),
+              Text('Invoice', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              if (!isFinal) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text('Estimated', style: tt.labelSmall?.copyWith(color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildInfoRow(context, 'Vehicle', invoice.vehicleModelName),
+          _buildInfoRow(context, 'Distance', '${invoice.distanceKm.toStringAsFixed(1)} km'),
+          _buildInfoRow(context, 'Base Price', '₹${invoice.effectiveBasePrice.toStringAsFixed(0)}'),
+          _buildInfoRow(context, 'Per Km Rate', '₹${invoice.perKmPrice.toStringAsFixed(0)}/km'),
+          Divider(height: 16, color: cs.outline.withValues(alpha: 0.1)),
+          _buildInfoRow(context, 'Total', '₹${invoice.totalPrice.toStringAsFixed(0)}'),
+          if (invoice.walletApplied > 0)
+            _buildInfoRow(context, 'Wallet Applied', '-₹${invoice.walletApplied.toStringAsFixed(0)}', valueColor: Colors.green),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Amount Payable', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              Text('₹${invoice.finalAmount.toStringAsFixed(0)}', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: cs.primary)),
+            ],
+          ),
+          if (isFinal && invoice.isPaid) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle_rounded, size: 16, color: Colors.green),
+                  const SizedBox(width: 6),
+                  Text('Paid', style: tt.bodySmall?.copyWith(color: Colors.green, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: tt.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.6))),
+          Text(value, style: tt.bodyMedium?.copyWith(color: valueColor ?? cs.onSurface, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressRow(BuildContext context, String label, String value, {required bool isPickup}) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(isPickup ? Icons.my_location : Icons.location_on, size: 18, color: isPickup ? colorScheme.primary : Colors.red),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label.toUpperCase(), style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade600, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-            const SizedBox(height: 4),
-            Text(value, style: textTheme.bodyMedium),
-          ]),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: (isPickup ? cs.primary : Colors.red).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            isPickup ? Icons.my_location_rounded : Icons.location_on_rounded,
+            size: 16,
+            color: isPickup ? cs.primary : Colors.red,
+          ),
         ),
-        if(showEditButton(_booking.status, isPickup ? EditButtonType.pickup : EditButtonType.drop))
-        TextButton(onPressed: () => _editAddress(context, isPickup), child: Text('Edit', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600))),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: tt.labelSmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.5),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(value, style: tt.bodyMedium?.copyWith(color: cs.onSurface)),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Future<void> _editAddress(BuildContext context, bool isPickup) async {
-    final current = isPickup ? _booking.pickupAddress : _booking.dropAddress;
+  Widget _buildHelpSection(BuildContext context, bool canCancel) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
-    final saved = SavedAddress(
-      id: '',
-      name: isPickup ? 'Pickup' : 'Drop',
-      address: Address(
-        formattedAddress: current.formattedAddress,
-        latitude: current.latitude,
-        longitude: current.longitude,
-        addressDetails: current.addressDetails,
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
-      contactName: isPickup ? _booking.pickupAddress.contactName : _booking.dropAddress.contactName,
-      contactPhone: isPickup ? _booking.pickupAddress.contactPhone : _booking.dropAddress.contactPhone,
-      noteToDriver: isPickup ? _booking.pickupAddress.noteToDriver : _booking.dropAddress.noteToDriver,
-      isDefault: false,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+      child: Column(
+        children: [
+          // Header - tappable to expand
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _helpExpanded = !_helpExpanded),
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: cs.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.help_outline_rounded, color: cs.secondary, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Need Help?', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+                          const SizedBox(height: 2),
+                          Text('Support & options', style: tt.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.6))),
+                        ],
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _helpExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(Icons.keyboard_arrow_down_rounded, color: cs.onSurface.withValues(alpha: 0.5), size: 24),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
-    final selected = await Navigator.push<SavedAddress>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MapSelectionPage.booking(
-          isPickup: isPickup,
-          initialSavedAddress: saved,
-        ),
-      ),
-    );
-
-    if (!context.mounted || selected == null) return;
-
-    try {
-      final api = await ref.read(apiProvider.future);
-      await updateBookingAddress(
-        api,
-        _booking.id,
-        addressType: isPickup ? AddressType.pickup : AddressType.drop,
-        addressName: selected.name,
-        contactName: selected.contactName,
-        contactPhone: selected.contactPhone,
-        noteToDriver: selected.noteToDriver,
-        formattedAddress: selected.address.formattedAddress,
-        addressDetails: selected.address.addressDetails,
-        latitude: selected.address.latitude,
-        longitude: selected.address.longitude,
-      );
-      if (!context.mounted) return;
-      ref.invalidate(bookingDetailsProvider(_booking.id));
-    } catch (e) {
-      if (context.mounted) SnackBars.error(context, 'Failed to update address: $e');
-    }
-  }
-
-  Future<void> _editPackage(BuildContext context) async {
-    // Lightweight prompt to edit weight; validate with estimate and updateBooking
-    final isAgri = _booking.package.productType == ProductType.agricultural;
-    final controller = TextEditingController(text: isAgri ? (_booking.package.approximateWeight?.toString() ?? '') : (_booking.package.averageWeight?.toString() ?? ''));
-
-    final value = await showDialog<double?>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Update weight'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Weight (KG)'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, double.tryParse(controller.text.trim())), child: const Text('Save')),
+          // Expandable content
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              children: [
+                Divider(height: 1, color: cs.outline.withValues(alpha: 0.1)),
+                // Contact Support
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => SnackBars.info(context, 'Support coming soon'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.support_agent_rounded, color: cs.primary, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text('Contact Support', style: tt.bodyMedium?.copyWith(color: cs.onSurface, fontWeight: FontWeight.w500)),
+                          ),
+                          Icon(Icons.chevron_right_rounded, color: cs.onSurface.withValues(alpha: 0.4), size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Cancel Booking - only if allowed
+                if (canCancel) ...[
+                  Divider(height: 1, indent: 46, color: cs.outline.withValues(alpha: 0.1)),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showCancelDialog(context),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(14),
+                        bottomRight: Radius.circular(14),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.cancel_outlined, color: cs.error, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text('Cancel Booking', style: tt.bodyMedium?.copyWith(color: cs.error, fontWeight: FontWeight.w500)),
+                            ),
+                            Icon(Icons.chevron_right_rounded, color: cs.error.withValues(alpha: 0.5), size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            crossFadeState: _helpExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
         ],
       ),
     );
+  }
 
-    if (value == null) return;
 
+  Future<void> _showCancelDialog(BuildContext context) async {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final configAsync = ref.read(cancellationConfigProvider);
+
+    final config = configAsync.valueOrNull ?? const CancellationConfig(
+      minChargePercent: 0.1,
+      maxChargePercent: 0.5,
+      incrementPerMinute: 0.01,
+    );
+
+    final totalAmount = _booking.finalCost ?? _booking.estimatedCost;
+    final isConfirmed = _booking.status != BookingStatus.pending && _booking.status != BookingStatus.driverAssigned;
+
+    double refundAmount;
+    double cancellationCharge;
+
+    if (isConfirmed) {
+      final refundPercent = config.calculateRefundPercent(_booking.acceptedAt);
+      refundAmount = totalAmount * refundPercent;
+      cancellationCharge = totalAmount - refundAmount;
+    } else {
+      refundAmount = totalAmount;
+      cancellationCharge = 0;
+    }
+
+    final shouldCancel = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('Cancel Booking?', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+            const SizedBox(height: 8),
+            Text(
+              'Booking #${_booking.bookingNumber.toString().padLeft(6, '0')}',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+            ),
+            const SizedBox(height: 20),
+
+            // Refund details
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.surfaceBright,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.outline.withValues(alpha: 0.1)),
+              ),
+              child: Column(
+                children: [
+                  _buildDetailRow(context, 'Booking Amount', '₹${totalAmount.toStringAsFixed(0)}'),
+                  if (cancellationCharge > 0) ...[
+                    const SizedBox(height: 10),
+                    _buildDetailRow(context, 'Cancellation Fee', '-₹${cancellationCharge.toStringAsFixed(0)}', valueColor: cs.error),
+                  ],
+                  const SizedBox(height: 10),
+                  Divider(color: cs.outline.withValues(alpha: 0.1)),
+                  const SizedBox(height: 10),
+                  _buildDetailRow(context, 'Refund Amount', '₹${refundAmount.toStringAsFixed(0)}', valueColor: Colors.green, isBold: true),
+                ],
+              ),
+            ),
+
+            if (isConfirmed) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 18, color: Colors.orange),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Cancellation charges increase over time after driver accepts',
+                        style: tt.bodySmall?.copyWith(color: Colors.orange.shade800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Keep Booking'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: cs.error,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Cancel Booking'),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+          ],
+        ),
+      ),
+    );
+
+    if (shouldCancel == true && context.mounted) {
+      await _cancelBooking(context);
+    }
+  }
+
+  Widget _buildDetailRow(BuildContext context, String label, String value, {Color? valueColor, bool isBold = false}) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.7), fontWeight: isBold ? FontWeight.w600 : null)),
+        Text(value, style: tt.bodyMedium?.copyWith(color: valueColor ?? cs.onSurface, fontWeight: isBold ? FontWeight.w700 : FontWeight.w600)),
+      ],
+    );
+  }
+
+  Future<void> _cancelBooking(BuildContext context) async {
     try {
-      final api = await ref.read(apiProvider.future);
-      final isAgri = _booking.package.productType == ProductType.agricultural;
-      final pkg = isAgri ? Package.agricultural(
-        packageType: _booking.package.packageType,
-        productName: _booking.package.productName ?? '',
-        approximateWeight: value,
-        weightUnit: _booking.package.weightUnit ?? WeightUnit.kg,
-      ) : Package.nonAgricultural(
-        packageType: _booking.package.packageType,
-        averageWeight: value,
-        bundleWeight: _booking.package.bundleWeight,
-        length: _booking.package.length,
-        width: _booking.package.width,
-        height: _booking.package.height,
-        dimensionUnit: _booking.package.dimensionUnit ?? DimensionUnit.cm,
-        description: _booking.package.description,
-        packageImageUrl: _booking.package.packageImageUrl,
-        gstBillUrl: _booking.package.gstBillUrl,
-      );
-
-      // Validate against vehicle weight limit using estimate
-      final estimate = await getBookingEstimate(
-        api,
-        pickupAddress: _booking.pickupAddress,
-        dropAddress: _booking.dropAddress,
-        package: _booking.package,
-      );
-      final matched = estimate.vehicleOptions.firstWhere((o) => o.vehicleType == _booking.suggestedVehicleType, orElse: () => estimate.vehicleOptions.first);
-      if ((isAgri ? (pkg.approximateWeight ?? 0) : (pkg.averageWeight ?? 0)) > matched.weightLimit) {
-        if (context.mounted) SnackBars.error(context, 'Weight exceeds ${matched.weightLimit.toStringAsFixed(0)} kg limit for ${_booking.suggestedVehicleType.value.replaceAll('_', ' ')}');
-        return;
-      }
-
-      await updateBookingPackage(api, _booking.id, pkg);
-      if (!context.mounted) return;
+      final api = ref.read(apiProvider).value!;
+      await booking_api.cancelBooking(api, _booking.id, 'Cancelled by customer');
+      ref.invalidate(activeBookingsProvider);
       ref.invalidate(bookingDetailsProvider(_booking.id));
+      if (context.mounted) {
+        SnackBars.success(context, 'Booking cancelled successfully');
+        Navigator.pop(context);
+      }
     } catch (e) {
-      if (context.mounted) SnackBars.error(context, 'Failed to update package: $e');
+      if (context.mounted) {
+        SnackBars.error(context, 'Failed to cancel booking: $e');
+      }
     }
   }
 }
-
-

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
+import 'package:hello_truck_app/models/cancellation_config.dart';
 import 'package:hello_truck_app/models/navigation_update.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
@@ -14,7 +15,7 @@ final activeBookingsProvider = FutureProvider<List<Booking>>((ref) async {
 });
 
 // Provider for booking history
-final bookingHistoryProvider = FutureProvider<List<Booking>>((ref) async {
+final bookingHistoryProvider = FutureProvider.autoDispose<List<Booking>>((ref) async {
   final api = await ref.read(apiProvider.future);
   return getBookingHistory(api);
 });
@@ -38,6 +39,12 @@ final bookingEstimateProvider = FutureProvider.autoDispose.family<BookingEstimat
     dropAddress: params.dropAddress,
     package: params.package,
   );
+});
+
+// Provider for cancellation config
+final cancellationConfigProvider = FutureProvider<CancellationConfig>((ref) async {
+  final api = await ref.read(apiProvider.future);
+  return getCancellationConfig(api);
 });
 
 /// SSE stream provider for driver navigation (live updates)

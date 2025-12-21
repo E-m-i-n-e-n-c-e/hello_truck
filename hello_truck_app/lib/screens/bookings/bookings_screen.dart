@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/api/booking_api.dart' as booking_api;
 import 'package:hello_truck_app/models/booking.dart';
+import 'package:hello_truck_app/models/cancellation_config.dart';
+import 'package:hello_truck_app/models/enums/booking_enums.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/screens/bookings/booking_details_screen.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
   const BookingsScreen({super.key});
@@ -12,7 +17,8 @@ class BookingsScreen extends ConsumerStatefulWidget {
   ConsumerState<BookingsScreen> createState() => _BookingsScreenState();
 }
 
-class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTickerProviderStateMixin {
+class _BookingsScreenState extends ConsumerState<BookingsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -22,21 +28,27 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: cs.surface,
       appBar: AppBar(
         title: Text(
           'My Bookings',
-          style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+          style: tt.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface,
           ),
         ),
-        backgroundColor: colorScheme.surface,
+        backgroundColor: cs.surface,
         elevation: 0,
         centerTitle: true,
         bottom: TabBar(
@@ -45,251 +57,538 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> with SingleTick
             Tab(text: 'Active'),
             Tab(text: 'History'),
           ],
-          labelColor: colorScheme.primary,
-          unselectedLabelColor: colorScheme.onSurface.withValues(alpha: 0.6),
-          indicatorColor: colorScheme.primary,
+          labelColor: cs.primary,
+          unselectedLabelColor: cs.onSurface.withValues(alpha: 0.6),
+          indicatorColor: cs.primary,
+          labelStyle: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildActiveBookingsList(context),
-          _buildHistoryBookingsList(context),
+          _ActiveBookingsTab(),
+          _HistoryBookingsTab(),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActiveBookingsTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeBookingsAsync = ref.watch(activeBookingsProvider);
+
+    return activeBookingsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _buildErrorState(context, ref, error, activeBookingsProvider),
+      data: (bookings) => _buildBookingsList(
+        context,
+        ref,
+        bookings,
+        'No active bookings',
+        'Your active bookings will appear here',
+        showCancel: true,
+      ),
+    );
+  }
+}
+
+class _HistoryBookingsTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyBookingsAsync = ref.watch(bookingHistoryProvider);
+
+    return historyBookingsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _buildErrorState(context, ref, error, bookingHistoryProvider),
+      data: (bookings) => _buildBookingsList(
+        context,
+        ref,
+        bookings,
+        'No past bookings',
+        'Your booking history will appear here',
+        showCancel: false,
+      ),
+    );
+  }
+}
+
+Widget _buildErrorState(BuildContext context, WidgetRef ref, Object error, ProviderBase provider) {
+  final cs = Theme.of(context).colorScheme;
+  final tt = Theme.of(context).textTheme;
+
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: cs.error.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.error_outline_rounded, color: cs.error, size: 48),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Failed to load bookings',
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$error',
+            textAlign: TextAlign.center,
+            style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () => ref.invalidate(provider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildBookingsList(
+  BuildContext context,
+  WidgetRef ref,
+  List<Booking> bookings,
+  String emptyTitle,
+  String emptySubtitle, {
+  required bool showCancel,
+}) {
+  final cs = Theme.of(context).colorScheme;
+  final tt = Theme.of(context).textTheme;
+
+  if (bookings.isEmpty) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.receipt_long_outlined,
+              size: 64,
+              color: cs.primary.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            emptyTitle,
+            style: tt.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            emptySubtitle,
+            style: tt.bodyMedium?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.6),
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActiveBookingsList(BuildContext context) {
-    final activeBookingsAsync = ref.watch(activeBookingsProvider);
+  return ListView.separated(
+    padding: const EdgeInsets.all(16),
+    itemCount: bookings.length,
+    separatorBuilder: (context, index) => const SizedBox(height: 12),
+    itemBuilder: (context, index) => _BookingCard(
+      booking: bookings[index],
+      showCancel: showCancel,
+    ),
+  );
+}
 
-    return activeBookingsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-              const SizedBox(height: 12),
-              Text('Failed to load active bookings', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 6),
-              Text('$error', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(activeBookingsProvider),
-                child: const Text('Retry'),
-              ),
-            ],
+class _BookingCard extends ConsumerWidget {
+  final Booking booking;
+  final bool showCancel;
+
+  const _BookingCard({required this.booking, required this.showCancel});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final canCancel = showCancel && showCancelOnCard(booking.status);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: booking)),
+            );
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '#${booking.bookingNumber.toString().padLeft(6, '0')}',
+                            style: tt.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.local_shipping_outlined,
+                                size: 14,
+                                color: cs.onSurface.withValues(alpha: 0.55),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                booking.assignedVehicle ?? booking.idealVehicle,
+                                style: tt.bodySmall?.copyWith(
+                                  color: cs.onSurface.withValues(alpha: 0.55),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '₹${(booking.finalCost ?? booking.estimatedCost).toStringAsFixed(0)}',
+                      style: tt.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Status row
+                Consumer(builder: (context, ref, _) {
+                  final stream = isActive(booking.status)
+                      ? ref.watch(driverNavigationStreamProvider(booking.id))
+                      : const AsyncValue.data(null);
+
+                  final label = tileLabel(booking.status, stream.value);
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.schedule_rounded, size: 18, color: cs.primary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: tt.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: cs.primary.withValues(alpha: 0.7),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+                // Cancel button
+                if (canCancel) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => _showCancelDialog(context, ref),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: cs.error,
+                        side: BorderSide(color: cs.error.withValues(alpha: 0.4)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel Booking',
+                        style: tt.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cs.error,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
-      data: (bookings) => _buildBookingsList(context, bookings, 'No active bookings', 'Your active bookings will appear here'),
     );
   }
 
-  Widget _buildHistoryBookingsList(BuildContext context) {
-    final historyBookingsAsync = ref.watch(bookingHistoryProvider);
+  Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final configAsync = ref.read(cancellationConfigProvider);
 
-    return historyBookingsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-              const SizedBox(height: 12),
-              Text('Failed to load booking history', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 6),
-              Text('$error', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(bookingHistoryProvider),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+    final config = configAsync.valueOrNull ?? const CancellationConfig(
+      minChargePercent: 0.1,
+      maxChargePercent: 0.5,
+      incrementPerMinute: 0.01,
+    );
+
+    // Calculate refund details
+    final totalAmount = booking.finalCost ?? booking.estimatedCost;
+    final isConfirmed = booking.status != BookingStatus.pending &&
+        booking.status != BookingStatus.driverAssigned;
+
+    double refundAmount;
+    double cancellationCharge;
+
+    if (isConfirmed) {
+      final refundPercent = config.calculateRefundPercent(booking.acceptedAt);
+      refundAmount = totalAmount * refundPercent;
+      cancellationCharge = totalAmount - refundAmount;
+    } else {
+      refundAmount = totalAmount;
+      cancellationCharge = 0;
+    }
+
+    final shouldCancel = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-      ),
-      data: (bookings) => _buildBookingsList(context, bookings, 'No past bookings', 'Your booking history will appear here'),
-    );
-  }
-
-  Widget _buildBookingsList(BuildContext context, List<Booking> bookings, String emptyTitle, String emptySubtitle) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (bookings.isEmpty) {
-      return Center(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.receipt_long_outlined,
-                size: 64,
-                color: colorScheme.primary.withValues(alpha: 0.7),
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Title
             Text(
-              emptyTitle,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+              'Cancel Booking?',
+              style: tt.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              emptySubtitle,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.7),
+              'Booking #${booking.bookingNumber.toString().padLeft(6, '0')}',
+              style: tt.bodyMedium?.copyWith(
+                color: cs.onSurface.withValues(alpha: 0.6),
               ),
-              textAlign: TextAlign.center,
             ),
-          ],
-        ),
-      );
-    }
+            const SizedBox(height: 20),
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: bookings.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final b = bookings[index];
-        return _bookingCard(context, b);
-      },
-    );
-  }
-
-  Widget _bookingCard(BuildContext context, Booking b) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return InkWell(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: b)));
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceBright,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Booking number and price
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Refund details card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.surfaceBright,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.outline.withValues(alpha: 0.1)),
+              ),
+              child: Column(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Booking #${b.bookingNumber.toString().padLeft(6, '0')}',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.local_shipping_outlined, size: 16, color: Colors.grey.shade600),
-                          const SizedBox(width: 6),
-                          Text(
-                            b.suggestedVehicleType.value.replaceAll('_', ' '),
-                            style: textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '₹${(b.finalCost ?? b.estimatedCost).toStringAsFixed(0)}',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
+                  _buildDetailRow(context, 'Booking Amount', '₹${totalAmount.toStringAsFixed(0)}'),
+                  if (cancellationCharge > 0) ...[
+                    const SizedBox(height: 10),
+                    _buildDetailRow(
+                      context,
+                      'Cancellation Fee',
+                      '-₹${cancellationCharge.toStringAsFixed(0)}',
+                      valueColor: cs.error,
                     ),
+                  ],
+                  const SizedBox(height: 10),
+                  Divider(color: cs.outline.withValues(alpha: 0.1)),
+                  const SizedBox(height: 10),
+                  _buildDetailRow(
+                    context,
+                    'Refund Amount',
+                    '₹${refundAmount.toStringAsFixed(0)}',
+                    valueColor: Colors.green,
+                    isBold: true,
                   ),
                 ],
               ),
+            ),
 
-              const SizedBox(height: 16),
-
-              // Live ETA row powered by SSE
-              Consumer(builder: (context, ref, _) {
-
-                final stream = isActive(b.status) ? ref.watch(driverNavigationStreamProvider(b.id)) : AsyncValue.data(null);
-
-                final label = tileLabel(b.status, stream.value);
-                final hint = isBeforeDropArrived(b.status)
-                    ? 'Time to drop: ${formatTime(stream.value?.timeToDrop ?? 0)}\nDistance to drop: ${formatDistance(stream.value?.distanceToDrop ?? 0)}'
-                    : null;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            if (isConfirmed) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
                   children: [
-                    // Main ETA status
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.schedule, size: 20, color: colorScheme.primary),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              label,
-                              style: textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          Icon(Icons.arrow_forward_ios, size: 16, color: colorScheme.primary),
-                        ],
+                    Icon(Icons.info_outline_rounded, size: 18, color: Colors.orange),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Cancellation charges increase over time after driver accepts',
+                        style: tt.bodySmall?.copyWith(color: Colors.orange.shade800),
                       ),
                     ),
-                    // Hint text below if available
-                    if (hint != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          hint,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
                   ],
-                );
-              }),
+                ),
+              ),
             ],
-          ),
+
+            const SizedBox(height: 24),
+
+            // Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Keep Booking'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: cs.error,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Cancel Booking'),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+          ],
         ),
       ),
     );
+
+    if (shouldCancel == true && context.mounted) {
+      await _cancelBooking(context, ref);
+    }
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value, {
+    Color? valueColor,
+    bool isBold = false,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: tt.bodyMedium?.copyWith(
+            color: cs.onSurface.withValues(alpha: 0.7),
+            fontWeight: isBold ? FontWeight.w600 : null,
+          ),
+        ),
+        Text(
+          value,
+          style: tt.bodyMedium?.copyWith(
+            color: valueColor ?? cs.onSurface,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _cancelBooking(BuildContext context, WidgetRef ref) async {
+    try {
+      final api = ref.read(apiProvider).value!;
+      await booking_api.cancelBooking(api, booking.id, 'Booking cancelled by customer');
+      ref.invalidate(activeBookingsProvider);
+      ref.invalidate(bookingHistoryProvider);
+      if (context.mounted) {
+        SnackBars.success(context, 'Booking cancelled successfully');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        SnackBars.error(context, 'Failed to cancel booking: $e');
+      }
+    }
   }
 }

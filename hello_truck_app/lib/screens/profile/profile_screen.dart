@@ -231,6 +231,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          ref.invalidate(walletLogsProvider);
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const WalletActivityScreen()),
@@ -310,6 +311,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: 'Payments',
           subtitle: 'Transactions & pending refunds',
           onTap: () {
+            ref.invalidate(walletLogsProvider);
+            ref.invalidate(pendingRefundsProvider);
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PaymentsScreen()),
@@ -325,6 +328,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: 'GST Details',
           subtitle: 'Manage your business GST info',
           onTap: () {
+            ref.invalidate(gstDetailsProvider);
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const GstDetailsScreen()),

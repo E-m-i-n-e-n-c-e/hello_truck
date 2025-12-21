@@ -1,6 +1,7 @@
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
+import 'package:hello_truck_app/models/cancellation_config.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/utils/constants.dart';
 import 'package:hello_truck_app/utils/logger.dart';
@@ -77,7 +78,15 @@ Future<List<Booking>> getActiveBookings(API api) async {
   return (response.data as List).map((json) => Booking.fromJson(json)).toList();
 }
 
+/// Get cancellation config
+Future<CancellationConfig> getCancellationConfig(API api) async {
+  final response = await api.get('/bookings/customer/cancellation-config');
+  return CancellationConfig.fromJson(response.data);
+}
+
 /// Cancel a booking
-Future<void> cancelBooking(API api, String bookingId) async {
-  await api.delete('/bookings/customer/$bookingId');
+Future<void> cancelBooking(API api, String bookingId, String reason) async {
+  await api.post('/bookings/customer/cancel/$bookingId', data: {
+    'reason': reason,
+  });
 }
