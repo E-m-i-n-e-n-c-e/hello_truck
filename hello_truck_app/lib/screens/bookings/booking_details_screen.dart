@@ -538,13 +538,11 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
               ],
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IconButton(
-              onPressed: () async {
+          Material(
+            color: Colors.green.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              onTap: () async {
                 if (d?.phoneNumber != null) {
                   final url = Uri.parse('tel:${d!.phoneNumber}');
                   if (!await launchUrl(url)) {
@@ -552,8 +550,11 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
                   }
                 }
               },
-              icon: const Icon(Icons.call_rounded, color: Colors.green),
-              iconSize: 22,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                child: Icon(Icons.call_rounded, color: Colors.green.shade700, size: 20),
+              ),
             ),
           ),
         ],
