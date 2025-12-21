@@ -340,13 +340,13 @@ class _AddressSelectionScreenState
               children: [
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: BackButton(color: Colors.black.withValues(alpha: 0.8)),
+                  icon: BackButton(color: colorScheme.onSurface),
                 ),
                 Text(
                   'Select Addresses',
                   style: textTheme.titleLarge?.copyWith(
-                    color: Colors.black.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -484,7 +484,7 @@ class _AddressSelectionScreenState
                                            IconButton(
                                              icon: Icon(
                                                Icons.search,
-                                               color: Colors.black.withValues(alpha: 0.7),
+                                               color: colorScheme.onSurface.withValues(alpha: 0.7),
                                              ),
                                              onPressed: () => _showAddressSearch(true),
                                            ),
@@ -589,7 +589,7 @@ class _AddressSelectionScreenState
                                            IconButton(
                                              icon: Icon(
                                                Icons.search,
-                                               color: Colors.black.withValues(alpha: 0.7),
+                                               color: colorScheme.onSurface.withValues(alpha: 0.7),
                                              ),
                                              onPressed: () => _showAddressSearch(false),
                                            ),

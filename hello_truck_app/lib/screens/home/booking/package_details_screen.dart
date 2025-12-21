@@ -94,21 +94,20 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final media = MediaQuery.of(context);
     return Scaffold(
-    backgroundColor: colorScheme.surfaceBright,
+    backgroundColor: colorScheme.surface,
     appBar: AppBar(
-      backgroundColor: colorScheme.surfaceBright,
+      backgroundColor: colorScheme.surface,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Colors.black.withValues(alpha: 0.8)),
+        icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
         'Package Details',
         style: textTheme.titleLarge?.copyWith(
           color: colorScheme.onSurface,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
       ),
       centerTitle: false,
@@ -303,7 +302,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                     // Tab Switch for Dimensions or Description
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: colorScheme.onSurface.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       padding: const EdgeInsets.all(4),
@@ -335,7 +334,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                   'Dimensions',
                                   textAlign: TextAlign.center,
                                   style: textTheme.bodyMedium?.copyWith(
-                                    color: _showDimensions ? colorScheme.primary : Colors.grey.shade600,
+                                    color: _showDimensions ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.6),
                                     fontWeight: _showDimensions ? FontWeight.w600 : FontWeight.w500,
                                   ),
                                 ),
@@ -357,7 +356,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                   boxShadow: !_showDimensions
                                       ? [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.05),
+                                            color: colorScheme.onSurface.withValues(alpha: 0.05),
                                             blurRadius: 4,
                                             offset: const Offset(0, 2),
                                           ),
@@ -368,7 +367,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                   'Description',
                                   textAlign: TextAlign.center,
                                   style: textTheme.bodyMedium?.copyWith(
-                                    color: !_showDimensions ? colorScheme.primary : Colors.grey.shade600,
+                                    color: !_showDimensions ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.6),
                                     fontWeight: !_showDimensions ? FontWeight.w600 : FontWeight.w500,
                                   ),
                                 ),
@@ -471,7 +470,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                                   Text(
                                     'Unit',
                                     style: textTheme.bodySmall?.copyWith(
-                                      color: Colors.black.withValues(alpha: 0.68),
+                                      color: colorScheme.onSurface.withValues(alpha: 0.68),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -919,7 +918,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             Text(
               label,
               style: textTheme.bodySmall?.copyWith(
-                color: Colors.black.withValues(alpha: 0.68),
+                color: colorScheme.onSurface.withValues(alpha: 0.68),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -945,7 +944,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             fillColor: colorScheme.surfaceBright,
             hintText: hint,
             hintStyle: textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade500,
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -990,8 +989,8 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
           child: ElevatedButton(
             onPressed: enabled ? _proceedToEstimate : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: enabled ? colorScheme.primary : Colors.grey.shade200,
-              foregroundColor: enabled ? colorScheme.onPrimary : Colors.grey.shade500,
+              backgroundColor: enabled ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.12),
+              foregroundColor: enabled ? colorScheme.onPrimary : colorScheme.onSurface.withValues(alpha: 0.38),
               padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1001,7 +1000,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             child: Text(
               'Proceed to Estimate',
               style: textTheme.titleMedium?.copyWith(
-                color: enabled ? colorScheme.onPrimary : Colors.grey.shade500,
+                color: enabled ? colorScheme.onPrimary : colorScheme.onSurface.withValues(alpha: 0.38),
                 fontWeight: FontWeight.bold,
               ),
             ),

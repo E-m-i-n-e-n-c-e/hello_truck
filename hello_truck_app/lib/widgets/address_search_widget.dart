@@ -47,32 +47,22 @@ class _AddressSearchWidgetState extends ConsumerState<AddressSearchWidget> {
     if (_controller.text.isNotEmpty) {
       _searchPlaces(_controller.text);
     } else {
-      setState(() {
-        _predictions.clear();
-      });
+      setState(() => _predictions.clear());
     }
   }
 
   Future<void> _searchPlaces(String query) async {
     if (query.length < 2) {
-      setState(() {
-        _predictions.clear();
-      });
+      setState(() => _predictions.clear());
       return;
     }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       final position = ref.read(currentPositionStreamProvider);
       final currentPosition = position.value;
       final predictions = await GooglePlacesService.searchPlaces(
         query,
-        location: currentPosition != null
-            ? LatLng(currentPosition.latitude, currentPosition.longitude)
-            : null,
+        location: currentPosition != null ? LatLng(currentPosition.latitude, currentPosition.longitude) : null,
       );
       setState(() {
         _predictions = predictions;
@@ -87,21 +77,12 @@ class _AddressSearchWidgetState extends ConsumerState<AddressSearchWidget> {
   }
 
   Future<void> _onPredictionTapped(PlacePrediction prediction) async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     final LatLng? location = await GooglePlacesService.getPlaceDetails(prediction.placeId);
-
-    setState(() {
-      _isLoading = false;
-    });
-
+    setState(() => _isLoading = false);
     if (location != null) {
       widget.onLocationSelected(location, prediction);
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      if (mounted) Navigator.pop(context);
     }
   }
 
@@ -112,47 +93,26 @@ class _AddressSearchWidgetState extends ConsumerState<AddressSearchWidget> {
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
       ),
       child: Column(
         children: [
-          // Handle bar
           Container(
             margin: const EdgeInsets.symmetric(vertical: 12),
             width: 50,
             height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            decoration: BoxDecoration(color: colorScheme.outline.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
           ),
-
-          // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(
               children: [
-                if (widget.showBackButton)
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back),
-                  ),
+                if (widget.showBackButton) IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back)),
                 const SizedBox(width: 10),
-                Text(
-                  widget.title ?? 'Search for Address',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(widget.title ?? 'Search for Address', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-
-          // Search field
           Padding(
             padding: const EdgeInsets.all(20),
             child: TextField(
@@ -161,67 +121,27 @@ class _AddressSearchWidgetState extends ConsumerState<AddressSearchWidget> {
                 hintText: 'Search for location...',
                 prefixIcon: Icon(Icons.search, color: colorScheme.primary),
                 suffixIcon: _isLoading
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                      )
+                    ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))
                     : _controller.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _controller.clear();
-                              setState(() {
-                                _predictions.clear();
-                              });
-                            },
-                          )
+                        ? IconButton(icon: const Icon(Icons.clear), onPressed: () { _controller.clear(); setState(() => _predictions.clear()); })
                         : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: colorScheme.primary, width: 2)),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: colorScheme.surfaceBright,
               ),
-              onSubmitted: (value) {
-                if (value.isNotEmpty) {
-                  _searchPlaces(value);
-                }
-              },
+              onSubmitted: (value) { if (value.isNotEmpty) _searchPlaces(value); },
             ),
           ),
-
-          // Results
           Expanded(
             child: _predictions.isEmpty && !_isLoading
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.search,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
+                        Icon(Icons.search, size: 64, color: colorScheme.onSurface.withValues(alpha: 0.4)),
                         const SizedBox(height: 16),
-                        Text(
-                          'Start typing to search for locations',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
+                        Text('Start typing to search for locations', style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withValues(alpha: 0.6))),
                       ],
                     ),
                   )
@@ -235,34 +155,19 @@ class _AddressSearchWidgetState extends ConsumerState<AddressSearchWidget> {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              const Icon(Icons.location_on, color: Colors.grey),
+                              Icon(Icons.location_on, color: colorScheme.onSurface.withValues(alpha: 0.6)),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      prediction.structuredFormat ?? prediction.description.split(',').first,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    if (prediction.structuredFormat != null)
-                                      const SizedBox(height: 2),
-                                    Text(
-                                      prediction.description,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 14,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                    Text(prediction.structuredFormat ?? prediction.description.split(',').first, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                                    if (prediction.structuredFormat != null) const SizedBox(height: 2),
+                                    Text(prediction.description, style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.north_west, color: Colors.grey, size: 16),
+                              Icon(Icons.north_west, color: colorScheme.onSurface.withValues(alpha: 0.5), size: 16),
                             ],
                           ),
                         ),
