@@ -9,6 +9,7 @@ import 'package:hello_truck_app/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/widgets/address_search_widget.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_confirmation_modal.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
 
 enum MapSelectionMode {
   booking, // Current mode - shows modals, save options, etc.
@@ -342,6 +343,78 @@ class _MapSelectionPageState extends ConsumerState<MapSelectionPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final currentPositionAsync = ref.watch(currentPositionStreamProvider);
+    final authState = ref.watch(authStateProvider);
+
+    // Check if user is offline
+    if (authState.value?.isOffline == true) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            widget.title,
+            style: textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.wifi_off_rounded,
+                  size: 80,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'No Internet Connection',
+                  style: textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Address selection requires an internet connection. Please check your network and try again.',
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Go Back'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
