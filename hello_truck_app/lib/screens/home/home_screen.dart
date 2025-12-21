@@ -6,6 +6,7 @@ import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/address_selection_screen.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -318,7 +319,7 @@ class _ExpandableBookingCardState extends State<_ExpandableBookingCard> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '₹${(booking.finalCost ?? booking.estimatedCost).toStringAsFixed(0)}',
+                          (booking.finalCost ?? booking.estimatedCost).toRupees(),
                           style: tt.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: cs.primary,

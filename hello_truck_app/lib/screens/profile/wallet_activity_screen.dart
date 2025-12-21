@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/wallet_log.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 
 class WalletActivityScreen extends ConsumerWidget {
   const WalletActivityScreen({super.key});
@@ -185,7 +186,7 @@ class WalletActivityScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isCredit ? '+' : ''}₹${log.amount.abs().toStringAsFixed(2)}',
+                '${isCredit ? '+' : ''}${log.amount.abs().toRupees()}',
                 style: tt.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: isCredit ? Colors.green : Colors.red,
@@ -193,7 +194,7 @@ class WalletActivityScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Bal: ₹${log.afterBalance.toStringAsFixed(2)}',
+                'Bal: ${log.afterBalance.toRupees()}',
                 style: tt.bodySmall?.copyWith(
                   color: cs.onSurface.withValues(alpha: 0.5),
                 ),

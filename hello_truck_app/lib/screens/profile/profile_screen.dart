@@ -11,6 +11,7 @@ import 'package:hello_truck_app/screens/profile/wallet_activity_screen.dart';
 import 'package:hello_truck_app/screens/profile/payments_screen.dart';
 import 'package:hello_truck_app/screens/profile/gst_details_screen.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -279,7 +280,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '₹${customer.walletBalance.toStringAsFixed(2)}',
+                      customer.walletBalance.toRupees(),
                       style: tt.titleLarge?.copyWith(
                         color: cs.onPrimary,
                         fontWeight: FontWeight.w900,

@@ -10,6 +10,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final BookingAddress pickupAddress;
@@ -242,7 +243,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     ],
                   ),
                 ),
-                Text('₹${_idealVehicle.estimatedCost.toStringAsFixed(0)}', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                Text(_idealVehicle.estimatedCost.toRupees(), style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
               ],
             ),
           ],
@@ -280,7 +281,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   Widget _buildPriceRow(String label, double amount, ColorScheme colorScheme, TextTheme textTheme, {bool isTotal = false, String? suffix}) {
-    String displayValue = suffix != null ? '${amount.toStringAsFixed(2)}$suffix' : '₹${amount.toStringAsFixed(2)}';
+    String displayValue = suffix != null ? '${amount.toStringAsFixed(2)}$suffix' : amount.toRupees();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -329,7 +330,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-              Text('₹${_idealVehicle.estimatedCost.toStringAsFixed(0)}', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+              Text(_idealVehicle.estimatedCost.toRupees(), style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
             ],
           ),
           const SizedBox(height: 16),

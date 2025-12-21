@@ -7,13 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hello_truck_app/api/booking_api.dart' as booking_api;
 import 'package:hello_truck_app/models/booking.dart';
-import 'package:hello_truck_app/models/cancellation_config.dart';
+
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/models/navigation_update.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/utils/logger.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -460,7 +461,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Payment of ₹${amount.toStringAsFixed(0)} pending',
+                  'Payment of ${amount.toRupees()} pending',
                   style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface),
                 ),
                 const SizedBox(height: 2),
@@ -761,22 +762,22 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
           const SizedBox(height: 14),
           _buildInfoRow(context, 'Vehicle', invoice.vehicleModelName),
           _buildInfoRow(context, 'Distance', '${invoice.distanceKm.toStringAsFixed(1)} km'),
-          _buildInfoRow(context, 'Base Price', '₹${invoice.effectiveBasePrice.toStringAsFixed(0)}'),
-          _buildInfoRow(context, 'Per Km Rate', '₹${invoice.perKmPrice.toStringAsFixed(0)}/km'),
+          _buildInfoRow(context, 'Base Price', invoice.effectiveBasePrice.toRupees()),
+          _buildInfoRow(context, 'Per Km Rate', '${invoice.perKmPrice.toRupees()}/km'),
           Divider(height: 16, color: cs.outline.withValues(alpha: 0.1)),
-          _buildInfoRow(context, 'Total', '₹${invoice.totalPrice.toStringAsFixed(0)}'),
+          _buildInfoRow(context, 'Total', invoice.totalPrice.toRupees()),
           if (invoice.walletApplied != 0) ...[
             if (invoice.walletApplied > 0)
-              _buildInfoRow(context, 'Wallet Applied', '-₹${invoice.walletApplied.toStringAsFixed(0)}', valueColor: Colors.green)
+              _buildInfoRow(context, 'Wallet Applied', '-${invoice.walletApplied.toRupees()}', valueColor: Colors.green)
             else
-              _buildInfoRow(context, 'Debt Cleared', '+₹${invoice.walletApplied.abs().toStringAsFixed(0)}', valueColor: Colors.orange),
+              _buildInfoRow(context, 'Debt Cleared', '+${invoice.walletApplied.abs().toRupees()}', valueColor: Colors.orange),
           ],
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Amount Payable', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
-              Text('₹${invoice.finalAmount.toStringAsFixed(0)}', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: cs.primary)),
+              Text(invoice.finalAmount.toRupees(), style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: cs.primary)),
             ],
           ),
           if (isFinal && invoice.isPaid) ...[
@@ -981,18 +982,20 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
     final tt = Theme.of(context).textTheme;
     final config = await ref.read(cancellationConfigProvider.future);
 
-    final totalAmount = _booking.finalCost ?? _booking.estimatedCost;
+    // Use totalPrice (full service value before wallet deduction) for cancellation charge
+    // This matches backend logic
+    final totalPrice = _booking.finalInvoice?.totalPrice ?? _booking.estimateInvoice?.totalPrice ?? _booking.estimatedCost;
     final isConfirmed = _booking.status != BookingStatus.pending && _booking.status != BookingStatus.driverAssigned;
 
     double refundAmount;
     double cancellationCharge;
 
     if (isConfirmed) {
-      final refundPercent = config.calculateRefundPercent(_booking.acceptedAt);
-      refundAmount = totalAmount * refundPercent;
-      cancellationCharge = totalAmount - refundAmount;
+      final chargePercent = config.calculateChargePercent(_booking.acceptedAt);
+      cancellationCharge = totalPrice * chargePercent;
+      refundAmount = totalPrice - cancellationCharge;
     } else {
-      refundAmount = totalAmount;
+      refundAmount = totalPrice;
       cancellationCharge = 0;
     }
 
@@ -1040,15 +1043,15 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
               ),
               child: Column(
                 children: [
-                  _buildDetailRow(context, 'Booking Amount', '₹${totalAmount.toStringAsFixed(0)}'),
+                  _buildDetailRow(context, 'Booking Amount', totalPrice.toRupees()),
                   if (cancellationCharge > 0) ...[
                     const SizedBox(height: 10),
-                    _buildDetailRow(context, 'Cancellation Fee', '-₹${cancellationCharge.toStringAsFixed(0)}', valueColor: cs.error),
+                    _buildDetailRow(context, 'Cancellation Fee', '-${cancellationCharge.toRupees()}', valueColor: cs.error),
                   ],
                   const SizedBox(height: 10),
                   Divider(color: cs.outline.withValues(alpha: 0.1)),
                   const SizedBox(height: 10),
-                  _buildDetailRow(context, 'Refund Amount', '₹${refundAmount.toStringAsFixed(0)}', valueColor: Colors.green, isBold: true),
+                  _buildDetailRow(context, 'Refund Amount', refundAmount.toRupees(), valueColor: Colors.green, isBold: true),
                 ],
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:hello_truck_app/models/pending_refund.dart';
 import 'package:hello_truck_app/models/transaction_log.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 
 class PaymentsScreen extends ConsumerStatefulWidget {
   const PaymentsScreen({super.key});
@@ -239,7 +240,7 @@ class _TransactionCard extends StatelessWidget {
           const SizedBox(width: 8),
           // Amount
           Text(
-            '${isCredit ? '+' : '-'}₹${transaction.amount.abs().toStringAsFixed(0)}',
+            '${isCredit ? '+' : '-'}${transaction.amount.abs().toRupees()}',
             style: tt.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
               color: isCredit ? Colors.green : cs.onSurface,
@@ -446,7 +447,7 @@ class _RefundCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '₹${refund.totalRefundAmount.toStringAsFixed(0)}',
+                refund.totalRefundAmount.toRupees(),
                 style: tt.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: cs.onSurface,

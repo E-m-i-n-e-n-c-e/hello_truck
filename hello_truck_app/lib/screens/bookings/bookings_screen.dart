@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/api/booking_api.dart' as booking_api;
 import 'package:hello_truck_app/models/booking.dart';
-import 'package:hello_truck_app/models/cancellation_config.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/screens/bookings/booking_details_screen.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
   const BookingsScreen({super.key});
@@ -331,7 +331,7 @@ class _BookingCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      '₹${(booking.finalCost ?? booking.estimatedCost).toStringAsFixed(0)}',
+                      (booking.finalCost ?? booking.estimatedCost).toRupees(),
                       style: tt.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: cs.primary,
@@ -417,8 +417,9 @@ class _BookingCard extends ConsumerWidget {
     final tt = Theme.of(context).textTheme;
     final config = await ref.read(cancellationConfigProvider.future);
 
-    // Calculate refund details
-    final totalAmount = booking.finalCost ?? booking.estimatedCost;
+    // Use totalPrice (full service value before wallet deduction) for cancellation charge
+    // This matches backend logic
+    final totalPrice = booking.finalInvoice?.totalPrice ?? booking.estimateInvoice?.totalPrice ?? booking.estimatedCost;
     final isConfirmed = booking.status != BookingStatus.pending &&
         booking.status != BookingStatus.driverAssigned;
 
@@ -426,11 +427,11 @@ class _BookingCard extends ConsumerWidget {
     double cancellationCharge;
 
     if (isConfirmed) {
-      final refundPercent = config.calculateRefundPercent(booking.acceptedAt);
-      refundAmount = totalAmount * refundPercent;
-      cancellationCharge = totalAmount - refundAmount;
+      final chargePercent = config.calculateChargePercent(booking.acceptedAt);
+      cancellationCharge = totalPrice * chargePercent;
+      refundAmount = totalPrice - cancellationCharge;
     } else {
-      refundAmount = totalAmount;
+      refundAmount = totalPrice;
       cancellationCharge = 0;
     }
     if (!context.mounted) return;
@@ -489,13 +490,13 @@ class _BookingCard extends ConsumerWidget {
               ),
               child: Column(
                 children: [
-                  _buildDetailRow(context, 'Booking Amount', '₹${totalAmount.toStringAsFixed(0)}'),
+                  _buildDetailRow(context, 'Booking Amount', totalPrice.toRupees()),
                   if (cancellationCharge > 0) ...[
                     const SizedBox(height: 10),
                     _buildDetailRow(
                       context,
                       'Cancellation Fee',
-                      '-₹${cancellationCharge.toStringAsFixed(0)}',
+                      '-${cancellationCharge.toRupees()}',
                       valueColor: cs.error,
                     ),
                   ],
@@ -505,7 +506,7 @@ class _BookingCard extends ConsumerWidget {
                   _buildDetailRow(
                     context,
                     'Refund Amount',
-                    '₹${refundAmount.toStringAsFixed(0)}',
+                    refundAmount.toRupees(),
                     valueColor: Colors.green,
                     isBold: true,
                   ),

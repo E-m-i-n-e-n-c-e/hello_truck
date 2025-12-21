@@ -5,6 +5,7 @@ import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/screens/home/booking/review_screen.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
+import 'package:hello_truck_app/utils/currency_format.dart';
 
 class EstimateScreen extends ConsumerStatefulWidget {
   final BookingAddress pickupAddress;
@@ -204,7 +205,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Estimated Cost', style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.8))),
-                  Text('₹${idealVehicle.estimatedCost.toStringAsFixed(0)}', style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                  Text(idealVehicle.estimatedCost.toRupees(), style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
                 ],
               ),
             ),
@@ -403,7 +404,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
               ],
             ),
           ),
-          Text('₹${option.estimatedCost.toStringAsFixed(0)}', style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface.withValues(alpha: 0.8))),
+          Text(option.estimatedCost.toRupees(), style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface.withValues(alpha: 0.8))),
         ],
       ),
     );
