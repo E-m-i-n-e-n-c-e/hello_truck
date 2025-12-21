@@ -14,6 +14,7 @@ final appInitializerProvider = FutureProvider.autoDispose<void>((ref) async {
   // There are currently no FutureProviders to eagerly initialize in the customer app.
   final List<FutureProvider<Object>> futureProvidersToEagerInit = [
     activeBookingsProvider,
+    cancellationConfigProvider,
   ];
 
   // Only the FCM event stream needs eager initialization for now.

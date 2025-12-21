@@ -415,13 +415,7 @@ class _BookingCard extends ConsumerWidget {
   Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final configAsync = ref.read(cancellationConfigProvider);
-
-    final config = configAsync.valueOrNull ?? const CancellationConfig(
-      minChargePercent: 0.1,
-      maxChargePercent: 0.5,
-      incrementPerMinute: 0.01,
-    );
+    final config = await ref.read(cancellationConfigProvider.future);
 
     // Calculate refund details
     final totalAmount = booking.finalCost ?? booking.estimatedCost;
@@ -439,7 +433,7 @@ class _BookingCard extends ConsumerWidget {
       refundAmount = totalAmount;
       cancellationCharge = 0;
     }
-
+    if (!context.mounted) return;
     final shouldCancel = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,

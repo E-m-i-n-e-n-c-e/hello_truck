@@ -979,13 +979,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
   Future<void> _showCancelDialog(BuildContext context) async {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final configAsync = ref.read(cancellationConfigProvider);
-
-    final config = configAsync.valueOrNull ?? const CancellationConfig(
-      minChargePercent: 0.1,
-      maxChargePercent: 0.5,
-      incrementPerMinute: 0.01,
-    );
+    final config = await ref.read(cancellationConfigProvider.future);
 
     final totalAmount = _booking.finalCost ?? _booking.estimatedCost;
     final isConfirmed = _booking.status != BookingStatus.pending && _booking.status != BookingStatus.driverAssigned;
