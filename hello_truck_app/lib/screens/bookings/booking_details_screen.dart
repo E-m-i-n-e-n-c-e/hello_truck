@@ -443,7 +443,6 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
         color: cs.surfaceBright,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
-        border: Border.all(color: cs.primary.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -596,6 +595,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
         color: cs.surfaceBright,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        border: Border.all(color: cs.secondary.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
