@@ -4,7 +4,7 @@ import 'package:hello_truck_app/models/pending_refund.dart';
 import 'package:hello_truck_app/models/transaction_log.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
-import 'package:hello_truck_app/utils/currency_format.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 class PaymentsScreen extends ConsumerStatefulWidget {
   const PaymentsScreen({super.key});

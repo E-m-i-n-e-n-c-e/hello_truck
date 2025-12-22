@@ -8,7 +8,7 @@ import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/screens/bookings/booking_details_screen.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
-import 'package:hello_truck_app/utils/currency_format.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
   const BookingsScreen({super.key});

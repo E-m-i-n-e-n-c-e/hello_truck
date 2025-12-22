@@ -5,7 +5,7 @@ import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/screens/home/booking/review_screen.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
-import 'package:hello_truck_app/utils/currency_format.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 class EstimateScreen extends ConsumerStatefulWidget {
   final BookingAddress pickupAddress;
@@ -212,7 +212,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                _buildSpecChip(Icons.scale, 'Up to ${(idealVehicle.maxWeightTons * 1000).toStringAsFixed(0)} kg', colorScheme, textTheme),
+                _buildSpecChip(Icons.scale, 'Up to ${idealVehicle.maxWeightTons.tonsToKg()}', colorScheme, textTheme),
                 const SizedBox(width: 12),
                 _buildSpecChip(Icons.check_circle, 'Available', colorScheme, textTheme, isSuccess: true),
               ],
@@ -400,7 +400,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
               children: [
                 Text(_vehicleLabel(option.vehicleModelName), style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
                 const SizedBox(height: 2),
-                Text('Up to ${(option.maxWeightTons * 1000).toStringAsFixed(0)} kg', style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
+                Text('Up to ${option.maxWeightTons.tonsToKg()}', style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
               ],
             ),
           ),

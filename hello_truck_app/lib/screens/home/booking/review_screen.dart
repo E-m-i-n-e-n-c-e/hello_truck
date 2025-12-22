@@ -10,7 +10,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
-import 'package:hello_truck_app/utils/currency_format.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final BookingAddress pickupAddress;
@@ -267,28 +267,27 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           children: [
             Text('Price Breakdown', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
             const SizedBox(height: 16),
-            _buildPriceRow('Base fare', _idealVehicle.breakdown.baseFare, colorScheme, textTheme),
-            _buildPriceRow('Base km included', _idealVehicle.breakdown.baseKm.toDouble(), colorScheme, textTheme, suffix: ' km'),
-            _buildPriceRow('Per km rate', _idealVehicle.breakdown.perKm, colorScheme, textTheme),
-            _buildPriceRow('Distance', _idealVehicle.breakdown.distanceKm, colorScheme, textTheme, suffix: ' km'),
-            _buildPriceRow('Weight', _idealVehicle.breakdown.weightInTons, colorScheme, textTheme, suffix: ' tons'),
+            _buildPriceRow('Base fare', _idealVehicle.breakdown.baseFare.toRupees(), colorScheme, textTheme),
+            _buildPriceRow('Base km included', '${_idealVehicle.breakdown.baseKm} km', colorScheme, textTheme),
+            _buildPriceRow('Per km rate', '${_idealVehicle.breakdown.perKm.toRupees()}/km', colorScheme, textTheme),
+            _buildPriceRow('Distance', _idealVehicle.breakdown.distanceKm.toDistance(), colorScheme, textTheme),
+            _buildPriceRow('Weight', _idealVehicle.breakdown.weightInTons.tonsToKg(), colorScheme, textTheme),
             Divider(height: 24, color: colorScheme.outline.withValues(alpha: 0.2)),
-            _buildPriceRow('Total', _idealVehicle.estimatedCost, colorScheme, textTheme, isTotal: true),
+            _buildPriceRow('Total', _idealVehicle.estimatedCost.toRupees(), colorScheme, textTheme, isTotal: true),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPriceRow(String label, double amount, ColorScheme colorScheme, TextTheme textTheme, {bool isTotal = false, String? suffix}) {
-    String displayValue = suffix != null ? '${amount.toStringAsFixed(2)}$suffix' : amount.toRupees();
+  Widget _buildPriceRow(String label, String value, ColorScheme colorScheme, TextTheme textTheme, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: textTheme.bodyMedium?.copyWith(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.8))),
-          Text(displayValue, style: textTheme.bodyMedium?.copyWith(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? colorScheme.primary : colorScheme.onSurface)),
+          Text(value, style: textTheme.bodyMedium?.copyWith(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? colorScheme.primary : colorScheme.onSurface)),
         ],
       ),
     );

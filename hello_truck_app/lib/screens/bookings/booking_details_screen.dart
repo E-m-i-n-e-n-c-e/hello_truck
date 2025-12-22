@@ -14,7 +14,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/utils/logger.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
-import 'package:hello_truck_app/utils/currency_format.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -761,7 +761,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
           ),
           const SizedBox(height: 14),
           _buildInfoRow(context, 'Vehicle', invoice.vehicleModelName),
-          _buildInfoRow(context, 'Distance', '${invoice.distanceKm.toStringAsFixed(1)} km'),
+          _buildInfoRow(context, 'Distance', invoice.distanceKm.toDistance()),
           _buildInfoRow(context, 'Base Price', invoice.effectiveBasePrice.toRupees()),
           _buildInfoRow(context, 'Per Km Rate', '${invoice.perKmPrice.toRupees()}/km'),
           Divider(height: 16, color: cs.outline.withValues(alpha: 0.1)),

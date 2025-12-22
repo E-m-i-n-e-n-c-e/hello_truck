@@ -2,6 +2,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/models/navigation_update.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 /// Decode an encoded polyline string using flutter_polyline_points
 /// into a list of Google Maps `LatLng`.
@@ -141,11 +142,7 @@ String formatTime(int t) {
 
 // in meters
 String formatDistance(int d) {
-  if(d >= 1000) {
-    double km = d / 1000;
-    return '${km == km.toInt() ? km.toInt() : km.toStringAsFixed(1)} km';
-  }
-  return '$d m';
+  return (d / 1000.0).toDistance();
 }
 
 enum EditButtonType {

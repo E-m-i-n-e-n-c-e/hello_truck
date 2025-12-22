@@ -20,3 +20,30 @@ extension CurrencyFormat on num {
   /// Format with rupee symbol
   String toRupees() => '₹${toCurrency()}';
 }
+
+/// Extension for formatting distance values
+/// Input assumed to be in Kilometers (km)
+extension DistanceFormat on num {
+  /// Formats distance
+  /// - < 1 km: show in meters (0.5 km → "500 m")
+  /// - >= 1 km: show in km with 1 decimal (1.5 km → "1.5 km")
+  String toDistance() {
+    if (this < 1) {
+      return '${(this * 1000).round()} m';
+    }
+    String s = toStringAsFixed(1);
+    if (s.endsWith('.0')) {
+      return '${s.substring(0, s.length - 2)} km';
+    }
+    return '$s km';
+  }
+}
+
+/// Extension for formatting weight values
+extension WeightFormat on num {
+  /// Formats tons to kg string
+  /// 1.5 → "1500 kg"
+  String tonsToKg() {
+    return '${(this * 1000).round()} kg';
+  }
+}

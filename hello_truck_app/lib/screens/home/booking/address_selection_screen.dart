@@ -14,6 +14,7 @@ import 'package:hello_truck_app/screens/home/booking/package_details_screen.dart
 import 'package:hello_truck_app/widgets/location_permission_handler.dart';
 import 'package:hello_truck_app/api/address_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 class AddressSelectionScreen extends ConsumerStatefulWidget {
   const AddressSelectionScreen({super.key});
@@ -636,7 +637,7 @@ class _AddressSelectionScreenState
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      '${_distanceKm.toStringAsFixed(1)} km',
+                                      _distanceKm.toDistance(),
                                       style: textTheme.bodySmall?.copyWith(
                                         color: colorScheme.primary,
                                         fontWeight: FontWeight.bold,

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/wallet_log.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
-import 'package:hello_truck_app/utils/currency_format.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 class WalletActivityScreen extends ConsumerWidget {
   const WalletActivityScreen({super.key});

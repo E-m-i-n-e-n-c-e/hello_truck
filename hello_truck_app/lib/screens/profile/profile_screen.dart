@@ -11,7 +11,7 @@ import 'package:hello_truck_app/screens/profile/wallet_activity_screen.dart';
 import 'package:hello_truck_app/screens/profile/payments_screen.dart';
 import 'package:hello_truck_app/screens/profile/gst_details_screen.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
-import 'package:hello_truck_app/utils/currency_format.dart';
+import 'package:hello_truck_app/utils/format_utils.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
