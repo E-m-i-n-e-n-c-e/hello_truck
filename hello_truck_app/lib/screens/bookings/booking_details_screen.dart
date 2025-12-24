@@ -51,8 +51,12 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
   BitmapDescriptor? _truckIconFlipped;
   late Booking _booking;
   bool _handledFirstUpdate = false;
-  double _sheetSize = _initialSheetSize;
+  // Use ValueNotifier to avoid rebuilding entire widget tree on sheet drag
+  final ValueNotifier<double> _sheetExtent = ValueNotifier(_initialSheetSize);
   bool _helpExpanded = false;
+  // Cache decoded polyline to avoid repeated decodePolyline calls
+  String? _cachedPolylineEncoded;
+  List<LatLng>? _cachedPolylinePoints;
 
   @override
   void initState() {
@@ -64,6 +68,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
 
   @override
   void dispose() {
+    _sheetExtent.dispose();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitDown,
       DeviceOrientation.portraitUp,
@@ -117,7 +122,16 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
 
   void _updateRouteAndDriver(DriverNavigationUpdate? update) async {
     if (update == null || update.isStale || !isActive(_booking.status)) return;
-    final points = decodePolyline(update.routePolyline);
+
+    // Use cached polyline if it hasn't changed
+    List<LatLng> points;
+    if (_cachedPolylineEncoded == update.routePolyline && _cachedPolylinePoints != null) {
+      points = _cachedPolylinePoints!;
+    } else {
+      points = decodePolyline(update.routePolyline);
+      _cachedPolylineEncoded = update.routePolyline;
+      _cachedPolylinePoints = points;
+    }
 
     if (update.location != null) {
       final latLng = LatLng(update.location!.latitude, update.location!.longitude);
@@ -305,10 +319,14 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
               zoomControlsEnabled: false,
             ),
 
-            // Recenter button
-            Positioned(
-              left: 16,
-              bottom: constraints.maxHeight * min(_sheetSize, _initialSheetSize) + 16,
+            // Recenter button - uses ValueListenableBuilder to avoid rebuilding GoogleMap
+            ValueListenableBuilder<double>(
+              valueListenable: _sheetExtent,
+              builder: (context, sheetSize, child) => Positioned(
+                left: 16,
+                bottom: constraints.maxHeight * min(sheetSize, _initialSheetSize) + 16,
+                child: child!,
+              ),
               child: Material(
                 elevation: 4,
                 borderRadius: BorderRadius.circular(12),
@@ -326,10 +344,14 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
               ),
             ),
 
-            // Zoom controls
-            Positioned(
-              right: 16,
-              bottom: constraints.maxHeight * min(_sheetSize, _initialSheetSize) + 16,
+            // Zoom controls - uses ValueListenableBuilder to avoid rebuilding GoogleMap
+            ValueListenableBuilder<double>(
+              valueListenable: _sheetExtent,
+              builder: (context, sheetSize, child) => Positioned(
+                right: 16,
+                bottom: constraints.maxHeight * min(sheetSize, _initialSheetSize) + 16,
+                child: child!,
+              ),
               child: Material(
                 elevation: 4,
                 borderRadius: BorderRadius.circular(12),
@@ -363,10 +385,10 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
               ),
             ),
 
-            // Draggable sheet
+            // Draggable sheet - updates ValueNotifier instead of calling setState
             NotificationListener<DraggableScrollableNotification>(
               onNotification: (notification) {
-                setState(() => _sheetSize = notification.extent);
+                _sheetExtent.value = notification.extent;
                 return true;
               },
               child: DraggableScrollableSheet(
