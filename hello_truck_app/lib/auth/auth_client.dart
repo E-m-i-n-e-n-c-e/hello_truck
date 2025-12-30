@@ -132,6 +132,13 @@ class AuthClient with WidgetsBindingObserver {
     _controller.add(AuthState.unauthenticated());
   }
 
+  Future<void> emitOfflineState() async {
+    final accessToken = await _storage.read(key: 'accessToken');
+    if (accessToken != null && accessToken.isNotEmpty) {
+      _controller.add(AuthState.fromToken(accessToken, isOffline: true));
+    }
+  }
+
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _retryDelay = 0;

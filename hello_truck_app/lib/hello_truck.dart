@@ -50,7 +50,7 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
       }
       // Listen for offline status changes
       ref.listen(authStateProvider, (previous, next) {
-        if (next.value?.isOffline == true) {
+        if (previous?.value?.isOffline == false && next.value?.isOffline == true) {
           SnackBars.error(context, 'You are offline. Please check your internet connection.');
         }
         else if (previous?.value?.isOffline == true && next.value?.isOffline == false) {

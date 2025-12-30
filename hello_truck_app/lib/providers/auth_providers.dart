@@ -18,6 +18,8 @@ final authClientProvider = Provider<AuthClient>((ref) {
   ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
     if (previous?.value == false && next.value == true) {
       client.refreshTokens();
+    } else if (previous?.value == true && next.value == false) {
+      client.emitOfflineState();
     }
   });
 
