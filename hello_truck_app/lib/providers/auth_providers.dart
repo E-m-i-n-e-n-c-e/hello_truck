@@ -7,6 +7,7 @@ import 'package:hello_truck_app/models/auth_state.dart';
 import 'package:hello_truck_app/models/enums/fcm_enums.dart';
 import 'package:hello_truck_app/providers/connectivity_providers.dart';
 import 'package:hello_truck_app/providers/fcm_providers.dart';
+import 'package:hello_truck_app/providers/provider_registry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/logger.dart';
@@ -17,7 +18,11 @@ final authClientProvider = Provider<AuthClient>((ref) {
   // Listen to connectivity changes
   ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
     if (previous?.value == false && next.value == true) {
-      client.refreshTokens();
+      // Coming back online - refresh all data
+      AppLogger.log('📡 Network restored - refreshing all data');
+      client.refreshTokens().then((_) {
+        ProviderRegistry.invalidateAll(ref);
+      });
     } else if (previous?.value == true && next.value == false) {
       client.emitOfflineState();
     }

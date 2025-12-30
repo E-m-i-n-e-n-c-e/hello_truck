@@ -233,6 +233,9 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
 
     navStream.whenData((update) => _updateRouteAndDriver(update));
 
+    // Watch cancellation config to initialize it
+    ref.watch(cancellationConfigProvider);
+
     final etaLabel = arrivalLabel(_booking.status, navStream.value);
     final isPickupPhase = isBeforePickupVerified(_booking.status);
     final title = getBookingTitle(_booking.status);
