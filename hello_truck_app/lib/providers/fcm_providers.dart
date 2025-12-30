@@ -23,6 +23,7 @@ final fcmEventsHandlerProvider = Provider<void>((ref) {
       }
       if(event == FcmEventType.paymentSuccess) {
         ref.invalidate(activeBookingsProvider);
+        ref.invalidate(transactionLogsProvider);
         ref.invalidate(bookingDetailsProvider);
       }
       if(event == FcmEventType.refundProcessed) {

@@ -312,7 +312,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: 'Payments',
           subtitle: 'Transactions & pending refunds',
           onTap: () {
-            ref.invalidate(walletLogsProvider);
+            ref.invalidate(transactionLogsProvider);
             ref.invalidate(pendingRefundsProvider);
             Navigator.push(
               context,
