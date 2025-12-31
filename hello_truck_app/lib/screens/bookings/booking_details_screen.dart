@@ -1007,135 +1007,135 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
     final tt = Theme.of(context).textTheme;
     final config = await ref.read(cancellationConfigProvider.future);
 
-    // Use totalPrice (full service value before wallet deduction) for cancellation charge
-    // This matches backend logic
-    final totalPrice = _booking.finalInvoice?.totalPrice ?? _booking.estimateInvoice?.totalPrice ?? _booking.estimatedCost;
-    final isConfirmed = _booking.status != BookingStatus.pending && _booking.status != BookingStatus.driverAssigned;
-
-    double refundAmount;
-    double cancellationCharge;
-
-    if (isConfirmed) {
-      final chargePercent = config.calculateChargePercent(_booking.acceptedAt);
-      cancellationCharge = totalPrice * chargePercent;
-      refundAmount = totalPrice - cancellationCharge;
-    } else {
-      refundAmount = totalPrice;
-      cancellationCharge = 0;
-    }
-
     if(!context.mounted) return;
     final shouldCancel = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: cs.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Cancel Booking?', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
-            const SizedBox(height: 8),
-            Text(
-              'Booking #${_booking.bookingNumber.toString().padLeft(6, '0')}',
-              style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
-            ),
-            const SizedBox(height: 20),
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          // Watch navigation stream for real-time charge updates
+          final navigationAsync = ref.watch(driverNavigationStreamProvider(_booking.id));
+          final chargePercent = getCancellationChargePercent(
+            booking: _booking,
+            config: config,
+            navigationAsync: navigationAsync,
+          );
 
-            // Refund details
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: cs.surfaceBright,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.outline.withValues(alpha: 0.1)),
-              ),
-              child: Column(
-                children: [
-                  _buildDetailRow(context, 'Booking Amount', totalPrice.toRupees()),
-                  if (cancellationCharge > 0) ...[
-                    const SizedBox(height: 10),
-                    _buildDetailRow(context, 'Cancellation Fee', '-${cancellationCharge.toRupees()}', valueColor: cs.error),
-                  ],
-                  const SizedBox(height: 10),
-                  Divider(color: cs.outline.withValues(alpha: 0.1)),
-                  const SizedBox(height: 10),
-                  _buildDetailRow(context, 'Refund Amount', refundAmount.toRupees(), valueColor: Colors.green, isBold: true),
+          final totalPrice = _booking.finalInvoice?.totalPrice ?? _booking.estimateInvoice?.totalPrice ?? _booking.estimatedCost;
+          final isConfirmed = _booking.status != BookingStatus.pending && _booking.status != BookingStatus.driverAssigned;
+          final cancellationCharge = totalPrice * chargePercent;
+          final refundAmount = totalPrice - cancellationCharge;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text('Cancel Booking?', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+                const SizedBox(height: 8),
+                Text(
+                  'Booking #${_booking.bookingNumber.toString().padLeft(6, '0')}',
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+                ),
+                const SizedBox(height: 20),
+
+                // Refund details
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceBright,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outline.withValues(alpha: 0.1)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(context, 'Booking Amount', totalPrice.toRupees()),
+                      if (cancellationCharge > 0) ...[
+                        const SizedBox(height: 10),
+                        _buildDetailRow(context, 'Cancellation Fee', '-${cancellationCharge.toRupees()}', valueColor: cs.error),
+                      ],
+                      const SizedBox(height: 10),
+                      Divider(color: cs.outline.withValues(alpha: 0.1)),
+                      const SizedBox(height: 10),
+                      _buildDetailRow(context, 'Refund Amount', refundAmount.toRupees(), valueColor: Colors.green, isBold: true),
+                    ],
+                  ),
+                ),
+
+                if (isConfirmed) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 18, color: Colors.orange),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Cancellation charges increase with distance travelled after driver accepts',
+                            style: tt.bodySmall?.copyWith(color: Colors.orange.shade800),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
-            ),
 
-            if (isConfirmed) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
+                const SizedBox(height: 24),
+                Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, size: 18, color: Colors.orange),
-                    const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        'Cancellation charges increase over time after driver accepts',
-                        style: tt.bodySmall?.copyWith(color: Colors.orange.shade800),
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Keep Booking'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: cs.error,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Cancel Booking'),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Keep Booking'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: cs.error,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Cancel Booking'),
-                  ),
-                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
               ],
             ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-          ],
-        ),
+          );
+        },
       ),
     );
 

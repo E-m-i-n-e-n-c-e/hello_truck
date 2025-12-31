@@ -2,7 +2,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/models/navigation_update.dart';
+import 'package:hello_truck_app/models/cancellation_config.dart';
+import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Decode an encoded polyline string using flutter_polyline_points
 /// into a list of Google Maps `LatLng`.
@@ -162,4 +165,29 @@ bool showEditButton(BookingStatus status, EditButtonType type) {
 
 bool showPolyline(BookingStatus status) {
   return status == BookingStatus.confirmed || status == BookingStatus.inTransit;
+}
+
+/// Calculate cancellation charge percentage based on booking status and navigation data
+double getCancellationChargePercent({
+  required Booking booking,
+  required CancellationConfig config,
+  required AsyncValue<DriverNavigationUpdate?> navigationAsync,
+}) {
+  final isConfirmed = booking.status != BookingStatus.pending && booking.status != BookingStatus.driverAssigned;
+
+  if (!isConfirmed) {
+    return 0.0;
+  }
+
+  // Get kmTravelled from navigation stream if available
+  double chargePercent = config.minChargePercent; // fallback
+
+  if (navigationAsync.hasValue && navigationAsync.value != null && !navigationAsync.value!.isStale) {
+    final navData = navigationAsync.value!;
+    final kmTravelled = navData.kmTravelled.toDouble();
+    // Mimic server logic: calculate charge based on distance travelled
+    chargePercent = config.calculateChargePercent(kmTravelled);
+  }
+
+  return chargePercent;
 }

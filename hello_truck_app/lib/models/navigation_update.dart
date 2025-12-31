@@ -5,6 +5,8 @@ class DriverNavigationUpdate {
   final int timeToDrop;
   final int distanceToPickup;
   final int distanceToDrop;
+  final int initialDistanceToPickup;
+  final int kmTravelled;
   final Location? location;
   final String? routePolyline;
   bool isStale;
@@ -16,6 +18,8 @@ class DriverNavigationUpdate {
     required this.timeToDrop,
     required this.distanceToPickup,
     required this.distanceToDrop,
+    required this.initialDistanceToPickup,
+    required this.kmTravelled,
     required this.location,
     required this.routePolyline,
     this.isStale = false,
@@ -25,10 +29,12 @@ class DriverNavigationUpdate {
   factory DriverNavigationUpdate.fromJson(Map<String, dynamic> json, {required String bookingId}) {
     return DriverNavigationUpdate(
       bookingId: json['bookingId'],
-      timeToPickup: json['timeToPickup'],
-      timeToDrop: json['timeToDrop'],
-      distanceToPickup: json['distanceToPickup'],
-      distanceToDrop: json['distanceToDrop'],
+      timeToPickup: json['timeToPickup'].toInt(),
+      timeToDrop: json['timeToDrop'].toInt(),
+      distanceToPickup: json['distanceToPickup'].toInt(),
+      distanceToDrop: json['distanceToDrop'].toInt(),
+      initialDistanceToPickup: json['initialDistanceToPickup']?.toInt() ?? json['distanceToPickup']?.toInt() ?? 0,
+      kmTravelled: json['kmTravelled']?.toInt() ?? 0,
       location: json['location'] != null ? Location.fromJson(json['location']) : null,
       routePolyline: json['routePolyline'],
       sentAt: json['sentAt'] != null ? DateTime.parse(json['sentAt']) : DateTime.now(),
