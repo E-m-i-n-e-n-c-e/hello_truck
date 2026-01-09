@@ -5,6 +5,7 @@ import 'package:hello_truck_app/pages/otp_verification_page.dart';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:smart_auth/smart_auth.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -24,6 +25,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   void initState() {
     super.initState();
     _phoneFocusNode.addListener(_onFocusChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestPhoneNumberHint();
+    });
   }
 
   void _onFocusChange() {
@@ -41,6 +45,59 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _phoneFocusNode.dispose();
     _formKey.currentState?.dispose();
     super.dispose();
+  }
+
+  // Request phone number hint from device
+  Future<void> _requestPhoneNumberHint() async {
+    try {
+      final smartAuth = SmartAuth.instance;
+      final res = await smartAuth.requestPhoneNumberHint();
+      debugPrint('Phone hint: $res');
+
+      if (res.hasData && mounted) {
+        final phoneNumber = res.requireData;
+        // Strip country code and any non-digit characters
+        String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+
+        // Remove +91 or 91 prefix if present
+        if (cleanNumber.startsWith('91') && cleanNumber.length > 10) {
+          cleanNumber = cleanNumber.substring(2);
+        }
+
+        // Only take last 10 digits to be safe
+        if (cleanNumber.length > 10) {
+          cleanNumber = cleanNumber.substring(cleanNumber.length - 10);
+        }
+
+        // Only proceed if we got a valid 10-digit number
+        if (cleanNumber.length == 10) {
+          _phoneController.text = cleanNumber;
+          // Auto-send OTP after getting phone number
+          final api = await ref.read(apiProvider.future);
+          if (mounted) {
+            await _sendOtp(api);
+          }
+          return;
+        }
+      }
+
+      // No data or invalid - open keyboard after small delay
+      _openKeyboard();
+    } catch (e) {
+      debugPrint('Phone hint error: $e');
+      // Phone hint failed - open keyboard
+      _openKeyboard();
+    }
+  }
+
+  void _openKeyboard() {
+    if (!mounted) return;
+    // Small delay to ensure hint dialog is fully dismissed
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        FocusScope.of(context).requestFocus(_phoneFocusNode);
+      }
+    });
   }
 
   // Send OTP and show verification bottom sheet
@@ -172,7 +229,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       controller: _phoneController,
       focusNode: _phoneFocusNode,
       keyboardType: TextInputType.phone,
-      autofillHints: const [AutofillHints.telephoneNumber],
       style: textTheme.titleMedium?.copyWith(
         letterSpacing: 1.5
       ),
@@ -197,6 +253,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 color: Colors.grey.shade300,
               ),
             ],
+          ),
+        ),
+        suffixIcon: TextButton(
+          onPressed: _requestPhoneNumberHint,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            'Auto-fill',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.primary.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         hintText: 'Phone Number',

@@ -238,7 +238,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return gstDetailsAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (gstDetails) {
         // Don't show warning if GST details exist
         if (gstDetails.isNotEmpty) {
