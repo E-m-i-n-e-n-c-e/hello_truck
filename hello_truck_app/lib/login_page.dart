@@ -172,6 +172,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       controller: _phoneController,
       focusNode: _phoneFocusNode,
       keyboardType: TextInputType.phone,
+      autofillHints: const [AutofillHints.telephoneNumber],
       style: textTheme.titleMedium?.copyWith(
         letterSpacing: 1.5
       ),

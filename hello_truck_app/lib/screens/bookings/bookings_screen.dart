@@ -268,6 +268,7 @@ class _BookingCard extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final canCancel = showCancel && showCancelOnCard(booking.status);
+    final statusColor = _getStatusColor(booking.status, cs);
 
     return Container(
       decoration: BoxDecoration(
@@ -334,7 +335,7 @@ class _BookingCard extends ConsumerWidget {
                       (booking.finalCost ?? booking.estimatedCost).toRupees(),
                       style: tt.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: cs.primary,
+                        color: statusColor,
                       ),
                     ),
                   ],
@@ -353,26 +354,26 @@ class _BookingCard extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.08),
+                      color: statusColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.schedule_rounded, size: 18, color: cs.primary),
+                        Icon(Icons.schedule_rounded, size: 18, color: statusColor),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             label,
                             style: tt.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: cs.primary,
+                              color: statusColor,
                             ),
                           ),
                         ),
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 20,
-                          color: cs.primary.withValues(alpha: 0.7),
+                          color: statusColor.withValues(alpha: 0.7),
                         ),
                       ],
                     ),
@@ -412,6 +413,18 @@ class _BookingCard extends ConsumerWidget {
     );
   }
 
+  /// Get status-specific color for booking status
+  Color _getStatusColor(BookingStatus status, ColorScheme cs) {
+    switch (status) {
+      case BookingStatus.expired:
+        return Colors.orange;
+      case BookingStatus.cancelled:
+        return cs.error;
+      default:
+        return cs.primary;
+    }
+  }
+
   Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
@@ -432,10 +445,20 @@ class _BookingCard extends ConsumerWidget {
             navigationAsync: navigationAsync,
           );
 
-          final totalPrice = booking.finalInvoice?.totalPrice ?? booking.estimateInvoice?.totalPrice ?? booking.estimatedCost;
+          // Use basePrice for cancellation charge calculation (matches server logic)
+          final invoice = booking.finalInvoice ?? booking.estimateInvoice;
+          final basePrice = invoice?.basePrice ?? booking.estimatedCost;
+          final walletApplied = invoice?.walletApplied ?? 0.0;
+          final finalAmount = invoice?.finalAmount ?? booking.estimatedCost;
+          final totalPaid = walletApplied + finalAmount;
+
           final isConfirmed = booking.status != BookingStatus.pending && booking.status != BookingStatus.driverAssigned;
-          final cancellationCharge = totalPrice * chargePercent;
-          final refundAmount = totalPrice - cancellationCharge;
+          final cancellationCharge = basePrice * chargePercent;
+
+          // Proportional refund distribution (matches server logic)
+          final walletRefund = totalPaid > 0 ? walletApplied - (cancellationCharge * walletApplied / totalPaid) : 0.0;
+          final razorpayRefund = totalPaid > 0 ? finalAmount - (cancellationCharge * finalAmount / totalPaid) : 0.0;
+          final refundAmount = walletRefund + razorpayRefund;
 
           return Container(
             decoration: BoxDecoration(
@@ -488,7 +511,7 @@ class _BookingCard extends ConsumerWidget {
                   ),
                   child: Column(
                     children: [
-                      _buildDetailRow(context, 'Booking Amount', totalPrice.toRupees()),
+                      _buildDetailRow(context, 'Booking Amount', totalPaid.toRupees()),
                       if (cancellationCharge > 0) ...[
                         const SizedBox(height: 10),
                         _buildDetailRow(

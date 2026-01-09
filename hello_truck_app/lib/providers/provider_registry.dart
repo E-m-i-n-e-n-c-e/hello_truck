@@ -29,3 +29,7 @@ class ProviderRegistry {
     }
   }
 }
+
+
+/// Provider for managing the selected tab index in the main navigation
+final selectedTabIndexProvider = StateProvider<int>((ref) => 0);

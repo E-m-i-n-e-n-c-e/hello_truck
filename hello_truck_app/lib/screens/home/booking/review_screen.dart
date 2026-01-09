@@ -8,6 +8,7 @@ import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
+import 'package:hello_truck_app/providers/provider_registry.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
@@ -430,11 +431,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 child: const Icon(Icons.check_circle, color: Colors.green, size: 48),
               ),
               const SizedBox(height: 16),
-              const Text('Booking Confirmed!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text('Booking Placed!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text('Your order has been placed successfully. You will receive updates on your booking.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
               const SizedBox(height: 24),
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.popUntil(context, (route) => route.isFirst), child: const Text('Go to Home'))),
+              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () {
+                // Navigate to Rides tab (index 1)
+                ref.read(selectedTabIndexProvider.notifier).state = 1;
+                Navigator.popUntil(context, (route) => route.isFirst);
+              }, child: const Text('Go to Rides'))),
             ],
           ),
         ),
@@ -492,9 +497,9 @@ class _ConfirmationCountdownDialogState extends State<_ConfirmationCountdownDial
             ],
           ),
           const SizedBox(height: 24),
-          Text('Confirming Booking', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+          Text('Placing Booking', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
           const SizedBox(height: 8),
-          Text('Your booking will be confirmed in $_countdown seconds.\nTap cancel if you need to make changes.', textAlign: TextAlign.center, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.7), height: 1.4)),
+          Text('Your booking will be placed in $_countdown seconds.\nTap cancel if you need to make changes.', textAlign: TextAlign.center, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.7), height: 1.4)),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,

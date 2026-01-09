@@ -614,23 +614,26 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
     final otp = isPickupPhase ? _booking.pickupOtp! : _booking.dropOtp!;
     final label = isPickupPhase ? 'Pickup OTP' : 'Drop OTP';
 
+    // Use red color for drop OTP to match drop marker color
+    final otpColor = isPickupPhase ? cs.primary : cs.error;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: cs.surfaceBright,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [BoxShadow(color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
-        border: Border.all(color: cs.secondary.withValues(alpha: 0.4)),
+        border: Border.all(color: isPickupPhase ? cs.secondary.withValues(alpha: 0.4) : cs.error.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.1),
+              color: otpColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.verified_user_rounded, color: cs.primary, size: 22),
+            child: Icon(Icons.verified_user_rounded, color: otpColor, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -657,13 +660,13 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: cs.primary,
+              color: otpColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               otp,
               style: tt.titleMedium?.copyWith(
-                color: cs.onPrimary,
+                color: isPickupPhase ? cs.onPrimary : Colors.white,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 4,
               ),
@@ -1022,10 +1025,20 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
             navigationAsync: navigationAsync,
           );
 
-          final totalPrice = _booking.finalInvoice?.totalPrice ?? _booking.estimateInvoice?.totalPrice ?? _booking.estimatedCost;
+          // Use basePrice for cancellation charge calculation (matches server logic)
+          final invoice = _booking.finalInvoice ?? _booking.estimateInvoice;
+          final basePrice = invoice?.basePrice ?? _booking.estimatedCost;
+          final walletApplied = invoice?.walletApplied ?? 0.0;
+          final finalAmount = invoice?.finalAmount ?? _booking.estimatedCost;
+          final totalPaid = walletApplied + finalAmount;
+
           final isConfirmed = _booking.status != BookingStatus.pending && _booking.status != BookingStatus.driverAssigned;
-          final cancellationCharge = totalPrice * chargePercent;
-          final refundAmount = totalPrice - cancellationCharge;
+          final cancellationCharge = basePrice * chargePercent;
+
+          // Proportional refund distribution (matches server logic)
+          final walletRefund = totalPaid > 0 ? walletApplied - (cancellationCharge * walletApplied / totalPaid) : 0.0;
+          final razorpayRefund = totalPaid > 0 ? finalAmount - (cancellationCharge * finalAmount / totalPaid) : 0.0;
+          final refundAmount = walletRefund + razorpayRefund;
 
           return Container(
             decoration: BoxDecoration(
@@ -1067,7 +1080,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
                   ),
                   child: Column(
                     children: [
-                      _buildDetailRow(context, 'Booking Amount', totalPrice.toRupees()),
+                      _buildDetailRow(context, 'Booking Amount', totalPaid.toRupees()),
                       if (cancellationCharge > 0) ...[
                         const SizedBox(height: 10),
                         _buildDetailRow(context, 'Cancellation Fee', '-${cancellationCharge.toRupees()}', valueColor: cs.error),

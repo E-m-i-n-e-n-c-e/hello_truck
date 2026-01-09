@@ -5,6 +5,7 @@ import 'package:hello_truck_app/providers/app_initializer_provider.dart.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/providers/fcm_providers.dart';
+import 'package:hello_truck_app/providers/provider_registry.dart';
 import 'package:hello_truck_app/screens/home/home_screen.dart';
 import 'package:hello_truck_app/screens/profile/profile_screen.dart';
 import 'package:hello_truck_app/screens/bookings/bookings_screen.dart';
@@ -20,7 +21,6 @@ class HelloTruck extends ConsumerStatefulWidget {
 }
 
 class _HelloTruckState extends ConsumerState<HelloTruck> {
-  int _selectedIndex = 0;
   final List<Widget> _screens = List.filled(3, const SizedBox.shrink());
   final List<bool> _screenLoaded = List.filled(3, false); // Track loaded state
   bool _hasSetupListener = false;
@@ -64,6 +64,7 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
     final colorScheme = Theme.of(context).colorScheme;
     final api = ref.watch(apiProvider);
     final authState = ref.watch(authStateProvider);
+    final selectedIndex = ref.watch(selectedTabIndexProvider);
 
     _setupListeners(authState);
 
@@ -89,22 +90,20 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
     // Handle app lifecycle events
     ref.watch(appLifecycleHandlerProvider);
 
-    _loadScreen(_selectedIndex);
+    _loadScreen(selectedIndex);
 
     return Scaffold(
       body: IndexedStack(
-        index: _selectedIndex,
+        index: selectedIndex,
         children: _screens,
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
-        selectedIndex: _selectedIndex,
+        selectedIndex: selectedIndex,
         onItemSelected: (index) {
           if (index == 1) {
             ref.invalidate(activeBookingsProvider);
           }
-          setState(() {
-            _selectedIndex = index;
-          });
+          ref.read(selectedTabIndexProvider.notifier).state = index;
         },
       ),
     );

@@ -21,6 +21,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _isGstWarningDismissed = false;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -101,6 +103,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             // Profile Card
             _buildProfileCard(context, customer),
             const SizedBox(height: 20),
+
+            // GST Warning (if no GST details)
+            _buildGstWarning(context),
 
             // Wallet Balance Card
             _buildWalletBalanceCard(context, customer),
@@ -221,6 +226,96 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGstWarning(BuildContext context) {
+    if (_isGstWarningDismissed) {
+      return const SizedBox.shrink();
+    }
+
+    final gstDetailsAsync = ref.watch(gstDetailsProvider);
+
+    return gstDetailsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (gstDetails) {
+        // Don't show warning if GST details exist
+        if (gstDetails.isNotEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final cs = Theme.of(context).colorScheme;
+        final tt = Theme.of(context).textTheme;
+        final color = Colors.orange;
+
+        return Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.info_rounded,
+                      color: color,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add GST Details',
+                          style: tt.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add your GST details to receive GST invoices for your bookings.',
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _isGstWarningDismissed = true;
+                      });
+                    },
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        );
+      },
     );
   }
 

@@ -290,7 +290,8 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
           Text(
             '• Prices are estimates and may vary based on real-time factors.\n'
             '• Loading distance limit: up to 50 feet from vehicle (longer distances may incur additional charges).\n'
-            '• Additional charges may apply for extended waiting time after pickup verification, change of destination, or change in package details.',
+            '• Additional charges may apply for extended waiting time after pickup verification, change of destination, or change in package details.\n'
+            '• Customers must provide all required transport documents, and they are responsible for any legal issues during transit.',
             style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.75), height: 1.35),
           ),
         ],

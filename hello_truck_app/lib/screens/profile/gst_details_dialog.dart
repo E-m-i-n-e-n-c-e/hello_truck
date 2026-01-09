@@ -204,6 +204,8 @@ class _GstDetailsDialogState extends ConsumerState<GstDetailsDialog> {
                       hintText: 'Enter GST number',
                       border: OutlineInputBorder(),
                     ),
+                    maxLength: 15,
+                    textCapitalization: TextCapitalization.characters,
                     enabled: !_isLoading,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
