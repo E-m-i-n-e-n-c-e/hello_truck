@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:hello_truck_app/providers/provider_registry.dart';
 import 'package:hello_truck_app/utils/logger.dart';
 import 'package:http_cache_hive_store/http_cache_hive_store.dart';
 import 'package:path_provider/path_provider.dart';
@@ -272,6 +273,9 @@ class API {
       FirebaseMessaging.instance.deleteToken(),
     ]);
     ref.read(authClientProvider).emitSignOut();
+
+    // Reset selected tab index on logout
+    ref.read(selectedTabIndexProvider.notifier).state = 0;
 
     if (refreshToken != null) {
       post('/auth/customer/logout', data: {'refreshToken': refreshToken}).catchError((e) {
