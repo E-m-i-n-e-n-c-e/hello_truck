@@ -30,6 +30,9 @@ class ProviderRegistry {
   }
 }
 
-
 /// Provider for managing the selected tab index in the main navigation
 final selectedTabIndexProvider = StateProvider<int>((ref) => 0);
+
+/// Provider to force rebuild of BookingsScreen
+/// Increment this value to rebuild the screen with fresh state (tab reset to Active)
+final bookingsScreenKeyProvider = StateProvider<int>((ref) => 0);

@@ -25,15 +25,18 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
   final List<bool> _screenLoaded = List.filled(3, false); // Track loaded state
   bool _hasSetupListener = false;
 
-  void _loadScreen(int index) {
+  void _loadScreen(int index, int bookingsKey) {
     if (!_screenLoaded[index]) {
       _screens[index] = switch (index) {
         0 => const HomeScreen(),
-        1 => const BookingsScreen(),
+        1 => BookingsScreen(key: ValueKey(bookingsKey)),
         2 => const ProfileScreen(),
         _ => const SizedBox.shrink(),
       };
       _screenLoaded[index] = true;
+    } else if (index == 1) {
+      // Always update BookingsScreen with new key to force rebuild
+      _screens[1] = BookingsScreen(key: ValueKey(bookingsKey));
     }
   }
 
@@ -65,6 +68,7 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
     final api = ref.watch(apiProvider);
     final authState = ref.watch(authStateProvider);
     final selectedIndex = ref.watch(selectedTabIndexProvider);
+    final bookingsKey = ref.watch(bookingsScreenKeyProvider);
 
     _setupListeners(authState);
 
@@ -90,7 +94,7 @@ class _HelloTruckState extends ConsumerState<HelloTruck> {
     // Handle app lifecycle events
     ref.watch(appLifecycleHandlerProvider);
 
-    _loadScreen(selectedIndex);
+    _loadScreen(selectedIndex, bookingsKey);
 
     return Scaffold(
       body: IndexedStack(

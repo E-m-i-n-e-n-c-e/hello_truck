@@ -436,7 +436,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               Text('Your order has been placed successfully. You will receive updates on your booking.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
               const SizedBox(height: 24),
               SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () {
-                // Navigate to Rides tab (index 1)
+                // Increment key to force rebuild BookingsScreen (resets tab to Active)
+                final currentKey = ref.read(bookingsScreenKeyProvider);
+                ref.read(bookingsScreenKeyProvider.notifier).state = currentKey + 1;
+                // Navigate to Bookings tab (index 1)
                 ref.read(selectedTabIndexProvider.notifier).state = 1;
                 Navigator.popUntil(context, (route) => route.isFirst);
               }, child: const Text('Go to Rides'))),
