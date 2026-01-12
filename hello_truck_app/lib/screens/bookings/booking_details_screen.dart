@@ -517,6 +517,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
   }
 
   bool _shouldShowPaymentBanner() {
+    if (_booking.status == BookingStatus.cancelled) return false;
     final invoice = _booking.finalInvoice;
     return invoice != null &&
            invoice.paymentLinkUrl != null &&

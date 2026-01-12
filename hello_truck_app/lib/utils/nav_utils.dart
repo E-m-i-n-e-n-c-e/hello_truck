@@ -66,8 +66,9 @@ String getBookingTitle(BookingStatus status) {
     case BookingStatus.completed:
       return 'Booking completed';
     case BookingStatus.cancelled:
-    case BookingStatus.expired:
       return 'Booking cancelled';
+    case BookingStatus.expired:
+      return 'Booking expired';
     case BookingStatus.pending:
     case BookingStatus.driverAssigned:
       return 'Looking for a driver';
