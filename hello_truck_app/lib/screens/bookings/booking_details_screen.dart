@@ -15,6 +15,7 @@ import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/utils/logger.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
+import 'package:hello_truck_app/utils/date_time_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -704,9 +705,21 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          _buildAddressRow(context, 'Pickup', _booking.pickupAddress.formattedAddress, isPickup: true),
+          _buildAddressRow(
+            context,
+            'Pickup',
+            _booking.pickupAddress.formattedAddress,
+            isPickup: true,
+            verifiedAt: _booking.pickupVerifiedAt,
+          ),
           const SizedBox(height: 12),
-          _buildAddressRow(context, 'Drop', _booking.dropAddress.formattedAddress, isPickup: false),
+          _buildAddressRow(
+            context,
+            'Drop',
+            _booking.dropAddress.formattedAddress,
+            isPickup: false,
+            verifiedAt: _booking.dropVerifiedAt,
+          ),
         ],
       ),
     );
@@ -848,7 +861,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
     );
   }
 
-  Widget _buildAddressRow(BuildContext context, String label, String value, {required bool isPickup}) {
+  Widget _buildAddressRow(BuildContext context, String label, String value, {required bool isPickup, DateTime? verifiedAt}) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -872,13 +885,27 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: tt.labelSmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
+              Row(
+                children: [
+                  Text(
+                    label,
+                    style: tt.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  if (verifiedAt != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '• ${DateTimeUtils.formatToIST(verifiedAt, 'd MMM yyyy, h:mm a')}',
+                      style: tt.labelSmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.5),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 2),
               Text(value, style: tt.bodyMedium?.copyWith(color: cs.onSurface)),

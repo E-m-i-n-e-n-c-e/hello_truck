@@ -9,6 +9,7 @@ import 'package:hello_truck_app/screens/bookings/booking_details_screen.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
+import 'package:hello_truck_app/utils/date_time_utils.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
   const BookingsScreen({super.key});
@@ -257,18 +258,26 @@ Widget _buildBookingsList(
   );
 }
 
-class _BookingCard extends ConsumerWidget {
+class _BookingCard extends ConsumerStatefulWidget {
   final Booking booking;
   final bool showCancel;
 
   const _BookingCard({required this.booking, required this.showCancel});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BookingCard> createState() => _BookingCardState();
+}
+
+class _BookingCardState extends ConsumerState<_BookingCard> {
+  bool _pickupExpanded = false;
+  bool _dropExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final canCancel = showCancel && showCancelOnCard(booking.status);
-    final statusColor = _getStatusColor(booking.status, cs);
+    final canCancel = widget.showCancel && showCancelOnCard(widget.booking.status);
+    final statusColor = _getStatusColor(widget.booking.status, cs);
 
     return Container(
       decoration: BoxDecoration(
@@ -288,7 +297,7 @@ class _BookingCard extends ConsumerWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: booking)),
+              MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: widget.booking)),
             );
           },
           borderRadius: BorderRadius.circular(14),
@@ -305,7 +314,7 @@ class _BookingCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '#${booking.bookingNumber.toString().padLeft(6, '0')}',
+                            '#${widget.booking.bookingNumber.toString().padLeft(6, '0')}',
                             style: tt.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: cs.onSurface,
@@ -321,7 +330,7 @@ class _BookingCard extends ConsumerWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                booking.assignedVehicle ?? booking.idealVehicle,
+                                widget.booking.assignedVehicle ?? widget.booking.idealVehicle,
                                 style: tt.bodySmall?.copyWith(
                                   color: cs.onSurface.withValues(alpha: 0.55),
                                 ),
@@ -332,7 +341,7 @@ class _BookingCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      (booking.finalCost ?? booking.estimatedCost).toRupees(),
+                      (widget.booking.finalCost ?? widget.booking.estimatedCost).toRupees(),
                       style: tt.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: statusColor,
@@ -342,13 +351,18 @@ class _BookingCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 14),
 
+                // Addresses with expand/collapse (times shown inline)
+                _buildAddressSection(cs, tt),
+
+                const SizedBox(height: 10),
+
                 // Status row
                 Consumer(builder: (context, ref, _) {
-                  final stream = isActive(booking.status)
-                      ? ref.watch(driverNavigationStreamProvider(booking.id))
+                  final stream = isActive(widget.booking.status)
+                      ? ref.watch(driverNavigationStreamProvider(widget.booking.id))
                       : const AsyncValue.data(null);
 
-                  final label = tileLabel(booking.status, stream.value);
+                  final label = tileLabel(widget.booking.status, stream.value);
 
                   return Container(
                     width: double.infinity,
@@ -413,6 +427,66 @@ class _BookingCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildAddressSection(ColorScheme cs, TextTheme tt) {
+    return Column(
+      children: [
+        // Pickup row - tappable to expand (only show verified pickup time)
+        _buildCompactAddressRow(cs, tt, cs.primary, widget.booking.pickupAddress.formattedAddress, widget.booking.pickupVerifiedAt, _pickupExpanded, () => setState(() => _pickupExpanded = !_pickupExpanded)),
+        const SizedBox(height: 6),
+        // Drop row - tappable to expand (only show verified drop time)
+        _buildCompactAddressRow(cs, tt, Colors.red, widget.booking.dropAddress.formattedAddress, widget.booking.dropVerifiedAt, _dropExpanded, () => setState(() => _dropExpanded = !_dropExpanded)),
+      ],
+    );
+  }
+
+  Widget _buildCompactAddressRow(ColorScheme cs, TextTheme tt, Color dotColor, String address, DateTime? time, bool isExpanded, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            // Dot indicator
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            // Address text
+            Expanded(
+              child: Text(
+                address,
+                maxLines: isExpanded ? 3 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.85),
+                  height: 1.2,
+                ),
+              ),
+            ),
+            // Time chip (show if available for both active and history)
+            if (time != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                _formatTime(time),
+                style: tt.labelSmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.5),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    return DateTimeUtils.formatCompactDateTimeShort(dateTime);
+  }
+
   /// Get status-specific color for booking status
   Color _getStatusColor(BookingStatus status, ColorScheme cs) {
     switch (status) {
@@ -438,21 +512,21 @@ class _BookingCard extends ConsumerWidget {
       builder: (context) => Consumer(
         builder: (context, ref, _) {
           // Watch navigation stream for real-time charge updates
-          final navigationAsync = ref.watch(driverNavigationStreamProvider(booking.id));
+          final navigationAsync = ref.watch(driverNavigationStreamProvider(widget.booking.id));
           final chargePercent = getCancellationChargePercent(
-            booking: booking,
+            booking: widget.booking,
             config: config,
             navigationAsync: navigationAsync,
           );
 
           // Use basePrice for cancellation charge calculation (matches server logic)
-          final invoice = booking.finalInvoice ?? booking.estimateInvoice;
-          final basePrice = invoice?.basePrice ?? booking.estimatedCost;
+          final invoice = widget.booking.finalInvoice ?? widget.booking.estimateInvoice;
+          final basePrice = invoice?.basePrice ?? widget.booking.estimatedCost;
           final walletApplied = invoice?.walletApplied ?? 0.0;
-          final finalAmount = invoice?.finalAmount ?? booking.estimatedCost;
+          final finalAmount = invoice?.finalAmount ?? widget.booking.estimatedCost;
           final totalPaid = walletApplied + finalAmount;
 
-          final isConfirmed = booking.status != BookingStatus.pending && booking.status != BookingStatus.driverAssigned;
+          final isConfirmed = widget.booking.status != BookingStatus.pending && widget.booking.status != BookingStatus.driverAssigned;
           final cancellationCharge = basePrice * chargePercent;
 
           // Proportional refund distribution (matches server logic)
@@ -493,7 +567,7 @@ class _BookingCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Booking #${booking.bookingNumber.toString().padLeft(6, '0')}',
+                  'Booking #${widget.booking.bookingNumber.toString().padLeft(6, '0')}',
                   style: tt.bodyMedium?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.6),
                   ),
@@ -639,7 +713,7 @@ class _BookingCard extends ConsumerWidget {
   Future<void> _cancelBooking(BuildContext context, WidgetRef ref) async {
     try {
       final api = ref.read(apiProvider).value!;
-      await booking_api.cancelBooking(api, booking.id, 'Booking cancelled by customer');
+      await booking_api.cancelBooking(api, widget.booking.id, 'Booking cancelled by customer');
       ref.invalidate(activeBookingsProvider);
       ref.invalidate(bookingHistoryProvider);
       if (context.mounted) {

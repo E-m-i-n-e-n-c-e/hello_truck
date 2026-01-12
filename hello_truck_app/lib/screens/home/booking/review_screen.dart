@@ -387,15 +387,18 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   void _showConfirmationModal() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => _ConfirmationCountdownDialog(
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) => _PlacingOrderBottomSheet(
         onConfirmed: () {
-          Navigator.pop(dialogContext);
+          Navigator.pop(bottomSheetContext);
           _confirmBooking();
         },
-        onCancelled: () => Navigator.pop(dialogContext),
+        onCancelled: () => Navigator.pop(bottomSheetContext),
       ),
     );
   }
@@ -415,35 +418,85 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   void _showSuccessDialog() {
-    showDialog(
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => PopScope(
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) => PopScope(
         canPop: false,
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+        child: Container(
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: cs.onSurface.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Success icon
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 48),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Booking Placed!', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your booking has been placed successfully. You will receive updates on your booking.',
+                    textAlign: TextAlign.center,
+                    style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.7)),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        // Increment key to force rebuild BookingsScreen (resets tab to Active)
+                        final currentKey = ref.read(bookingsScreenKeyProvider);
+                        ref.read(bookingsScreenKeyProvider.notifier).state = currentKey + 1;
+                        // Navigate to Bookings tab (index 1)
+                        ref.read(selectedTabIndexProvider.notifier).state = 1;
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      },
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.directions_rounded, size: 20),
+                          const SizedBox(width: 8),
+                          Text('Go to Rides', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: cs.onPrimary)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text('Booking Placed!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('Your order has been placed successfully. You will receive updates on your booking.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
-              const SizedBox(height: 24),
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () {
-                // Increment key to force rebuild BookingsScreen (resets tab to Active)
-                final currentKey = ref.read(bookingsScreenKeyProvider);
-                ref.read(bookingsScreenKeyProvider.notifier).state = currentKey + 1;
-                // Navigate to Bookings tab (index 1)
-                ref.read(selectedTabIndexProvider.notifier).state = 1;
-                Navigator.popUntil(context, (route) => route.isFirst);
-              }, child: const Text('Go to Rides'))),
-            ],
+            ),
           ),
         ),
       ),
@@ -451,21 +504,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 }
 
-class _ConfirmationCountdownDialog extends StatefulWidget {
+class _PlacingOrderBottomSheet extends StatefulWidget {
   final VoidCallback onConfirmed;
   final VoidCallback onCancelled;
-  const _ConfirmationCountdownDialog({required this.onConfirmed, required this.onCancelled});
+  const _PlacingOrderBottomSheet({required this.onConfirmed, required this.onCancelled});
   @override
-  State<_ConfirmationCountdownDialog> createState() => _ConfirmationCountdownDialogState();
+  State<_PlacingOrderBottomSheet> createState() => _PlacingOrderBottomSheetState();
 }
 
-class _ConfirmationCountdownDialogState extends State<_ConfirmationCountdownDialog> {
+class _PlacingOrderBottomSheetState extends State<_PlacingOrderBottomSheet> with SingleTickerProviderStateMixin {
   int _countdown = 5;
   Timer? _timer;
+  late AnimationController _progressController;
 
   @override
   void initState() {
     super.initState();
+    _progressController = AnimationController(vsync: this, duration: const Duration(seconds: 5))..forward();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_countdown > 1) {
         setState(() => _countdown--);
@@ -479,40 +534,94 @@ class _ConfirmationCountdownDialogState extends State<_ConfirmationCountdownDial
   @override
   void dispose() {
     _timer?.cancel();
+    _progressController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 8),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(width: 80, height: 80, child: CircularProgressIndicator(value: _countdown / 5, strokeWidth: 6, backgroundColor: colorScheme.primary.withValues(alpha: 0.2), valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary))),
-              Text('$_countdown', style: textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text('Placing Booking', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-          const SizedBox(height: 8),
-          Text('Your booking will be placed in $_countdown seconds.\nTap cancel if you need to make changes.', textAlign: TextAlign.center, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.7), height: 1.4)),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: widget.onCancelled,
-              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), side: BorderSide(color: Colors.red.shade400, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              child: Text('Cancel', style: textTheme.titleMedium?.copyWith(color: Colors.red.shade400, fontWeight: FontWeight.w600)),
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Linear progress indicator at top
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              child: AnimatedBuilder(
+                animation: _progressController,
+                builder: (context, _) => LinearProgressIndicator(
+                  value: _progressController.value,
+                  minHeight: 4,
+                  backgroundColor: cs.primary.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+                ),
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 24),
+
+            // Truck icon centered
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.local_shipping_rounded, color: cs.primary, size: 32),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Title
+            Text('Placing Booking', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+
+            const SizedBox(height: 8),
+
+            // Countdown
+            Text(
+              'Your booking will be confirmed in $_countdown ${_countdown == 1 ? 'second' : 'seconds'}',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.7)),
+            ),
+
+            const SizedBox(height: 6),
+
+            // Info text
+            Text(
+              'Tap cancel if you need to make changes.',
+              style: tt.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.5)),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Cancel button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: widget.onCancelled,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: cs.error,
+                    side: BorderSide(color: cs.error.withValues(alpha: 0.5)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Cancel', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

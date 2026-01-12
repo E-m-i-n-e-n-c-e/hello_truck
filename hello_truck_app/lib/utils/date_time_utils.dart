@@ -165,6 +165,17 @@ class DateTimeUtils {
     return formatToIST(dateTime, 'dd/MM/yy hh:mm a');
   }
 
+  /// Formats a DateTime for short inline display with date and time
+  ///
+  /// Example:
+  /// ```dart
+  /// final compact = DateTimeUtils.formatCompactDateTimeShort(DateTime.now());
+  /// // Returns: "12 Jan, 3:45 PM"
+  /// ```
+  static String formatCompactDateTimeShort(DateTime dateTime) {
+    return formatToIST(dateTime, 'd MMM, h:mm a');
+  }
+
   /// Checks if a DateTime is today (in IST)
   static bool isToday(DateTime dateTime) {
     final istDateTime = toIST(dateTime);

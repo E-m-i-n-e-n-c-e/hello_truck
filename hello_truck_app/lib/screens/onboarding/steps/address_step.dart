@@ -308,11 +308,6 @@ class _AddressStepState extends ConsumerState<AddressStep> {
 
           const SizedBox(height: 24),
 
-          // Address Form Fields
-          if (!widget.controller.isAddressSkipped)
-          _buildAddressForm(context),
-
-          const SizedBox(height: 24),
           // Skip checkbox
           GestureDetector(
             onTap: () {
@@ -370,6 +365,12 @@ class _AddressStepState extends ConsumerState<AddressStep> {
               ),
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // Address Form Fields
+          if (!widget.controller.isAddressSkipped)
+          _buildAddressForm(context),
 
           const SizedBox(height: 40),
         ],
