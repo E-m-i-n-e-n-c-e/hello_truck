@@ -291,80 +291,80 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: widget.booking)),
-            );
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
               children: [
-                // Header row
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '#${widget.booking.bookingNumber.toString().padLeft(6, '0')}',
+                        style: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
                         children: [
-                          Text(
-                            '#${widget.booking.bookingNumber.toString().padLeft(6, '0')}',
-                            style: tt.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
-                            ),
+                          Icon(
+                            Icons.local_shipping_outlined,
+                            size: 14,
+                            color: cs.onSurface.withValues(alpha: 0.55),
                           ),
-                          const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.local_shipping_outlined,
-                                size: 14,
-                                color: cs.onSurface.withValues(alpha: 0.55),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                widget.booking.assignedVehicle ?? widget.booking.idealVehicle,
-                                style: tt.bodySmall?.copyWith(
-                                  color: cs.onSurface.withValues(alpha: 0.55),
-                                ),
-                              ),
-                            ],
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.booking.assignedVehicle ?? widget.booking.idealVehicle,
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.55),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    Text(
-                      (widget.booking.finalCost ?? widget.booking.estimatedCost).toRupees(),
-                      style: tt.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 14),
+                Text(
+                  (widget.booking.finalCost ?? widget.booking.estimatedCost).toRupees(),
+                  style: tt.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
 
-                // Addresses with expand/collapse (times shown inline)
-                _buildAddressSection(cs, tt),
+            // Addresses with expand/collapse (times shown inline)
+            _buildAddressSection(cs, tt),
 
-                const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-                // Status row
-                Consumer(builder: (context, ref, _) {
-                  final stream = isActive(widget.booking.status)
-                      ? ref.watch(driverNavigationStreamProvider(widget.booking.id))
-                      : const AsyncValue.data(null);
+            // Status row - Only this section is tappable
+            Consumer(builder: (context, ref, _) {
+              final stream = isActive(widget.booking.status)
+                  ? ref.watch(driverNavigationStreamProvider(widget.booking.id))
+                  : const AsyncValue.data(null);
 
-                  final label = tileLabel(widget.booking.status, stream.value);
+              final label = tileLabel(widget.booking.status, stream.value);
 
-                  return Container(
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: widget.booking)),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
@@ -391,37 +391,37 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                         ),
                       ],
                     ),
-                  );
-                }),
+                  ),
+                ),
+              );
+            }),
 
-                // Cancel button
-                if (canCancel) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => _showCancelDialog(context, ref),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: cs.error,
-                        side: BorderSide(color: cs.error.withValues(alpha: 0.4)),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel Booking',
-                        style: tt.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: cs.error,
-                        ),
-                      ),
+            // Cancel button
+            if (canCancel) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => _showCancelDialog(context, ref),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: cs.error,
+                    side: BorderSide(color: cs.error.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
+                  child: Text(
+                    'Cancel Booking',
+                    style: tt.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.error,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
