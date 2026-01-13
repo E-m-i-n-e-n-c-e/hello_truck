@@ -730,8 +730,8 @@ class _TappableStatusRowState extends State<_TappableStatusRow> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 50),
-        opacity: _pressed ? 0.5 : 1.0,
+        duration: const Duration(milliseconds: 60),
+        opacity: _pressed ? 0.45 : 1.0,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

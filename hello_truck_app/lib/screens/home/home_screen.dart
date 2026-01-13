@@ -118,43 +118,40 @@ class HomeScreen extends ConsumerWidget {
         color: cs.primary,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AddressSelectionScreen()),
-            );
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Book Parcel Transportation',
-                        style: tt.titleLarge?.copyWith(
-                          color: cs.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AddressSelectionScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Book Parcel Transportation',
+                      style: tt.titleLarge?.copyWith(
+                        color: cs.onPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Quick & easy booking',
-                        style: tt.bodyMedium?.copyWith(
-                          color: cs.onPrimary.withValues(alpha: 0.8),
-                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Quick & easy booking',
+                      style: tt.bodyMedium?.copyWith(
+                        color: cs.onPrimary.withValues(alpha: 0.8),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Icon(Icons.arrow_forward_rounded, color: cs.onPrimary, size: 24),
-              ],
-            ),
+              ),
+              Icon(Icons.arrow_forward_rounded, color: cs.onPrimary, size: 24),
+            ],
           ),
         ),
       ),
