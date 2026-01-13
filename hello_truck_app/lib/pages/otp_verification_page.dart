@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hello_truck_app/utils/logger.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'dart:async';
 import 'package:hello_truck_app/auth/api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:smart_auth/smart_auth.dart';
 
 class OtpVerificationPage extends ConsumerStatefulWidget {
   final String phoneNumber;
@@ -26,11 +28,54 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
   Timer? _resendTimer;
   StreamController<ErrorAnimationType>? _errorController;
 
+  // SmartAuth for User Consent API
+  final SmartAuth _smartAuth = SmartAuth.instance;
+
   @override
   void initState() {
     super.initState();
     _errorController = StreamController<ErrorAnimationType>();
     _startResendTimer();
+    _listenForSmsCode();
+  }
+
+  /// Listen for SMS using User Consent API
+  /// This shows a system dialog asking user to allow reading the SMS
+  /// No app hash required in the SMS message
+  void _listenForSmsCode() async {
+    try {
+      // Use getSmsWithUserConsentApi - this shows a dialog to user
+      // asking permission to read the incoming SMS
+      final result = await _smartAuth.getSmsWithUserConsentApi(
+        senderPhoneNumber: null, // null to listen for SMS from any sender
+      );
+
+      if (result.hasData && result.data != null && mounted) {
+        final smsData = result.data!;
+        AppLogger.log('SMS received via User Consent: ${smsData.sms}');
+
+        // SmartAuthSms has a 'code' property that extracts the OTP automatically
+        String? otp = smsData.code;
+
+        // Fallback: manually extract 6-digit OTP if auto-extraction failed
+        if (otp == null || otp.length != 6) {
+          final otpRegex = RegExp(r'\b(\d{6})\b');
+          final match = otpRegex.firstMatch(smsData.sms);
+          otp = match?.group(1);
+        }
+
+        if (otp != null && otp.length == 6) {
+          AppLogger.log('OTP extracted: $otp');
+          _otpController.text = otp;
+        }
+      } else if (result.isCanceled) {
+        AppLogger.log('User cancelled SMS consent dialog');
+      } else {
+        AppLogger.log('SMS consent failed or timed out');
+      }
+    } catch (e) {
+      AppLogger.log('SMS User Consent error: $e');
+    }
   }
 
   void _startResendTimer() {
@@ -58,6 +103,8 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
 
   @override
   void dispose() {
+    // Cancel any pending SMS listener
+    _smartAuth.removeSmsRetrieverApiListener();
     _resendTimer?.cancel();
     _errorController?.close();
     _timerState.dispose();
@@ -78,6 +125,8 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
       SnackBars.success(context, 'OTP sent successfully!');
       _otpController.clear();
       _startResendTimer();
+      // Re-listen for new SMS
+      _listenForSmsCode();
     } catch (e) {
       if (!mounted) return;
       SnackBars.error(context, 'Error sending OTP: ${e.toString()}');
@@ -202,7 +251,7 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
                               ),
                               animationDuration: const Duration(milliseconds: 100),
                               enableActiveFill: true,
-                              enablePinAutofill: true,
+                              enablePinAutofill: false,
                               autoDisposeControllers: false,
                               onCompleted: (value) {
                                 if (mounted) {
@@ -210,7 +259,7 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
                                 }
                               },
                               beforeTextPaste: (text) {
-                                // Allow only numbers12
+                                // Allow only numbers
                                 if (text == null) return false;
                                 return text.contains(RegExp(r'^[0-9]+$'));
                               },
