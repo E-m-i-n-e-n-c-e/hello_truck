@@ -7,6 +7,7 @@ import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/address_selection_screen.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
+import 'package:hello_truck_app/widgets/tappable_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -113,18 +114,19 @@ class HomeScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.primary,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AddressSelectionScreen()),
-          );
-        },
-        borderRadius: BorderRadius.circular(14),
+    return TappableCard(
+      pressedOpacity: 0.85,
+      animationDuration: const Duration(milliseconds: 100),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AddressSelectionScreen()),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.primary,
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Row(

@@ -8,6 +8,7 @@ import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/screens/bookings/booking_details_screen.dart';
 import 'package:hello_truck_app/utils/nav_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/widgets/tappable_card.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
 
@@ -354,16 +355,43 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
 
               final label = tileLabel(widget.booking.status, stream.value);
 
-              return _TappableStatusRow(
-                statusColor: statusColor,
-                label: label,
-                textTheme: tt,
+              return TappableCard(
+                pressedOpacity: 0.45,
+                animationDuration: const Duration(milliseconds: 60),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => BookingDetailsScreen(initialBooking: widget.booking)),
                   );
                 },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.schedule_rounded, size: 18, color: statusColor),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: tt.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: statusColor.withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }),
 
@@ -695,72 +723,5 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
         SnackBars.error(context, 'Failed to cancel booking: $e');
       }
     }
-  }
-}
-
-/// Custom tappable status row with opacity feedback instead of ink splash.
-/// Avoids the Material ink splash artifact during page transitions.
-class _TappableStatusRow extends StatefulWidget {
-  final Color statusColor;
-  final String label;
-  final TextTheme textTheme;
-  final VoidCallback onTap;
-
-  const _TappableStatusRow({
-    required this.statusColor,
-    required this.label,
-    required this.textTheme,
-    required this.onTap,
-  });
-
-  @override
-  State<_TappableStatusRow> createState() => _TappableStatusRowState();
-}
-
-class _TappableStatusRowState extends State<_TappableStatusRow> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 60),
-        opacity: _pressed ? 0.45 : 1.0,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: widget.statusColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.schedule_rounded, size: 18, color: widget.statusColor),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  widget.label,
-                  style: widget.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: widget.statusColor,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: widget.statusColor.withValues(alpha: 0.7),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

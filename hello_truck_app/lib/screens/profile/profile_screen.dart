@@ -5,6 +5,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/api/customer_api.dart' as customer_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/widgets/tappable_card.dart';
 import 'package:hello_truck_app/screens/profile/profile_edit_dialogs.dart';
 import 'package:hello_truck_app/screens/profile/email_link_dialog.dart';
 import 'package:hello_truck_app/screens/profile/wallet_activity_screen.dart';
@@ -323,75 +324,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          ref.invalidate(walletLogsProvider);
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const WalletActivityScreen()),
-          );
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                cs.primary,
-                cs.primary.withValues(alpha: 0.85),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: cs.onPrimary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet_rounded,
-                  color: cs.onPrimary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Wallet Balance',
-                      style: tt.labelMedium?.copyWith(
-                        color: cs.onPrimary.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      customer.walletBalance.toRupees(),
-                      style: tt.titleLarge?.copyWith(
-                        color: cs.onPrimary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: cs.onPrimary.withValues(alpha: 0.7),
-                size: 22,
-              ),
+    return TappableCard(
+      pressedOpacity: 0.85,
+      animationDuration: const Duration(milliseconds: 100),
+      onTap: () {
+        ref.invalidate(walletLogsProvider);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const WalletActivityScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              cs.primary,
+              cs.primary.withValues(alpha: 0.85),
             ],
           ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: cs.onPrimary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.account_balance_wallet_rounded,
+                color: cs.onPrimary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Wallet Balance',
+                    style: tt.labelMedium?.copyWith(
+                      color: cs.onPrimary.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    customer.walletBalance.toRupees(),
+                    style: tt.titleLarge?.copyWith(
+                      color: cs.onPrimary,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: cs.onPrimary.withValues(alpha: 0.7),
+              size: 22,
+            ),
+          ],
         ),
       ),
     );
@@ -445,61 +444,62 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceBright,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+    return TappableCard(
+      pressedOpacity: 0.6,
+      animationDuration: const Duration(milliseconds: 100),
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surfaceBright,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: cs.primary, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      ),
                     ),
-                    child: Icon(icon, color: cs.primary, size: 24),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: tt.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: tt.bodyMedium?.copyWith(
-                            color: cs.onSurface.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: tt.bodyMedium?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.7),
+                      ),
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                    size: 24,
-                  ),
-                ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: cs.onSurface.withValues(alpha: 0.5),
+                size: 24,
+              ),
+            ],
           ),
         ),
       ),

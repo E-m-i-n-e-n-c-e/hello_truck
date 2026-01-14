@@ -240,7 +240,7 @@ class _TransactionCard extends StatelessWidget {
           const SizedBox(width: 8),
           // Amount
           Text(
-            '${isCredit ? '+' : '-'}${transaction.amount.abs().toRupees()}',
+            '${isCredit ? '+' : ''}${transaction.amount.abs().toRupees()}',
             style: tt.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
               color: isCredit ? Colors.green : cs.onSurface,
