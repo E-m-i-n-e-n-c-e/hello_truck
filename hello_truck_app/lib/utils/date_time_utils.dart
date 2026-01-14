@@ -137,10 +137,10 @@ class DateTimeUtils {
   /// Example:
   /// ```dart
   /// final logDate = DateTimeUtils.formatLogDateTime(DateTime.now());
-  /// // Returns: "Jan 15, 2024 • 04:30 PM IST"
+  /// // Returns: "Jan 15, 2024 • 04:30 PM"
   /// ```
   static String formatLogDateTime(DateTime dateTime) {
-    return formatToISTWithLabel(dateTime);
+    return formatToIST(dateTime);
   }
 
   /// Formats a DateTime for compact display (date only)
