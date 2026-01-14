@@ -357,7 +357,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
 
               return TappableCard(
                 pressedOpacity: 0.45,
-                animationDuration: const Duration(milliseconds: 60),
+                animationDuration: const Duration(milliseconds: 80),
                 onTap: () {
                   Navigator.push(
                     context,

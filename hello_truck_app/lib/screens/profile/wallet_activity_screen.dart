@@ -174,7 +174,7 @@ class WalletActivityScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  DateTimeUtils.formatSmartDate(log.createdAt),
+                  DateTimeUtils.formatSmartDate(log.createdAt, showIST: false),
                   style: tt.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.6),
                   ),

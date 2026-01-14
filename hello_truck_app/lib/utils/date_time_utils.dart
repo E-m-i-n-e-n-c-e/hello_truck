@@ -206,13 +206,14 @@ class DateTimeUtils {
   /// );
   /// // Returns: "Yesterday, 04:30 PM IST"
   /// ```
-  static String formatSmartDate(DateTime dateTime) {
+  static String formatSmartDate(DateTime dateTime, {bool showIST = true}) {
+    final istSuffix = showIST ? ' IST' : '';
     if (isToday(dateTime)) {
-      return 'Today, ${formatShortTimeIST(dateTime)} IST';
+      return 'Today, ${formatShortTimeIST(dateTime)}$istSuffix';
     } else if (isYesterday(dateTime)) {
-      return 'Yesterday, ${formatShortTimeIST(dateTime)} IST';
+      return 'Yesterday, ${formatShortTimeIST(dateTime)}$istSuffix';
     } else {
-      return formatToISTWithLabel(dateTime);
+      return showIST ? formatToISTWithLabel(dateTime) : formatToIST(dateTime);
     }
   }
 

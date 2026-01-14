@@ -267,13 +267,8 @@ class _TransactionCard extends StatelessWidget {
         break;
     }
 
-    // Booking number if exists
-    if (transaction.booking != null) {
-      parts.add('#${transaction.booking!.bookingNumber.toString().padLeft(6, '0')}');
-    }
-
-    // Date
-    parts.add(DateTimeUtils.formatCompactDate(transaction.createdAt));
+    // Date - using smart date format to match wallet log
+    parts.add(DateTimeUtils.formatSmartDate(transaction.createdAt, showIST: false));
 
     return parts.join(' • ');
   }
