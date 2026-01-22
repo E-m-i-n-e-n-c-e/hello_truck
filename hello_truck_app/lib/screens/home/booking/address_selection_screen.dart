@@ -83,13 +83,13 @@ class _AddressSelectionScreenState
     );
   }
 
-  void _proceedToPackageDetails() {
+  void _proceedToPackageDetails() async {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => PackageTypeSelectionModal(
-        onSelect: (isCommercial) {
-          Navigator.push(
+        onSelect: (isCommercial) async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => PackageDetailsScreen(
@@ -99,6 +99,50 @@ class _AddressSelectionScreenState
               ),
             ),
           );
+
+          // If PackageDetailsScreen returned updates (from the chain),
+          // apply them locally and recalculate route
+          if (result is BookingUpdate && result.hasUpdates && mounted) {
+            setState(() {
+              if (result.pickupAddress != null) {
+                _pickupAddress = SavedAddress(
+                  id: _pickupAddress?.id ?? '',
+                  name: result.pickupAddress!.addressName ?? 'Updated Address',
+                  address: Address(
+                    formattedAddress: result.pickupAddress!.formattedAddress,
+                    latitude: result.pickupAddress!.latitude,
+                    longitude: result.pickupAddress!.longitude,
+                    addressDetails: result.pickupAddress!.addressDetails,
+                  ),
+                  contactName: result.pickupAddress!.contactName,
+                  contactPhone: result.pickupAddress!.contactPhone,
+                  noteToDriver: result.pickupAddress!.noteToDriver,
+                  isDefault: _pickupAddress?.isDefault ?? false,
+                  createdAt: _pickupAddress?.createdAt ?? DateTime.now(),
+                  updatedAt: DateTime.now(),
+                );
+              }
+              if (result.dropAddress != null) {
+                _dropAddress = SavedAddress(
+                  id: _dropAddress?.id ?? '',
+                  name: result.dropAddress!.addressName ?? 'Updated Address',
+                  address: Address(
+                    formattedAddress: result.dropAddress!.formattedAddress,
+                    latitude: result.dropAddress!.latitude,
+                    longitude: result.dropAddress!.longitude,
+                    addressDetails: result.dropAddress!.addressDetails,
+                  ),
+                  contactName: result.dropAddress!.contactName,
+                  contactPhone: result.dropAddress!.contactPhone,
+                  noteToDriver: result.dropAddress!.noteToDriver,
+                  isDefault: _dropAddress?.isDefault ?? false,
+                  createdAt: _dropAddress?.createdAt ?? DateTime.now(),
+                  updatedAt: DateTime.now(),
+                );
+              }
+            });
+            _updateMapView();
+          }
         },
       ),
     );

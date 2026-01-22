@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/enums/package_enums.dart';
+import 'package:hello_truck_app/models/enums/invoice_enums.dart';
 import 'package:hello_truck_app/models/gst_details.dart';
+import 'package:hello_truck_app/models/invoice.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
@@ -14,6 +16,7 @@ import 'package:hello_truck_app/providers/provider_registry.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
 import 'package:hello_truck_app/widgets/gst_details_modal.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/widgets/price_calculation_modal.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -43,10 +46,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   bool _hasLoadedLastUsedGst = false; // Track if we've loaded from prefs
   static const double _platformFee = 20.0; // Platform fee constant
   static const String _lastUsedGstKey = 'last_used_gst_number';
+  bool _isRecalculating = false; // Track if we're recalculating estimate
+  late BookingEstimate _currentEstimate; // Track current estimate
+  bool _hasChanges = false; // Track if any changes were made
 
   VehicleOption get _idealVehicle {
-    return widget.estimate.topVehicles.firstWhere(
-      (o) => o.vehicleModelName == widget.estimate.idealVehicleModel,
+    return _currentEstimate.topVehicles.firstWhere(
+      (o) => o.vehicleModelName == _currentEstimate.idealVehicleModel,
     );
   }
 
@@ -62,7 +68,19 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     super.initState();
     _pickupAddress = widget.pickupAddress;
     _dropAddress = widget.dropAddress;
+    _currentEstimate = widget.estimate; // Initialize with passed estimate
     _loadLastUsedGst();
+  }
+
+  /// Create BookingUpdate if there are changes
+  BookingUpdate? _createUpdateIfChanged() {
+    if (!_hasChanges) return null;
+
+    return BookingUpdate(
+      pickupAddress: _pickupAddress,
+      dropAddress: _dropAddress,
+      estimate: _currentEstimate,
+    );
   }
 
   /// Load the last used GST number from SharedPreferences
@@ -117,50 +135,71 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       data: (gstDetailsList) => !gstDetailsList.any((gst) => gst.gstNumber == _selectedGstNumber),
     );
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false, // Always intercept back button
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return; // Already popped, nothing to do
+
+        // Don't allow back during booking or recalculation
+        if (_isBooking || _isRecalculating) return;
+
+        // Pop with update if changes were made
+        final update = _createUpdateIfChanged();
+        if (mounted) {
+          Navigator.of(context).pop(update);
+        }
+      },
+      child: Scaffold(
         backgroundColor: colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Review Order',
-          style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+            onPressed: () {
+              // Don't allow back during booking or recalculation
+              if (_isBooking || _isRecalculating) return;
+
+              final update = _createUpdateIfChanged();
+              Navigator.pop(context, update);
+            },
           ),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildOrderSummaryCard(colorScheme, textTheme),
-                  const SizedBox(height: 20),
-                  _buildPackageDetailsCard(colorScheme, textTheme),
-                  const SizedBox(height: 20),
-                  _buildVehicleCard(colorScheme, textTheme),
-                  const SizedBox(height: 20),
-                  _buildPriceBreakdownCard(colorScheme, textTheme, isGstLoading),
-                  const SizedBox(height: 12),
-                  _buildGstSelectionCard(colorScheme, textTheme),
-                  const SizedBox(height: 20),
-                  _buildImportantNotesCard(colorScheme, textTheme),
-                  const SizedBox(height: 20),
-                ],
-              ),
+          title: Text(
+            'Review Order',
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
             ),
           ),
-          _buildBottomSection(colorScheme, textTheme, isGstLoading),
-        ],
+          centerTitle: true,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildOrderSummaryCard(colorScheme, textTheme),
+                    const SizedBox(height: 20),
+                    _buildPackageDetailsCard(colorScheme, textTheme),
+                    const SizedBox(height: 20),
+                    _buildVehicleCard(colorScheme, textTheme),
+                    const SizedBox(height: 20),
+                    _buildPriceBreakdownCard(colorScheme, textTheme, isGstLoading),
+                    const SizedBox(height: 12),
+                    _buildGstSelectionCard(colorScheme, textTheme),
+                    const SizedBox(height: 20),
+                    _buildImportantNotesCard(colorScheme, textTheme),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+            _buildBottomSection(colorScheme, textTheme, isGstLoading),
+          ],
+        ),
       ),
     );
   }
@@ -694,7 +733,58 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Price Breakdown', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text('Price Breakdown', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      // Create a temporary Invoice from breakdown for the modal
+                      final tempInvoice = Invoice(
+                        id: '',
+                        bookingId: '',
+                        type: InvoiceType.estimate,
+                        vehicleModelName: _idealVehicle.vehicleModelName,
+                        basePrice: _idealVehicle.breakdown.baseFare,
+                        perKmPrice: _idealVehicle.breakdown.perKm,
+                        baseKm: _idealVehicle.breakdown.baseKm,
+                        distanceKm: _idealVehicle.breakdown.distanceKm,
+                        weightInTons: _idealVehicle.breakdown.weightInTons,
+                        effectiveBasePrice: _idealVehicle.breakdown.baseFare * (_idealVehicle.breakdown.weightInTons > 1 ? _idealVehicle.breakdown.weightInTons : 1),
+                        platformFee: platformFee,
+                        totalPrice: _calculateTotal(isGstLoading),
+                        gstNumber: _selectedGstNumber,
+                        walletApplied: 0,
+                        finalAmount: _calculateTotal(isGstLoading),
+                        isPaid: false,
+                        createdAt: DateTime.now(),
+                        updatedAt: DateTime.now(),
+                      );
+                      PriceCalculationModal.show(context, tempInvoice);
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Learn more',
+                          style: textTheme.labelMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.chevron_right_rounded, size: 16, color: colorScheme.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             _buildPriceRow('Base fare', _idealVehicle.breakdown.baseFare.toRupees(), colorScheme, textTheme),
             _buildPriceRow('Base km included', '${_idealVehicle.breakdown.baseKm} km', colorScheme, textTheme),
@@ -714,9 +804,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     Row(
                       children: [
                         Text('Platform Fee', style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.8))),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         Tooltip(
                           message: 'Platform fee waived for GST bookings',
+                          triggerMode: TooltipTriggerMode.tap,
                           child: Icon(Icons.info_outline_rounded, size: 14, color: colorScheme.primary),
                         ),
                       ],
@@ -773,6 +864,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Widget _buildBottomSection(ColorScheme colorScheme, TextTheme textTheme, bool isGstLoading) {
     final total = _calculateTotal(isGstLoading);
+    final isButtonDisabled = _isBooking || _isRecalculating || isGstLoading;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -786,7 +878,22 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-              Text(total.toRupees(), style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+              _isRecalculating
+                  ? Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('Calculating...', style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
+                      ],
+                    )
+                  : Text(total.toRupees(), style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
             ],
           ),
           const SizedBox(height: 16),
@@ -794,7 +901,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isBooking ? null : _showConfirmationModal,
+                onPressed: isButtonDisabled ? null : _showConfirmationModal,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
@@ -813,23 +920,54 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
-  void _editLocation(bool isPickup) {
+  void _editLocation(bool isPickup) async {
     if (!mounted) return;
-    showModalBottomSheet<BuildContext>(
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       enableDrag: false,
       builder: (context) => AddressSearchPage(
         isPickup: isPickup,
-        onAddressSelected: (address) {
+        onAddressSelected: (address) async {
+          final newAddress = BookingAddress.fromSavedAddress(address);
+
+          // Update the address immediately
           setState(() {
             if (isPickup) {
-              _pickupAddress = BookingAddress.fromSavedAddress(address);
+              _pickupAddress = newAddress;
             } else {
-              _dropAddress = BookingAddress.fromSavedAddress(address);
+              _dropAddress = newAddress;
             }
+            _isRecalculating = true;
           });
+
+          // Recalculate estimate with new addresses
+          try {
+            final api = await ref.read(apiProvider.future);
+            final newEstimate = await getBookingEstimate(
+              api,
+              pickupAddress: _pickupAddress,
+              dropAddress: _dropAddress,
+              package: widget.package,
+            );
+
+            if (mounted) {
+              setState(() {
+                _currentEstimate = newEstimate;
+                _isRecalculating = false;
+                _hasChanges = true; // Mark that changes were made
+              });
+            }
+          } catch (e) {
+            if (mounted) {
+              setState(() {
+                _isRecalculating = false;
+              });
+              if(context.mounted) SnackBars.error(context, 'Failed to recalculate estimate: $e');
+            }
+          }
         },
       ),
     );

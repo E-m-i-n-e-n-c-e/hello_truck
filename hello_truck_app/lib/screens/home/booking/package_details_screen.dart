@@ -29,6 +29,23 @@ class PackageDetailsScreen extends ConsumerStatefulWidget {
 class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  // Update tracking
+  bool _hasUpdates = false;
+  BookingAddress? _updatedPickupAddress;
+  BookingAddress? _updatedDropAddress;
+
+  BookingAddress get _currentPickupAddress => _updatedPickupAddress ?? widget.pickupAddress;
+  BookingAddress get _currentDropAddress => _updatedDropAddress ?? widget.dropAddress;
+
+  BookingUpdate? _createUpdateIfChanged() {
+    if (!_hasUpdates) return null;
+
+    return BookingUpdate(
+      pickupAddress: _updatedPickupAddress,
+      dropAddress: _updatedDropAddress,
+    );
+  }
+
   // Package type
   bool _isCommercialUse = false;
 
@@ -94,14 +111,27 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final update = _createUpdateIfChanged();
+        if (mounted) {
+          Navigator.of(context).pop(update);
+        }
+      },
+      child: Scaffold(
     backgroundColor: colorScheme.surface,
     appBar: AppBar(
       backgroundColor: colorScheme.surface,
       elevation: 0,
       leading: IconButton(
         icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          final update = _createUpdateIfChanged();
+          Navigator.pop(context, update);
+        },
       ),
       title: Text(
         'Package Details',
@@ -644,8 +674,8 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
           ],
         ),
       ),
-    ),
-        );
+      ),
+    ));
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {
@@ -881,19 +911,33 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     );
   }
 
-  void _proceedToEstimate() {
+  void _proceedToEstimate() async {
     if (_formKey.currentState!.validate()) {
       final package = _buildPackage();
-      Navigator.push(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => EstimateScreen(
-            pickupAddress: widget.pickupAddress,
-            dropAddress: widget.dropAddress,
+            pickupAddress: _currentPickupAddress,
+            dropAddress: _currentDropAddress,
             package: package,
           ),
         ),
       );
+
+      // If EstimateScreen returned updates (from ReviewScreen chain),
+      // apply them locally and stay on this screen
+      if (result is BookingUpdate && result.hasUpdates && mounted) {
+        setState(() {
+          if (result.pickupAddress != null) {
+            _updatedPickupAddress = result.pickupAddress;
+          }
+          if (result.dropAddress != null) {
+            _updatedDropAddress = result.dropAddress;
+          }
+          _hasUpdates = true;
+        });
+      }
     }
   }
 

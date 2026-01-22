@@ -67,7 +67,7 @@ class Invoice {
       effectiveBasePrice: json['effectiveBasePrice']?.toDouble(),
       platformFee: json['platformFee']?.toDouble() ?? 0.0,
       totalPrice: json['totalPrice']?.toDouble(),
-      gstNumber: json['gstNumber'],
+      gstNumber: json['gstNumber'] ?? 'test',
       walletApplied: json['walletApplied']?.toDouble(),
       finalAmount: json['finalAmount']?.toDouble(),
       paymentLinkUrl: json['paymentLinkUrl'],

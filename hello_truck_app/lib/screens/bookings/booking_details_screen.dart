@@ -17,6 +17,7 @@ import 'package:hello_truck_app/utils/nav_utils.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
+import 'package:hello_truck_app/widgets/price_calculation_modal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 double calculateBearing(LatLng from, LatLng to) {
@@ -787,18 +788,45 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
             children: [
               Icon(Icons.receipt_long_rounded, size: 18, color: cs.primary),
               const SizedBox(width: 8),
-              Text('Invoice', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
-              if (!isFinal) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text('Estimated', style: tt.labelSmall?.copyWith(color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
+              Expanded(
+                child: Row(
+                  children: [
+                    Text('Invoice', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
+                    if (!isFinal) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text('Estimated', style: tt.labelSmall?.copyWith(color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => PriceCalculationModal.show(context, invoice),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Learn more',
+                        style: tt.labelMedium?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: cs.primary),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -817,8 +845,9 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
                 Row(
                   children: [
                     Text('Platform Fee', style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.8))),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Tooltip(
+                      triggerMode: TooltipTriggerMode.tap,
                       message: 'Platform fee waived for GST bookings',
                       child: Icon(Icons.info_outline_rounded, size: 14, color: cs.primary),
                     ),

@@ -25,60 +25,90 @@ class EstimateScreen extends ConsumerStatefulWidget {
 
 class _EstimateScreenState extends ConsumerState<EstimateScreen> {
   bool _acknowledged = false;
+  bool _hasUpdates = false;
+  BookingAddress? _updatedPickupAddress;
+  BookingAddress? _updatedDropAddress;
+  AsyncValue<BookingEstimate>? _estimateAsync;
+
+  BookingAddress get _currentPickupAddress => _updatedPickupAddress ?? widget.pickupAddress;
+  BookingAddress get _currentDropAddress => _updatedDropAddress ?? widget.dropAddress;
+
+  BookingUpdate? _createUpdateIfChanged() {
+    if (!_hasUpdates) return null;
+
+    return BookingUpdate(
+      pickupAddress: _updatedPickupAddress,
+      dropAddress: _updatedDropAddress,
+      estimate: _estimateAsync?.value,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final estimateAsync = ref.watch(bookingEstimateProvider((
-      pickupAddress: widget.pickupAddress,
-      dropAddress: widget.dropAddress,
+    final AsyncValue<BookingEstimate> estimateAsync = _estimateAsync ?? ref.watch(bookingEstimateProvider((
+      pickupAddress: _currentPickupAddress,
+      dropAddress: _currentDropAddress,
       package: widget.package,
     )));
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final update = _createUpdateIfChanged();
+        if (mounted) {
+          Navigator.of(context).pop(update);
+        }
+      },
+      child: Scaffold(
         backgroundColor: colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Estimate',
-          style: textTheme.titleLarge?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+            onPressed: () {
+              final update = _createUpdateIfChanged();
+              Navigator.pop(context, update);
+            },
           ),
+          title: Text(
+            'Estimate',
+            style: textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: estimateAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-                const SizedBox(height: 12),
-                Text('Failed to load estimate', style: textTheme.titleMedium),
-                const SizedBox(height: 6),
-                Text(
-                  error.toString(),
-                  textAlign: TextAlign.center,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+        body: estimateAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
+                  const SizedBox(height: 12),
+                  Text('Failed to load estimate', style: textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  Text(
+                    error.toString(),
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(bookingEstimateProvider((
-                    pickupAddress: widget.pickupAddress,
-                    dropAddress: widget.dropAddress,
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(bookingEstimateProvider((
+                      pickupAddress: _currentPickupAddress,
+                    dropAddress: _currentDropAddress,
                     package: widget.package,
                   ))),
                   child: const Text('Retry'),
@@ -121,6 +151,7 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }
@@ -413,17 +444,39 @@ class _EstimateScreenState extends ConsumerState<EstimateScreen> {
 
   String _vehicleLabel(String vehicleModelName) => vehicleModelName.replaceAll('_', ' ');
 
-  void _proceedToReview(BookingEstimate estimate) {
-    Navigator.push(
+  void _proceedToReview(BookingEstimate estimate) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ReviewScreen(
-          pickupAddress: widget.pickupAddress,
-          dropAddress: widget.dropAddress,
+          pickupAddress: _currentPickupAddress,
+          dropAddress: _currentDropAddress,
           package: widget.package,
           estimate: estimate,
         ),
       ),
     );
+
+    // If ReviewScreen returned updates, apply them locally and stay on this screen
+    if (result is BookingUpdate && result.hasUpdates && mounted) {
+      // Update local state with new addresses/estimate
+      setState(() {
+        if (result.pickupAddress != null) {
+          // Store updated pickup address
+          _updatedPickupAddress = result.pickupAddress;
+        }
+        if (result.dropAddress != null) {
+          // Store updated drop address
+          _updatedDropAddress = result.dropAddress;
+        }
+        if (result.estimate != null) {
+          // Refresh estimate display with new data
+          _estimateAsync = AsyncValue.data(result.estimate!);
+        }
+      });
+
+      // Mark that we have updates to pass up the chain
+      _hasUpdates = true;
+    }
   }
 }

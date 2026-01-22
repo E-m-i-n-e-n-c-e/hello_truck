@@ -5,6 +5,7 @@ import 'enums/booking_enums.dart';
 import 'package.dart';
 import 'saved_address.dart';
 import 'invoice.dart';
+import 'booking_estimate.dart';
 
 class Booking {
   final String id;
@@ -222,6 +223,44 @@ class Driver {
       email: json['email'],
       photo: json['photo'],
       score: json['score'],
+    );
+  }
+}
+
+/// Generic class to represent updates made during the booking flow
+/// Used to pass updated data back through the navigation stack
+class BookingUpdate {
+  final BookingAddress? pickupAddress;
+  final BookingAddress? dropAddress;
+  final Package? package;
+  final BookingEstimate? estimate;
+
+  const BookingUpdate({
+    this.pickupAddress,
+    this.dropAddress,
+    this.package,
+    this.estimate,
+  });
+
+  /// Check if any field was updated
+  bool get hasUpdates =>
+      pickupAddress != null ||
+      dropAddress != null ||
+      package != null ||
+      estimate != null;
+
+  /// Create a copy with updated fields
+  BookingUpdate copyWith({
+    BookingAddress? pickupAddress,
+    BookingAddress? dropAddress,
+    Package? package,
+    BookingEstimate? estimate,
+  }) {
+    return BookingUpdate(
+      pickupAddress: pickupAddress ?? this.pickupAddress,
+      dropAddress: dropAddress ?? this.dropAddress,
+      package: package ?? this.package,
+      estimate: estimate ?? this.estimate,
     );
   }
 }
