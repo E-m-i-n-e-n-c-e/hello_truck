@@ -4,14 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/booking_estimate.dart';
 import 'package:hello_truck_app/models/enums/package_enums.dart';
+import 'package:hello_truck_app/models/gst_details.dart';
 import 'package:hello_truck_app/models/package.dart';
 import 'package:hello_truck_app/api/booking_api.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
+import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/providers/provider_registry.dart';
 import 'package:hello_truck_app/screens/home/booking/widgets/address_search_page.dart';
+import 'package:hello_truck_app/widgets/gst_details_modal.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final BookingAddress pickupAddress;
@@ -35,6 +39,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   bool _isBooking = false;
   late BookingAddress _pickupAddress;
   late BookingAddress _dropAddress;
+  String? _selectedGstNumber; // Track selected GST number
+  bool _hasLoadedLastUsedGst = false; // Track if we've loaded from prefs
+  static const double _platformFee = 20.0; // Platform fee constant
+  static const String _lastUsedGstKey = 'last_used_gst_number';
 
   VehicleOption get _idealVehicle {
     return widget.estimate.topVehicles.firstWhere(
@@ -42,17 +50,72 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
+  // Calculate total with platform fee
+  double _calculateTotal(bool isGstLoading) {
+    // If GST is loading, show platform fee (no discount yet)
+    final platformFee = (_selectedGstNumber != null && !isGstLoading) ? 0.0 : _platformFee;
+    return _idealVehicle.estimatedCost + platformFee;
+  }
+
   @override
   void initState() {
     super.initState();
     _pickupAddress = widget.pickupAddress;
     _dropAddress = widget.dropAddress;
+    _loadLastUsedGst();
+  }
+
+  /// Load the last used GST number from SharedPreferences
+  Future<void> _loadLastUsedGst() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastUsedGst = prefs.getString(_lastUsedGstKey);
+
+    if (lastUsedGst != null && mounted) {
+      try {
+        // Wait for provider to resolve before validating
+        final gstDetailsList = await ref.read(gstDetailsProvider.future);
+
+        if (mounted && !_hasLoadedLastUsedGst) {
+          // Check if the last used GST still exists in the list
+          final isValid = gstDetailsList.any((gst) => gst.gstNumber == lastUsedGst);
+          setState(() {
+            _selectedGstNumber = isValid ? lastUsedGst : null;
+            _hasLoadedLastUsedGst = true;
+          });
+        }
+      } catch (e) {
+        // If provider fails, just don't auto-select
+        if (mounted && !_hasLoadedLastUsedGst) {
+          setState(() {
+            _hasLoadedLastUsedGst = true;
+          });
+        }
+      }
+    }
+  }
+
+  /// Save the selected GST number to SharedPreferences
+  Future<void> _saveLastUsedGst(String? gstNumber) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (gstNumber != null) {
+      await prefs.setString(_lastUsedGstKey, gstNumber);
+    } else {
+      await prefs.remove(_lastUsedGstKey);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Watch GST details provider to check loading state
+    final gstDetailsAsync = ref.watch(gstDetailsProvider);
+    final isGstLoading = _selectedGstNumber != null && gstDetailsAsync.when(
+      loading: () => true,
+      error: (_, _) => false,
+      data: (gstDetailsList) => !gstDetailsList.any((gst) => gst.gstNumber == _selectedGstNumber),
+    );
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -86,7 +149,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   const SizedBox(height: 20),
                   _buildVehicleCard(colorScheme, textTheme),
                   const SizedBox(height: 20),
-                  _buildPriceBreakdownCard(colorScheme, textTheme),
+                  _buildPriceBreakdownCard(colorScheme, textTheme, isGstLoading),
+                  const SizedBox(height: 12),
+                  _buildGstSelectionCard(colorScheme, textTheme),
                   const SizedBox(height: 20),
                   _buildImportantNotesCard(colorScheme, textTheme),
                   const SizedBox(height: 20),
@@ -94,7 +159,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               ),
             ),
           ),
-          _buildBottomSection(colorScheme, textTheme),
+          _buildBottomSection(colorScheme, textTheme, isGstLoading),
         ],
       ),
     );
@@ -211,6 +276,365 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
+  Widget _buildGstSelectionCard(ColorScheme colorScheme, TextTheme textTheme) {
+    final gstDetailsAsync = ref.watch(gstDetailsProvider);
+
+    return gstDetailsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (gstDetailsList) {
+        if (gstDetailsList.isEmpty) {
+          // Compact "Add GSTIN" card
+          return InkWell(
+            onTap: () => _showAddGstDialog(),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceBright,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.receipt_long_rounded, color: colorScheme.primary, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add GSTIN',
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          'Save ₹20 platform fee on your order',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // If no GST selected, show "Select GSTIN" card
+        if (_selectedGstNumber == null) {
+          return InkWell(
+            onTap: () => _showGstSelectionModal(gstDetailsList, colorScheme, textTheme),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceBright,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.receipt_long_rounded, color: colorScheme.primary, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Select GSTIN',
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          'Save ₹20 platform fee on your order',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Show selected GST details
+        // Try to find the selected GST in the list
+        final selectedGst = gstDetailsList.cast<GstDetails?>().firstWhere(
+          (gst) => gst?.gstNumber == _selectedGstNumber,
+          orElse: () => null,
+        );
+
+        // If selected GST not found (during refresh), show loading state
+        if (selectedGst == null) {
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceBright,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.receipt_long_rounded, color: colorScheme.primary, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Loading GST details...',
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      Text(
+                        _selectedGstNumber ?? '',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.4),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return InkWell(
+          onTap: () => _showGstSelectionModal(gstDetailsList, colorScheme, textTheme),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceBright,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.receipt_long_rounded, color: colorScheme.primary, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedGst.businessName,
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        selectedGst.gstNumber,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  'Change',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colorScheme.primary.withValues(alpha: 0.6),
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showGstSelectionModal(List<GstDetails> gstDetailsList, ColorScheme colorScheme, TextTheme textTheme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Select GST Number',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // GST options with Material for ripple effect
+              ...gstDetailsList.map((gst) => Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedGstNumber = gst.gstNumber;
+                    });
+                    _saveLastUsedGst(gst.gstNumber);
+                    Navigator.pop(context);
+                  },
+                  child: ListTile(
+                    leading: Icon(Icons.receipt_long_rounded, color: colorScheme.primary),
+                    title: Text(
+                      gst.businessName,
+                      style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      gst.gstNumber,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    trailing: _selectedGstNumber == gst.gstNumber
+                        ? Icon(Icons.check_circle, color: colorScheme.primary)
+                        : null,
+                  ),
+                ),
+              )),
+              // Remove GST button (only show if GST is selected)
+              if (_selectedGstNumber != null) ...[
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedGstNumber = null;
+                        });
+                        _saveLastUsedGst(null);
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: colorScheme.error.withValues(alpha: 0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.close_rounded, color: colorScheme.error, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Remove GST (Pay ₹20 platform fee)',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAddGstDialog() async {
+    final addedGstNumber = await GstDetailsModal.show(
+      context,
+      onSuccess: () {
+        ref.invalidate(gstDetailsProvider);
+        SnackBars.success(context, 'GST details added successfully');
+      },
+    );
+    // If a GST number was returned (newly added or reactivated), select it and save it
+    if (addedGstNumber != null && mounted) {
+      setState(() {
+        _selectedGstNumber = addedGstNumber;
+      });
+      _saveLastUsedGst(addedGstNumber);
+    }
+  }
+
   Widget _buildVehicleCard(ColorScheme colorScheme, TextTheme textTheme) {
     return Container(
       width: double.infinity,
@@ -253,7 +677,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
-  Widget _buildPriceBreakdownCard(ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildPriceBreakdownCard(ColorScheme colorScheme, TextTheme textTheme, bool isGstLoading) {
+    // If GST is loading, show platform fee (no discount yet)
+    final platformFee = (_selectedGstNumber != null && !isGstLoading) ? 0.0 : _platformFee;
+    final total = _calculateTotal(isGstLoading);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -273,8 +701,34 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             _buildPriceRow('Per km rate', '${_idealVehicle.breakdown.perKm.toRupees()}/km', colorScheme, textTheme),
             _buildPriceRow('Distance', _idealVehicle.breakdown.distanceKm.toDistance(), colorScheme, textTheme),
             _buildPriceRow('Weight', _idealVehicle.breakdown.weightInTons.tonsToKg(), colorScheme, textTheme),
+
+            // Platform Fee
+            if (platformFee > 0) ...[
+              _buildPriceRow('Platform Fee', platformFee.toRupees(), colorScheme, textTheme),
+            ] else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text('Platform Fee', style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.8))),
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message: 'Platform fee waived for GST bookings',
+                          child: Icon(Icons.info_outline_rounded, size: 14, color: colorScheme.primary),
+                        ),
+                      ],
+                    ),
+                    Text('₹0 (GST)', style: textTheme.bodyMedium?.copyWith(color: Colors.green, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+
             Divider(height: 24, color: colorScheme.outline.withValues(alpha: 0.2)),
-            _buildPriceRow('Total', _idealVehicle.estimatedCost.toRupees(), colorScheme, textTheme, isTotal: true),
+            _buildPriceRow('Total', total.toRupees(), colorScheme, textTheme, isTotal: true),
           ],
         ),
       ),
@@ -317,7 +771,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
-  Widget _buildBottomSection(ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildBottomSection(ColorScheme colorScheme, TextTheme textTheme, bool isGstLoading) {
+    final total = _calculateTotal(isGstLoading);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -330,7 +786,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-              Text(_idealVehicle.estimatedCost.toRupees(), style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+              Text(total.toRupees(), style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
             ],
           ),
           const SizedBox(height: 16),
@@ -407,7 +863,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     setState(() => _isBooking = true);
     try {
       final api = await ref.read(apiProvider.future);
-      await createBooking(api, pickupAddress: _pickupAddress, dropAddress: _dropAddress, package: widget.package);
+      await createBooking(
+        api,
+        pickupAddress: _pickupAddress,
+        dropAddress: _dropAddress,
+        package: widget.package,
+        gstNumber: _selectedGstNumber,
+      );
       ref.invalidate(activeBookingsProvider);
       if (mounted) _showSuccessDialog();
     } catch (e) {
@@ -439,18 +901,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: cs.onSurface.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 6),
                   // Success icon
                   Container(
                     padding: const EdgeInsets.all(16),

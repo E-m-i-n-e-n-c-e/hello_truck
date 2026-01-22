@@ -79,11 +79,12 @@ class API {
     },
   );
 
-  Future<Response> get(String path, {CachePolicy? policy}) => _dio.get(
+  Future<Response> get(String path, {CachePolicy? policy, Map<String, dynamic>? queryParameters}) => _dio.get(
     '$baseUrl$path',
     options: _cacheOptions
         .copyWith(policy: policy ?? _cacheOptions.policy)
         .toOptions(),
+    queryParameters: queryParameters,
   );
 
   Future<Response> post(String path, {dynamic data}) =>

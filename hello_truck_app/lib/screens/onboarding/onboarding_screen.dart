@@ -129,7 +129,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             ? null
             : _controller.lastNameController.text.trim(),
         googleIdToken: _controller.googleIdToken,
-        referralCode: _controller.referralController.text.trim().isEmpty
+        appliedReferralCode: _controller.referralController.text.trim().isEmpty
             ? null
             : _controller.referralController.text.trim(),
         gstDetails: _controller.getGstDetails(),

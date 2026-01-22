@@ -5,7 +5,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/api/gst_details_api.dart' as gst_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
-import 'package:hello_truck_app/screens/profile/gst_details_dialog.dart';
+import 'package:hello_truck_app/widgets/gst_details_modal.dart';
 
 class GstDetailsScreen extends ConsumerWidget {
   const GstDetailsScreen({super.key});
@@ -145,15 +145,13 @@ class GstDetailsScreen extends ConsumerWidget {
   }
 
   void _showGstDetailsDialog(BuildContext context, WidgetRef ref, {GstDetails? existingDetails}) {
-    showDialog(
-      context: context,
-      builder: (ctx) => GstDetailsDialog(
-        existingDetails: existingDetails,
-        onSuccess: () {
-          ref.invalidate(gstDetailsProvider);
-          SnackBars.success(context, 'GST details ${existingDetails == null ? 'added' : 'updated'} successfully');
-        },
-      ),
+    GstDetailsModal.show(
+      context,
+      existingDetails: existingDetails,
+      onSuccess: () {
+        ref.invalidate(gstDetailsProvider);
+        SnackBars.success(context, 'GST details ${existingDetails == null ? 'added' : 'updated'} successfully');
+      },
     );
   }
 

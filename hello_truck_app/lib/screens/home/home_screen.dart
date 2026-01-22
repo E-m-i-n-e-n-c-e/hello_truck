@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/booking.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
+import 'package:hello_truck_app/providers/addresse_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/screens/home/booking/address_selection_screen.dart';
+import 'package:hello_truck_app/widgets/gst_details_modal.dart';
+import 'package:hello_truck_app/screens/profile/gst_details_screen.dart';
+import 'package:hello_truck_app/screens/profile/referral_screen.dart';
+import 'package:hello_truck_app/screens/profile/saved_addresses_screen.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
 import 'package:hello_truck_app/widgets/tappable_card.dart';
+import 'package:hello_truck_app/widgets/snackbars.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -35,22 +41,35 @@ class HomeScreen extends ConsumerWidget {
               _buildBookNowCard(context),
               const SizedBox(height: 28),
 
+              // Quick Links (moved to top)
+              _buildQuickLinks(context, ref),
+              const SizedBox(height: 24),
+
               // Recent Bookings
               historyAsync.when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, _) => const SizedBox.shrink(),
                 data: (bookings) {
-                  final completed = bookings.where((b) => b.status == BookingStatus.completed).take(5).toList();
+                  // Filter completed bookings from last 48 hours (in IST)
+                  final nowIST = DateTimeUtils.nowIST();
+                  final fortyEightHoursAgo = nowIST.subtract(const Duration(hours: 48));
+
+                  final recentCompleted = bookings.where((b) {
+                    if (b.status != BookingStatus.completed) return false;
+                    final completedAt = b.completedAt ?? b.createdAt;
+                    final completedAtIST = DateTimeUtils.toIST(completedAt);
+                    return completedAtIST.isAfter(fortyEightHoursAgo);
+                  }).toList();
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildSectionHeader(context, 'Recent Bookings'),
                       const SizedBox(height: 12),
-                      if (completed.isEmpty)
+                      if (recentCompleted.isEmpty)
                         _buildEmptyBookingsState(context)
                       else
-                        ...completed.map((b) => Padding(
+                        ...recentCompleted.map((b) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _buildRecentBookingCard(context, b),
                         )),
@@ -235,8 +254,7 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Your completed bookings will appear here',
-            textAlign: TextAlign.center,
+            'Your recent bookings appear here',
             style: tt.bodyMedium?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.6),
             ),
@@ -248,6 +266,176 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildRecentBookingCard(BuildContext context, Booking booking) {
     return _ExpandableBookingCard(booking: booking);
+  }
+
+  Widget _buildQuickLinks(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Quick Actions',
+          style: tt.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickLinkCard(
+                context,
+                icon: Icons.location_on_rounded,
+                label: 'Addresses',
+                color: cs.primary,
+                onTap: () {
+                  ref.invalidate(savedAddressesProvider);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SavedAddressesScreen()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildGstQuickLinkCard(context, ref),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildQuickLinkCard(
+                context,
+                icon: Icons.card_giftcard_rounded,
+                label: 'Refer',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ReferralScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGstQuickLinkCard(BuildContext context, WidgetRef ref) {
+    final gstDetailsAsync = ref.watch(gstDetailsProvider);
+
+    return gstDetailsAsync.when(
+      loading: () => _buildQuickLinkCard(
+        context,
+        icon: Icons.receipt_long_rounded,
+        label: 'GST',
+        color: Colors.green,
+        onTap: () {},
+      ),
+      error: (_, _) => _buildQuickLinkCard(
+        context,
+        icon: Icons.receipt_long_rounded,
+        label: 'Add GST',
+        color: Colors.green,
+        onTap: () {
+          GstDetailsModal.show(
+            context,
+            navigateToScreenAfterAdd: true,
+            onSuccess: () {
+              ref.invalidate(gstDetailsProvider);
+              SnackBars.success(context, 'GST details added successfully');
+            },
+          );
+        },
+      ),
+      data: (gstDetails) {
+        final hasGstDetails = gstDetails.isNotEmpty;
+
+        return _buildQuickLinkCard(
+          context,
+          icon: Icons.receipt_long_rounded,
+          label: hasGstDetails ? 'Manage GST' : 'Add GST',
+          color: Colors.green,
+          onTap: () {
+            if (hasGstDetails) {
+              // Navigate to manage screen
+              ref.invalidate(gstDetailsProvider);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GstDetailsScreen()),
+              );
+            } else {
+              // Open modal to add
+              GstDetailsModal.show(
+                context,
+                navigateToScreenAfterAdd: true,
+                onSuccess: () {
+                  ref.invalidate(gstDetailsProvider);
+                  SnackBars.success(context, 'GST details added successfully');
+                },
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickLinkCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return TappableCard(
+      pressedOpacity: 0.6,
+      animationDuration: const Duration(milliseconds: 100),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: cs.surfaceBright,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

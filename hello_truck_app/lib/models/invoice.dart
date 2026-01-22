@@ -13,7 +13,9 @@ class Invoice {
   final double distanceKm;
   final double weightInTons;
   final double effectiveBasePrice;
+  final double platformFee;
   final double totalPrice;
+  final String? gstNumber;
   final double walletApplied;
   final double finalAmount;
   final String? paymentLinkUrl;
@@ -36,7 +38,9 @@ class Invoice {
     required this.distanceKm,
     required this.weightInTons,
     required this.effectiveBasePrice,
+    required this.platformFee,
     required this.totalPrice,
+    this.gstNumber,
     required this.walletApplied,
     required this.finalAmount,
     this.paymentLinkUrl,
@@ -61,7 +65,9 @@ class Invoice {
       distanceKm: json['distanceKm']?.toDouble(),
       weightInTons: json['weightInTons']?.toDouble(),
       effectiveBasePrice: json['effectiveBasePrice']?.toDouble(),
+      platformFee: json['platformFee']?.toDouble() ?? 0.0,
       totalPrice: json['totalPrice']?.toDouble(),
+      gstNumber: json['gstNumber'],
       walletApplied: json['walletApplied']?.toDouble(),
       finalAmount: json['finalAmount']?.toDouble(),
       paymentLinkUrl: json['paymentLinkUrl'],

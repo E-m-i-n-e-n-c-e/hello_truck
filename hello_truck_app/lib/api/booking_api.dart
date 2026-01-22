@@ -28,6 +28,7 @@ Future<Booking> createBooking(
   required BookingAddress pickupAddress,
   required BookingAddress dropAddress,
   required Package package,
+  String? gstNumber,
 }) async {
   final response = await api.post('/bookings/customer', data: {
     'pickupAddress': {
@@ -51,6 +52,7 @@ Future<Booking> createBooking(
       'longitude': dropAddress.longitude,
     },
     'package': package.toJson(),
+    if (gstNumber != null) 'gstNumber': gstNumber,
   });
 
   return Booking.fromJson(response.data);

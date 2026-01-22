@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/customer.dart';
 import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
+import 'package:hello_truck_app/providers/addresse_providers.dart';
 import 'package:hello_truck_app/api/customer_api.dart' as customer_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:hello_truck_app/widgets/tappable_card.dart';
@@ -11,6 +12,9 @@ import 'package:hello_truck_app/screens/profile/email_link_dialog.dart';
 import 'package:hello_truck_app/screens/profile/wallet_activity_screen.dart';
 import 'package:hello_truck_app/screens/profile/payments_screen.dart';
 import 'package:hello_truck_app/screens/profile/gst_details_screen.dart';
+import 'package:hello_truck_app/widgets/gst_details_modal.dart';
+import 'package:hello_truck_app/screens/profile/referral_screen.dart';
+import 'package:hello_truck_app/screens/profile/saved_addresses_screen.dart';
 import 'package:hello_truck_app/utils/date_time_utils.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
 
@@ -288,7 +292,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Add your GST details to receive GST invoices for your bookings.',
+                          'Add your GST details to save ₹20 platform fee on your bookings.',
                           style: tt.bodySmall?.copyWith(
                             color: cs.onSurface.withValues(alpha: 0.8),
                           ),
@@ -399,6 +403,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildQuickAccessSection(BuildContext context) {
     return Column(
       children: [
+        // GST Details Card with Plus Button
+        _buildGstDetailsCard(context, ref),
+        const SizedBox(height: 12),
+
         // Payments Card
         _buildQuickAccessCard(
           context,
@@ -416,21 +424,184 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         const SizedBox(height: 12),
 
-        // GST Details Card
+        // Saved Addresses Card
         _buildQuickAccessCard(
           context,
-          icon: Icons.receipt_long_rounded,
-          title: 'GST Details',
-          subtitle: 'Manage your business GST info',
+          icon: Icons.location_on_rounded,
+          title: 'Saved Addresses',
+          subtitle: 'Manage your saved locations',
           onTap: () {
-            ref.invalidate(gstDetailsProvider);
+            ref.invalidate(savedAddressesProvider);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const GstDetailsScreen()),
+              MaterialPageRoute(builder: (_) => const SavedAddressesScreen()),
             );
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildGstDetailsCard(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final gstDetailsAsync = ref.watch(gstDetailsProvider);
+    return gstDetailsAsync.when(
+      loading: () => _buildGstCardSkeleton(context),
+      error: (_, _) => _buildGstCardSkeleton(context),
+      data: (gstDetails) {
+        final hasGstDetails = gstDetails.isNotEmpty;
+
+        return TappableCard(
+          pressedOpacity: 0.6,
+          animationDuration: const Duration(milliseconds: 100),
+          onTap: () {
+            if (hasGstDetails) {
+              // Navigate to manage screen
+              ref.invalidate(gstDetailsProvider);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GstDetailsScreen()),
+              );
+            } else {
+              // Open modal to add
+              GstDetailsModal.show(
+                context,
+                navigateToScreenAfterAdd: true,
+                onSuccess: () {
+                  ref.invalidate(gstDetailsProvider);
+                  SnackBars.success(context, 'GST details added successfully');
+                },
+              );
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: cs.surfaceBright,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: hasGstDetails
+                    ? Colors.transparent
+                    : cs.primary.withValues(alpha: 0.3),
+                width: hasGstDetails ? 0 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.shadow.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.receipt_long_rounded, color: cs.primary, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'GST Details',
+                          style: tt.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          hasGstDetails ? 'Manage your business GST info' : 'Add GST Details',
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Show plus icon if no GST, chevron if has GST
+                  Icon(
+                    hasGstDetails ? Icons.chevron_right_rounded : Icons.add_rounded,
+                    color: hasGstDetails
+                        ? cs.onSurface.withValues(alpha: 0.5)
+                        : cs.primary,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGstCardSkeleton(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceBright,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.receipt_long_rounded, color: cs.primary, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'GST Details',
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Manage your business GST info',
+                    style: tt.bodyMedium?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -615,7 +786,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               icon: Icons.card_giftcard_rounded,
               title: 'Referral Code',
               value: customer.referralCode,
-              onEdit: null,
+              onEdit: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ReferralScreen()),
+                );
+              },
+              isAction: true,
+              actionLabel: 'Details',
             ),
           ],
         ],

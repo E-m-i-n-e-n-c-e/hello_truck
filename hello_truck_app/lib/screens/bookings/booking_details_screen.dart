@@ -806,6 +806,30 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
           _buildInfoRow(context, 'Distance', invoice.distanceKm.toDistance()),
           _buildInfoRow(context, 'Base Price', invoice.effectiveBasePrice.toRupees()),
           _buildInfoRow(context, 'Per Km Rate', '${invoice.perKmPrice.toRupees()}/km'),
+
+          // Platform Fee
+          if (invoice.platformFee > 0) ...[
+            _buildInfoRow(context, 'Platform Fee', invoice.platformFee.toRupees()),
+          ] else if (invoice.gstNumber != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text('Platform Fee', style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.8))),
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: 'Platform fee waived for GST bookings',
+                      child: Icon(Icons.info_outline_rounded, size: 14, color: cs.primary),
+                    ),
+                  ],
+                ),
+                Text('₹0 (GST)', style: tt.bodyMedium?.copyWith(color: Colors.green, fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+
           Divider(height: 16, color: cs.outline.withValues(alpha: 0.1)),
           _buildInfoRow(context, 'Total', invoice.totalPrice.toRupees()),
           if (invoice.walletApplied != 0) ...[

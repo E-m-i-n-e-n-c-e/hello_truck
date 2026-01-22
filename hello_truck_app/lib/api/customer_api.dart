@@ -37,7 +37,7 @@ Future<void> createCustomerProfile(API api, {
   required String firstName,
   String? lastName,
   String? googleIdToken,
-  String? referralCode,
+  String? appliedReferralCode,
   GstDetails? gstDetails,
   SavedAddress? savedAddress,
 }) async {
@@ -45,7 +45,7 @@ Future<void> createCustomerProfile(API api, {
     'firstName': firstName,
     if (lastName?.isNotEmpty ?? false) 'lastName': lastName,
     if (googleIdToken?.isNotEmpty ?? false) 'googleIdToken': googleIdToken,
-    if (referralCode?.isNotEmpty ?? false) 'referralCode': referralCode,
+    if (appliedReferralCode?.isNotEmpty ?? false) 'appliedReferralCode': appliedReferralCode,
     if (gstDetails != null) 'gstDetails': {
       'gstNumber': gstDetails.gstNumber,
       'businessName': gstDetails.businessName,
@@ -67,4 +67,25 @@ Future<void> updateCustomerProfile(
     if (lastName != null) 'lastName': lastName,
     if (googleIdToken?.isNotEmpty ?? false) 'googleIdToken': googleIdToken,
   });
+}
+
+/// Apply a referral code
+Future<void> applyReferralCode(API api, String referralCode) async {
+  await api.post('/customer/referral/apply', data: {
+    'referralCode': referralCode,
+  });
+}
+
+/// Get referral stats
+Future<Map<String, dynamic>> getReferralStats(API api) async {
+  final response = await api.get('/customer/referral/stats');
+  return response.data;
+}
+
+/// Validate a referral code
+Future<Map<String, dynamic>> validateReferralCode(API api, String code) async {
+  final response = await api.get('/customer/referral/validate', queryParameters: {
+    'code': code,
+  });
+  return response.data;
 }
