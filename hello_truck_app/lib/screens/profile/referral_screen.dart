@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
 import 'package:hello_truck_app/providers/referral_providers.dart';
 import 'package:hello_truck_app/utils/format_utils.dart';
+import 'package:hello_truck_app/utils/date_time_utils.dart';
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Referral bonus amounts
 const double kReferrerBonus = 100.0;
 const double kRefereeBonus = 50.0;
-const int kMaxReferrals = 5;
 
 class ReferralScreen extends ConsumerWidget {
   const ReferralScreen({super.key});
@@ -51,17 +51,12 @@ class ReferralScreen extends ConsumerWidget {
             error: (error, _) => _buildErrorState(context, error),
             data: (stats) {
               final referralCode = stats.referralCode ?? customer.referralCode;
-              final successfulReferrals = stats.totalReferrals;
-              final remainingReferrals = stats.remainingReferrals;
+              final totalReferrals = stats.totalReferrals;
 
               return SafeArea(
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    // Hero Card
-                    _buildHeroCard(context),
-                    const SizedBox(height: 16),
-
                     // Bonus Cards Row
                     Row(
                       children: [
@@ -115,9 +110,41 @@ class ReferralScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // Referral Progress
-                    _buildProgressSection(context, successfulReferrals, remainingReferrals),
-                    const SizedBox(height: 20),
+                    // Referrals List
+                    if (stats.referrals.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Your Referrals',
+                            style: tt.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$totalReferrals Total',
+                              style: tt.labelMedium?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...stats.referrals.map((referral) =>
+                          _buildReferralTile(context, referral)),
+                      const SizedBox(height: 20),
+                    ],
 
                     // How it Works
                     _buildHowItWorks(context),
@@ -162,50 +189,6 @@ class ReferralScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeroCard(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cs.primary,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.celebration_rounded,
-            color: cs.onPrimary,
-            size: 48,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Earn up to ₹${(kReferrerBonus * kMaxReferrals).toInt()}',
-            style: tt.headlineSmall?.copyWith(
-              color: cs.onPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Invite friends to join Hello Truck',
-            style: tt.bodyMedium?.copyWith(
-              color: cs.onPrimary.withValues(alpha: 0.9),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -317,12 +300,27 @@ class ReferralScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressSection(BuildContext context, int count, int remaining) {
+  Widget _buildReferralTile(BuildContext context, referral) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final customer = referral.referredCustomer;
+
+    String statusText;
+    Color statusColor;
+    if (referral.referrerRewardApplied) {
+      statusText = 'Reward Credited';
+      statusColor = Colors.green;
+    } else if (customer.bookingCount >= 1) {
+      statusText = 'Eligible (Pending)';
+      statusColor = Colors.orange;
+    } else {
+      statusText = 'Pending First Booking';
+      statusColor = cs.outline;
+    }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: cs.surfaceBright,
         borderRadius: BorderRadius.circular(12),
@@ -335,45 +333,73 @@ class ReferralScreen extends ConsumerWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Referral Progress',
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+          // Avatar
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                customer.fullName[0].toUpperCase(),
+                style: tt.titleLarge?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w700,
                 ),
-                child: Text(
-                  '$count / $kMaxReferrals',
-                  style: tt.labelMedium?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  customer.fullName,
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  customer.maskedPhone,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  'Joined ${DateTimeUtils.formatShortDateIST(customer.createdAt)}',
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.5),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Status Chip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              statusText,
+              style: tt.bodySmall?.copyWith(
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
               ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$remaining referrals remaining',
-            style: tt.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: count / kMaxReferrals,
-              minHeight: 8,
-              backgroundColor: cs.outline.withValues(alpha: 0.2),
-              valueColor: AlwaysStoppedAnimation(cs.primary),
             ),
           ),
         ],
@@ -387,8 +413,9 @@ class ReferralScreen extends ConsumerWidget {
 
     final steps = [
       (Icons.share_rounded, 'Share Code', 'Share your referral code with friends'),
-      (Icons.person_add_rounded, 'Friend Signs Up', 'Friend creates an account using your code'),
-      (Icons.wallet_giftcard_rounded, 'Earn Bonus', 'You get ₹${kReferrerBonus.toInt()}, friend gets ₹${kRefereeBonus.toInt()}'),
+      (Icons.person_add_rounded, 'Friend Signs Up', 'Friend creates an account and gets ₹${kRefereeBonus.toInt()}'),
+      (Icons.shopping_cart_rounded, 'First Booking', 'Friend completes their first booking'),
+      (Icons.wallet_giftcard_rounded, 'Earn Bonus', 'You get ₹${kReferrerBonus.toInt()} credited to your wallet'),
     ];
 
     return Column(
@@ -485,7 +512,7 @@ class ReferralScreen extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Referral bonuses are credited instantly to your wallet when your friend signs up.',
+                  'Your friend gets ₹${kRefereeBonus.toInt()} instantly on signup. You get ₹${kReferrerBonus.toInt()} after they complete their first booking.',
                   style: tt.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.8),
                   ),
@@ -505,9 +532,11 @@ Join Hello Truck!
 Use my referral code: $code
 Get ₹${kRefereeBonus.toInt()} bonus when you sign up!
 
+I'll get ₹${kReferrerBonus.toInt()} when you complete your first booking.
+
 Download now:
 https://play.google.com/store/apps/details?id=com.hellotruck.customer
 ''';
-    Share.share(message);
+    SharePlus.instance.share(ShareParams(text: message));
   }
 }

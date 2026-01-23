@@ -83,9 +83,13 @@ Future<Map<String, dynamic>> getReferralStats(API api) async {
 }
 
 /// Validate a referral code
-Future<Map<String, dynamic>> validateReferralCode(API api, String code) async {
-  final response = await api.get('/customer/referral/validate', queryParameters: {
-    'code': code,
-  });
-  return response.data;
+Future<bool> validateReferralCode(API api, String code) async {
+  try {
+    final response = await api.get('/customer/referral/validate', queryParameters: {
+      'code': code,
+    });
+    return response.data['isValid'] == true;
+  } catch (e) {
+    return false;
+  }
 }

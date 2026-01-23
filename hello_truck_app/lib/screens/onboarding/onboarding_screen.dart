@@ -121,6 +121,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     try {
       final api = await ref.read(apiProvider.future);
 
+      // Validate referral code if provided
+      final referralCode = _controller.referralController.text.trim();
+      if (referralCode.isNotEmpty) {
+        final isValid = await customer_api.validateReferralCode(api, referralCode);
+        if (!isValid) {
+          _showError('Invalid referral code. Please check and try again.');
+          _controller.setLoading(false);
+          return;
+        }
+      }
+
       // Create customer profile with address
       await customer_api.createCustomerProfile(
         api,
@@ -129,9 +140,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             ? null
             : _controller.lastNameController.text.trim(),
         googleIdToken: _controller.googleIdToken,
-        appliedReferralCode: _controller.referralController.text.trim().isEmpty
-            ? null
-            : _controller.referralController.text.trim(),
+        appliedReferralCode: referralCode.isEmpty ? null : referralCode,
         gstDetails: _controller.getGstDetails(),
         savedAddress: _controller.getSavedAddressForProfile(),
       );

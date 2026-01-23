@@ -1,15 +1,11 @@
 class ReferralStats {
   final String? referralCode;
   final int totalReferrals;
-  final int remainingReferrals;
-  final int maxReferrals;
   final List<ReferralRecord> referrals;
 
   ReferralStats({
     required this.referralCode,
     required this.totalReferrals,
-    required this.remainingReferrals,
-    required this.maxReferrals,
     required this.referrals,
   });
 
@@ -17,8 +13,6 @@ class ReferralStats {
     return ReferralStats(
       referralCode: json['referralCode'],
       totalReferrals: json['totalReferrals'] ?? 0,
-      remainingReferrals: json['remainingReferrals'] ?? 0,
-      maxReferrals: json['maxReferrals'] ?? 5,
       referrals: (json['referrals'] as List<dynamic>?)
               ?.map((r) => ReferralRecord.fromJson(r))
               .toList() ??
@@ -30,11 +24,13 @@ class ReferralStats {
 class ReferralRecord {
   final String id;
   final ReferredCustomer referredCustomer;
+  final bool referrerRewardApplied;
   final DateTime createdAt;
 
   ReferralRecord({
     required this.id,
     required this.referredCustomer,
+    required this.referrerRewardApplied,
     required this.createdAt,
   });
 
@@ -42,6 +38,7 @@ class ReferralRecord {
     return ReferralRecord(
       id: json['id'],
       referredCustomer: ReferredCustomer.fromJson(json['referredCustomer']),
+      referrerRewardApplied: json['referrerRewardApplied'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
@@ -52,6 +49,7 @@ class ReferredCustomer {
   final String? firstName;
   final String? lastName;
   final String phoneNumber;
+  final int bookingCount;
   final DateTime createdAt;
 
   ReferredCustomer({
@@ -59,6 +57,7 @@ class ReferredCustomer {
     this.firstName,
     this.lastName,
     required this.phoneNumber,
+    required this.bookingCount,
     required this.createdAt,
   });
 
@@ -67,12 +66,18 @@ class ReferredCustomer {
     return '${firstName ?? ''} ${lastName ?? ''}'.trim();
   }
 
+  String get maskedPhone {
+    if (phoneNumber.length < 4) return phoneNumber;
+    return 'XXXXXX${phoneNumber.substring(phoneNumber.length - 4)}';
+  }
+
   factory ReferredCustomer.fromJson(Map<String, dynamic> json) {
     return ReferredCustomer(
       id: json['id'],
       firstName: json['firstName'],
       lastName: json['lastName'],
       phoneNumber: json['phoneNumber'],
+      bookingCount: json['bookingCount'] ?? 0,
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
