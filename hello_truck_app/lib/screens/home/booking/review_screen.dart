@@ -975,8 +975,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   void _editPackageDetails() {
     if (mounted) {
-      Navigator.pop(context);
-      Navigator.pop(context);
+      // Pass back update if any
+      final update = _createUpdateIfChanged();
+      Navigator.pop(context, update);
+      Navigator.pop(context, update);
     }
   }
 
