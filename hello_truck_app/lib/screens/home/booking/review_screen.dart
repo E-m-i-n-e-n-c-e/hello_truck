@@ -44,6 +44,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   late BookingAddress _dropAddress;
   String? _selectedGstNumber; // Track selected GST number
   bool _hasLoadedLastUsedGst = false; // Track if we've loaded from prefs
+  double? _walletBalance; // Track wallet balance (loaded once)
+  bool _hasLoadedWallet = false; // Track if we've loaded wallet
   static const double _platformFee = 20.0; // Platform fee constant
   static const String _lastUsedGstKey = 'last_used_gst_number';
   bool _isRecalculating = false; // Track if we're recalculating estimate
@@ -56,11 +58,30 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
+  // Calculate wallet to be applied (supports both positive credit and negative debt)
+  double _calculateWalletApplied(double total) {
+    final balance = _walletBalance ?? 0.0;
+    if (balance == 0) return 0.0;
+    if (balance > 0) {
+      // Positive balance: apply up to total amount
+      return balance > total ? total : balance;
+    } else {
+      // Negative balance (debt): apply full debt
+      return balance;
+    }
+  }
+
   // Calculate total with platform fee
   double _calculateTotal(bool isGstLoading) {
     // If GST is loading, show platform fee (no discount yet)
     final platformFee = (_selectedGstNumber != null && !isGstLoading) ? 0.0 : _platformFee;
     return _idealVehicle.estimatedCost + platformFee;
+  }
+
+  // Calculate final amount after wallet (credit reduces, debt increases)
+  double _calculateFinalAmount(double total) {
+    final walletApplied = _calculateWalletApplied(total);
+    return total - walletApplied;
   }
 
   @override
@@ -70,6 +91,28 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     _dropAddress = widget.dropAddress;
     _currentEstimate = widget.estimate; // Initialize with passed estimate
     _loadLastUsedGst();
+    _loadWalletBalance();
+  }
+
+  /// Load wallet balance once
+  Future<void> _loadWalletBalance() async {
+    try {
+      final customer = await ref.read(customerProvider.future);
+      if (mounted && !_hasLoadedWallet) {
+        setState(() {
+          _walletBalance = customer.walletBalance;
+          _hasLoadedWallet = true;
+        });
+      }
+    } catch (e) {
+      // If loading fails, set to 0
+      if (mounted && !_hasLoadedWallet) {
+        setState(() {
+          _walletBalance = 0.0;
+          _hasLoadedWallet = true;
+        });
+      }
+    }
   }
 
   /// Create BookingUpdate if there are changes
@@ -743,6 +786,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   child: InkWell(
                     onTap: () {
                       // Create a temporary Invoice from breakdown for the modal
+                      final total = _calculateTotal(isGstLoading);
+                      final walletApplied = _hasLoadedWallet ? _calculateWalletApplied(total) : 0.0;
+                      final finalAmount = _hasLoadedWallet ? _calculateFinalAmount(total) : total;
+
                       final tempInvoice = Invoice(
                         id: '',
                         bookingId: '',
@@ -755,10 +802,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         weightInTons: _idealVehicle.breakdown.weightInTons,
                         effectiveBasePrice: _idealVehicle.breakdown.baseFare * (_idealVehicle.breakdown.weightInTons > 1 ? _idealVehicle.breakdown.weightInTons : 1),
                         platformFee: platformFee,
-                        totalPrice: _calculateTotal(isGstLoading),
+                        totalPrice: total,
                         gstNumber: _selectedGstNumber,
-                        walletApplied: 0,
-                        finalAmount: _calculateTotal(isGstLoading),
+                        walletApplied: walletApplied,
+                        finalAmount: finalAmount,
                         isPaid: false,
                         createdAt: DateTime.now(),
                         updatedAt: DateTime.now(),
@@ -819,21 +866,38 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             ],
 
             Divider(height: 24, color: colorScheme.outline.withValues(alpha: 0.2)),
-            _buildPriceRow('Total', total.toRupees(), colorScheme, textTheme, isTotal: true),
+            _buildPriceRow('Total', total.toRupees(), colorScheme, textTheme),
+
+            // Wallet Applied Section (only if wallet balance exists)
+            if (_hasLoadedWallet && (_walletBalance ?? 0.0) != 0) ...[
+              if (_calculateWalletApplied(total) > 0)
+                _buildPriceRow('Wallet Applied', '-${_calculateWalletApplied(total).toRupees()}', colorScheme, textTheme, valueColor: Colors.green)
+              else
+                _buildPriceRow('Debt Cleared', '+${_calculateWalletApplied(total).abs().toRupees()}', colorScheme, textTheme, valueColor: Colors.orange),
+            ],
+
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Amount Payable', style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
+                Text(_calculateFinalAmount(total).toRupees(), style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: colorScheme.primary)),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPriceRow(String label, String value, ColorScheme colorScheme, TextTheme textTheme, {bool isTotal = false}) {
+  Widget _buildPriceRow(String label, String value, ColorScheme colorScheme, TextTheme textTheme, {bool isTotal = false, Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: textTheme.bodyMedium?.copyWith(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.8))),
-          Text(value, style: textTheme.bodyMedium?.copyWith(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? colorScheme.primary : colorScheme.onSurface)),
+          Text(value, style: textTheme.bodyMedium?.copyWith(fontWeight: isTotal ? FontWeight.bold : (valueColor != null ? FontWeight.w600 : FontWeight.normal), color: valueColor ?? (isTotal ? colorScheme.primary : colorScheme.onSurface))),
         ],
       ),
     );
@@ -864,6 +928,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Widget _buildBottomSection(ColorScheme colorScheme, TextTheme textTheme, bool isGstLoading) {
     final total = _calculateTotal(isGstLoading);
+    final hasWallet = _hasLoadedWallet && (_walletBalance ?? 0.0) != 0;
+    final displayAmount = hasWallet ? _calculateFinalAmount(total) : total;
     final isButtonDisabled = _isBooking || _isRecalculating || isGstLoading;
 
     return Container(
@@ -877,7 +943,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              Text(hasWallet ? 'Amount to Pay' : 'Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
               _isRecalculating
                   ? Row(
                       children: [
@@ -893,7 +959,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         Text('Calculating...', style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.6))),
                       ],
                     )
-                  : Text(total.toRupees(), style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                  : Text(displayAmount.toRupees(), style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
             ],
           ),
           const SizedBox(height: 16),
