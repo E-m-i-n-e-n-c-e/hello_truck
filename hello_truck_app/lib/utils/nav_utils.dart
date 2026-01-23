@@ -168,7 +168,7 @@ bool showPolyline(BookingStatus status) {
   return status == BookingStatus.confirmed || status == BookingStatus.inTransit;
 }
 
-/// Calculate cancellation charge percentage based on booking status and navigation data
+/// Calculate cancellation charge percentage based on booking status and time elapsed since acceptance
 double getCancellationChargePercent({
   required Booking booking,
   required CancellationConfig config,
@@ -180,15 +180,6 @@ double getCancellationChargePercent({
     return 0.0;
   }
 
-  // Get kmTravelled from navigation stream if available
-  double chargePercent = config.minChargePercent; // fallback
-
-  if (navigationAsync.hasValue && navigationAsync.value != null && !navigationAsync.value!.isStale) {
-    final navData = navigationAsync.value!;
-    final kmTravelled = navData.kmTravelled.toDouble();
-    // Mimic server logic: calculate charge based on distance travelled
-    chargePercent = config.calculateChargePercent(kmTravelled);
-  }
-
-  return chargePercent;
+  // Calculate charge based on time elapsed since driver accepted
+  return config.calculateChargePercent(booking.acceptedAt);
 }

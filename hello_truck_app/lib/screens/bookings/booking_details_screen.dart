@@ -1189,7 +1189,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Cancellation charges increase with distance travelled after driver accepts',
+                            'Cancellation charges increase over time after driver accepts',
                             style: tt.bodySmall?.copyWith(color: Colors.orange.shade800),
                           ),
                         ),
