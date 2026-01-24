@@ -943,7 +943,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(hasWallet ? 'Amount to Pay' : 'Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              Text('Estimated Cost', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
               _isRecalculating
                   ? Row(
                       children: [

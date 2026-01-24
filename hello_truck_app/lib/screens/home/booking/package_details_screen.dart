@@ -670,7 +670,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
             // Continue Button (reactive)
             _buildReactiveProceedButton(colorScheme, textTheme),
 
-            const SizedBox(height: 20),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
           ],
         ),
       ),

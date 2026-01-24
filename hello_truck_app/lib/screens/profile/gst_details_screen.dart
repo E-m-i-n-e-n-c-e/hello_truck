@@ -35,10 +35,13 @@ class GstDetailsScreen extends ConsumerWidget {
         backgroundColor: cs.primary,
         child: Icon(Icons.add, color: cs.onPrimary),
       ),
-      body: gstDetailsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _buildErrorState(context, ref, error),
-        data: (details) => _buildContent(context, ref, details),
+      body: SafeArea(
+        top: false,
+        child: gstDetailsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _buildErrorState(context, ref, error),
+          data: (details) => _buildContent(context, ref, details),
+        ),
       ),
     );
   }

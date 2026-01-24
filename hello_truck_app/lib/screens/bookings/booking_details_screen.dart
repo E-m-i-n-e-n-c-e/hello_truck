@@ -444,7 +444,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
                         _buildInvoiceCard(context),
                         const SizedBox(height: 12),
                         _buildHelpSection(context, canCancel),
-                        const SizedBox(height: 24),
+                        SizedBox(height: MediaQuery.of(context).padding.bottom + 48),
                       ],
                     ),
                   );
@@ -1131,17 +1131,7 @@ class _BookingDetailsScreenState extends ConsumerState<BookingDetailsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: cs.onSurface.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
                 Text('Cancel Booking?', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface)),
                 const SizedBox(height: 8),
                 Text(

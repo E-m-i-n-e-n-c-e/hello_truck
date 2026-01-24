@@ -59,12 +59,15 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen>
           indicatorWeight: 3,
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _TransactionsTab(),
-          _PendingRefundsTab(),
-        ],
+      body: SafeArea(
+        top: false,
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _TransactionsTab(),
+            _PendingRefundsTab(),
+          ],
+        ),
       ),
     );
   }
