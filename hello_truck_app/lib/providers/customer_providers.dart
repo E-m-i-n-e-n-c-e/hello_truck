@@ -13,7 +13,7 @@ final customerProvider = FutureProvider.autoDispose<Customer>((ref) async {
   return customer_api.getCustomerProfile(api);
 });
 
-final gstDetailsProvider = FutureProvider<List<GstDetails>>((ref) async {
+final gstDetailsProvider = FutureProvider.autoDispose<List<GstDetails>>((ref) async {
   final api = await ref.watch(apiProvider.future);
   return gst_api.getGstDetails(api);
 });
