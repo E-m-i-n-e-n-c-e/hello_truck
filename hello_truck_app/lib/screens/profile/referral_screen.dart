@@ -376,7 +376,7 @@ class ReferralScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Joined ${DateTimeUtils.formatShortDateIST(customer.createdAt)}',
+                  'Joined ${DateTimeUtils.formatShortDateIST(customer.joinedDate)}',
                   style: tt.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.5),
                     fontSize: 11,

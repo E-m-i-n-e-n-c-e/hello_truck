@@ -50,6 +50,7 @@ class ReferredCustomer {
   final String? lastName;
   final String phoneNumber;
   final int bookingCount;
+  final DateTime? profileCreatedAt;
   final DateTime createdAt;
 
   ReferredCustomer({
@@ -58,6 +59,7 @@ class ReferredCustomer {
     this.lastName,
     required this.phoneNumber,
     required this.bookingCount,
+    this.profileCreatedAt,
     required this.createdAt,
   });
 
@@ -71,6 +73,8 @@ class ReferredCustomer {
     return 'XXXXXX${phoneNumber.substring(phoneNumber.length - 4)}';
   }
 
+  DateTime get joinedDate => profileCreatedAt ?? createdAt;
+
   factory ReferredCustomer.fromJson(Map<String, dynamic> json) {
     return ReferredCustomer(
       id: json['id'],
@@ -78,6 +82,7 @@ class ReferredCustomer {
       lastName: json['lastName'],
       phoneNumber: json['phoneNumber'],
       bookingCount: json['bookingCount'] ?? 0,
+      profileCreatedAt: json['profileCreatedAt'] != null ? DateTime.parse(json['profileCreatedAt']) : null,
       createdAt: DateTime.parse(json['createdAt']),
     );
   }

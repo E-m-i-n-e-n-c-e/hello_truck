@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hello_truck_app/models/booking.dart';
+import 'package:hello_truck_app/models/customer.dart';
 import 'package:hello_truck_app/models/enums/booking_enums.dart';
 import 'package:hello_truck_app/providers/addresse_providers.dart';
 import 'package:hello_truck_app/providers/booking_providers.dart';
 import 'package:hello_truck_app/providers/customer_providers.dart';
+import 'package:hello_truck_app/providers/referral_providers.dart';
+import 'package:hello_truck_app/providers/auth_providers.dart';
+import 'package:hello_truck_app/api/customer_api.dart' as customer_api;
 import 'package:hello_truck_app/screens/home/booking/address_selection_screen.dart';
 import 'package:hello_truck_app/widgets/gst_details_modal.dart';
 import 'package:hello_truck_app/screens/profile/gst_details_screen.dart';
@@ -39,11 +43,17 @@ class HomeScreen extends ConsumerWidget {
 
               // Book Now CTA
               _buildBookNowCard(context),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // Quick Links (moved to top)
               _buildQuickLinks(context, ref),
               const SizedBox(height: 24),
+
+              // Apply Referral Code Card (only show if within 24 hours and no referral code applied)
+              if (_shouldShowApplyReferralCard(customerAsync)) ...[
+                _buildApplyReferralCard(context, ref),
+                const SizedBox(height: 24),
+              ],
 
               // Recent Bookings
               historyAsync.when(
@@ -176,6 +186,218 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  bool _shouldShowApplyReferralCard(AsyncValue<Customer> customerAsync) {
+    return customerAsync.whenOrNull(
+      data: (customer) {
+        // Don't show if customer already applied a referral code
+        if (customer.hasAppliedReferral) {
+          return false;
+        }
+
+        // Check if within 24 hours of profile creation
+        final memberSince = customer.memberSince;
+        final now = DateTime.now();
+        final difference = now.difference(memberSince);
+        return difference.inHours < 24;
+      },
+    ) ?? false;
+  }
+
+  Widget _buildApplyReferralCard(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return TappableCard(
+      pressedOpacity: 0.6,
+      animationDuration: const Duration(milliseconds: 100),
+      onTap: () => _showApplyReferralBottomSheet(context, ref),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.redeem_rounded, size: 24, color: cs.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Have a referral code?',
+                    style: tt.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: cs.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Apply here to get ₹50',
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.primary.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: cs.primary.withValues(alpha: 0.8),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showApplyReferralBottomSheet(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final controller = TextEditingController();
+    bool isLoading = false;
+    String? errorText;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Apply Referral Code',
+                            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(bottomSheetContext),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enter a referral code to get ₹50 in your wallet',
+                      style: tt.bodyMedium?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: controller,
+                      enabled: !isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Referral Code',
+                        hintText: 'CUS-XXXXXXXX',
+                        errorText: errorText,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.card_giftcard_rounded),
+                      ),
+                      textCapitalization: TextCapitalization.characters,
+                      onChanged: (value) {
+                        if (errorText != null) {
+                          setModalState(() {
+                            errorText = null;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: isLoading
+                            ? null
+                            : () async {
+                                final code = controller.text.trim().toUpperCase();
+                                if (code.isEmpty) {
+                                  setModalState(() {
+                                    errorText = 'Please enter a referral code';
+                                  });
+                                  return;
+                                }
+
+                                setModalState(() {
+                                  isLoading = true;
+                                  errorText = null;
+                                });
+
+                                try {
+                                  final api = ref.read(apiProvider).value!;
+
+                                  await customer_api.applyReferralCode(api, code);
+                                  ref.invalidate(customerProvider);
+                                  ref.invalidate(referralStatsProvider);
+
+                                  if (bottomSheetContext.mounted) {
+                                    Navigator.pop(bottomSheetContext);
+                                  }
+                                  if (context.mounted) {
+                                    SnackBars.success(context, 'Referral code applied! ₹50 added to wallet');
+                                  }
+                                } catch (e) {
+                                    final message = e.toString();
+
+                                    if (bottomSheetContext.mounted) {
+                                    Navigator.pop(bottomSheetContext);
+                                    }
+                                    if (context.mounted) {
+                                    SnackBars.error(context, message);
+                                    }
+                                }
+                              },
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('Apply Code'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

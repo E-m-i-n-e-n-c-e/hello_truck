@@ -6,6 +6,8 @@ class Customer {
   final String referralCode;
   final bool isBusiness;
   final double walletBalance;
+  final bool hasAppliedReferral;
+  final DateTime? profileCreatedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,6 +19,8 @@ class Customer {
     required this.referralCode,
     required this.isBusiness,
     required this.walletBalance,
+    required this.hasAppliedReferral,
+    this.profileCreatedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -32,6 +36,8 @@ class Customer {
       walletBalance: json['walletBalance'] != null
           ? double.parse(json['walletBalance'].toString())
           : 0.0,
+      hasAppliedReferral: json['hasAppliedReferral'] ?? false,
+      profileCreatedAt: json['profileCreatedAt'] != null ? DateTime.parse(json['profileCreatedAt']) : null,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
     );
@@ -39,4 +45,5 @@ class Customer {
 
   String get fullName => '$firstName $lastName'.trim();
   String get initials => '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'.toUpperCase();
+  DateTime get memberSince => profileCreatedAt ?? createdAt;
 }

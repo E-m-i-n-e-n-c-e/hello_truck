@@ -776,7 +776,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             context,
             icon: Icons.calendar_today_rounded,
             title: 'Member Since',
-            value: DateTimeUtils.formatShortDateIST(customer.createdAt),
+            value: DateTimeUtils.formatShortDateIST(customer.memberSince),
             onEdit: null,
           ),
           if (customer.referralCode.isNotEmpty) ...[
