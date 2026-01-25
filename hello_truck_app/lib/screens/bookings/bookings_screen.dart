@@ -510,15 +510,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       backgroundColor: Colors.transparent,
       builder: (context) => Consumer(
         builder: (context, ref, _) {
-          // Watch navigation stream for real-time charge updates
-          final navigationAsync = ref.watch(driverNavigationStreamProvider(widget.booking.id));
-          final chargePercent = getCancellationChargePercent(
-            booking: widget.booking,
-            config: config,
-            navigationAsync: navigationAsync,
-          );
-
-          // Use basePrice for cancellation charge calculation (matches server logic)
+          // Use new calculation method: (baseAmount × percentage) + platformFee, capped at basePrice
           final invoice = widget.booking.finalInvoice ?? widget.booking.estimateInvoice;
           final basePrice = invoice?.basePrice ?? widget.booking.estimatedCost;
           final walletApplied = invoice?.walletApplied ?? 0.0;
@@ -526,7 +518,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           final totalPaid = walletApplied + finalAmount;
 
           final isConfirmed = widget.booking.status != BookingStatus.pending && widget.booking.status != BookingStatus.driverAssigned;
-          final cancellationCharge = basePrice * chargePercent;
+          final cancellationCharge = config.calculateCancellationCharge(widget.booking.acceptedAt, basePrice);
 
           // Proportional refund distribution (matches server logic)
           final walletRefund = totalPaid > 0 ? walletApplied - (cancellationCharge * walletApplied / totalPaid) : 0.0;
