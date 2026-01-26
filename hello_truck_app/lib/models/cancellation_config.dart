@@ -32,13 +32,14 @@ class CancellationConfig {
     return calculatedCharge.clamp(minChargePercent, maxChargePercent);
   }
 
-  /// Calculate cancellation charge amount: (baseAmount × percentage) + platformFee, capped at basePrice
+  /// Calculate cancellation charge amount: (baseAmount × percentage) + (platformFee / 2), capped at basePrice
   double calculateCancellationCharge(DateTime? acceptedAt, double basePrice) {
     // If no acceptedAt, no cancellation charge (PENDING/DRIVER_ASSIGNED without driver acceptance)
     if (acceptedAt == null) return 0;
     
     final chargePercent = calculateChargePercent(acceptedAt);
-    final calculatedCharge = (cancellationBaseAmount * chargePercent) + platformFee;
+    final halfPlatformFee = platformFee / 2;
+    final calculatedCharge = (cancellationBaseAmount * chargePercent) + halfPlatformFee;
     // Cap at basePrice to avoid overcharging
     return calculatedCharge < basePrice ? calculatedCharge : basePrice;
   }
