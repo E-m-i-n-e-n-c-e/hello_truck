@@ -1244,7 +1244,7 @@ class _PlacingOrderBottomSheetState extends State<_PlacingOrderBottomSheet> with
 
             // Countdown
             Text(
-              'Your booking will be confirmed in $_countdown ${_countdown == 1 ? 'second' : 'seconds'}',
+              'Your booking will be placed in $_countdown ${_countdown == 1 ? 'second' : 'seconds'}',
               style: tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.7)),
             ),
 

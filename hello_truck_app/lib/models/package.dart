@@ -84,7 +84,7 @@ class Package extends Equatable {
     required String productName,
     required double approximateWeight,
     required WeightUnit weightUnit,
-    required String gstBillUrl,
+    String? gstBillUrl,
     String? packageImageUrl,
     List<String> transportDocUrls = const [],
   }) {

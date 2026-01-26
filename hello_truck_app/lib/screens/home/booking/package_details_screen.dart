@@ -596,7 +596,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
                 uploadedUrl: _gstBillUrl,
                 isUploading: _isUploadingGstBill,
                 onUpload: () => _handleDocumentUpload('gstBill'),
-                isRequired: true,
+                isRequired: !_isAgriculturalProduct,
               ),
               const SizedBox(height: 20),
             ],
@@ -748,7 +748,8 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
     }
 
     // Check if GST bill is required and uploaded for commercial use
-    if (widget.isCommercial && (_gstBillUrl == null || _gstBillUrl!.isEmpty)) {
+    // GST bill is optional for agricultural products
+    if (widget.isCommercial && !_isAgriculturalProduct && (_gstBillUrl == null || _gstBillUrl!.isEmpty)) {
       return false;
     }
 
@@ -871,7 +872,7 @@ class _PackageDetailsScreenState extends ConsumerState<PackageDetailsScreen> {
         productName: _productNameController.text.trim(),
         approximateWeight: double.tryParse(_weightController.text.trim()) ?? 0.0,
         weightUnit: WeightUnit.fromString(_weightUnit.toUpperCase()),
-        gstBillUrl: _gstBillUrl ?? '',
+        gstBillUrl: _gstBillUrl,
         packageImageUrl: _packageImageUrl,
         transportDocUrls: _transportDocUrls.where((url) => url.isNotEmpty).toList(),
       );
