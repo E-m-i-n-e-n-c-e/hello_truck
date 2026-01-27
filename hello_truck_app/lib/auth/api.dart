@@ -16,6 +16,8 @@ import 'package:hello_truck_app/utils/constants.dart';
 
 class API {
   final Dio _dio = Dio();
+  final Dio _refreshDio = Dio();
+  Completer<void>? _refreshCompleter;
   String? accessToken;
   late CacheStore _cacheStore;
   late CacheOptions _cacheOptions;
@@ -66,16 +68,54 @@ class API {
   );
 
   InterceptorsWrapper get _errorInterceptor => InterceptorsWrapper(
-    onError: (error, handler) {
-      if (error.response?.statusCode == 401) {
-        // Schedule sign out after 2 seconds if the error is an unauthorized error
-        Future.delayed(const Duration(seconds: 2), () {
-          signOut();
-        });
+    onError: (error, handler) async {
+      if (error.response?.statusCode != 401) {
+        return handler.reject(APIException.fromDioException(error));
       }
 
-      // Convert DioException to APIException and continue with error handling
-      handler.reject(APIException.fromDioException(error));
+      // If refresh itself fails → logout
+      if (error.requestOptions.path.endsWith('/auth/customer/refresh-token')) {
+        await signOut();
+        return handler.reject(APIException.fromDioException(error));
+      }
+
+      try {
+        // Wait if refresh already running
+        if (_refreshCompleter != null) {
+          await _refreshCompleter!.future;
+        } else {
+          _refreshCompleter = Completer();
+
+          final refreshToken = await storage.read(key: 'refreshToken');
+          if (refreshToken == null) throw Exception('No refresh token');
+
+          final response = await _refreshDio.post(
+            '$baseUrl/auth/customer/refresh-token',
+            data: {'refreshToken': refreshToken},
+          );
+
+          final newAccessToken = response.data['accessToken'];
+
+          await storage.write(key: 'accessToken', value: newAccessToken);
+          updateToken(newAccessToken);
+
+          _refreshCompleter!.complete();
+          _refreshCompleter = null;
+        }
+
+        // Retry original request
+        final opts = error.requestOptions;
+        opts.headers['Authorization'] =
+            'Bearer ${await storage.read(key: 'accessToken')}';
+
+        final response = await _dio.fetch(opts);
+        return handler.resolve(response);
+      } catch (e) {
+        _refreshCompleter?.completeError(e);
+        _refreshCompleter = null;
+        await signOut();
+        return handler.reject(APIException.fromDioException(error));
+      }
     },
   );
 
@@ -272,6 +312,7 @@ class API {
       storage.delete(key: 'refreshToken'),
       storage.delete(key: 'accessToken'),
       FirebaseMessaging.instance.deleteToken(),
+      clearCache(),
     ]);
     ref.read(authClientProvider).emitSignOut();
 

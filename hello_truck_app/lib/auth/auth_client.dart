@@ -107,8 +107,8 @@ class AuthClient with WidgetsBindingObserver {
   void _startRefreshLoop() {
     _refreshTimer?.cancel();
 
-    // Refresh tokens every 5 minutes
-    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+    // Refresh tokens every 30 min
+    _refreshTimer = Timer.periodic(const Duration(minutes: 30), (_) {
       refreshTokens();
     });
   }
