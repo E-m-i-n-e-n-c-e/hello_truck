@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hello_truck_app/models/gst_details.dart';
 import 'package:hello_truck_app/models/saved_address.dart';
+import 'package:hello_truck_app/utils/constants.dart';
 
 class OnboardingController {
   // Page and Animation Controllers
@@ -366,8 +370,11 @@ class OnboardingController {
     required Function(String) onSuccess,
   }) async {
     try {
+      // Android: request an ID token for backend verification.
+      // iOS: use the native client ID from Firebase options.
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: '691159300275-37gn4bpd7jrkld0cmot36vl181s3tsf3.apps.googleusercontent.com',
+        serverClientId: Platform.isAndroid ? googleWebClientId : null,
+        clientId: Platform.isIOS ? Firebase.app().options.iosClientId : null,
       );
 
       await googleSignIn.signOut();

@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +8,7 @@ import 'package:hello_truck_app/providers/auth_providers.dart';
 import 'package:hello_truck_app/api/customer_api.dart' as customer_api;
 import 'package:hello_truck_app/widgets/snackbars.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:hello_truck_app/utils/constants.dart';
 
 class EmailLinkDialog extends ConsumerStatefulWidget {
   final String? currentEmail;
@@ -35,8 +39,11 @@ class _EmailLinkDialogState extends ConsumerState<EmailLinkDialog> {
     setState(() => _isLinking = true);
 
     try {
+      // Android: request an ID token for backend verification.
+      // iOS: use the native client ID from Firebase options.
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: '691159300275-37gn4bpd7jrkld0cmot36vl181s3tsf3.apps.googleusercontent.com',
+        serverClientId: Platform.isAndroid ? googleWebClientId : null,
+        clientId: Platform.isIOS ? Firebase.app().options.iosClientId : null,
       );
 
       await googleSignIn.signOut();
