@@ -1,4 +1,7 @@
 enum FcmEventType {
+  // Fallback
+  unknown('UNKNOWN'),
+
   bookingStatusChange('BOOKING_STATUS_CHANGE'),
   // driverAssignmentOffered('DRIVER_ASSIGNMENT_OFFERED'),
   // driverAssignmentTimeout('DRIVER_ASSIGNMENT_TIMEOUT'), // Data only
@@ -15,6 +18,7 @@ enum FcmEventType {
   static FcmEventType fromString(String value) {
     return FcmEventType.values.firstWhere(
       (type) => type.value == value,
+      orElse: () => FcmEventType.unknown,
     );
   }
 
